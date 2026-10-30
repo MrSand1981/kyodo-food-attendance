@@ -1,6 +1,7 @@
 // server/gitService.js
 const { exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const APP_DIR = path.join(__dirname, '..');
 
@@ -57,11 +58,29 @@ async function getGitStatus() {
 async function pushToGitHub(messageInput) {
   const now = new Date();
   const dateStr = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const commitMsg = messageInput?.trim() || `Cap nhat Kyodo Food - ${dateStr}`;
-
   const logs = [];
+  let newVersion = '1.2.1';
 
   try {
+    // 0. Tự động tăng phiên bản patch trong package.json để máy client phát hiện bản mới khi refresh
+    try {
+      const pkgPath = path.join(APP_DIR, 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        const parts = (pkg.version || '1.2.0').split('.').map(n => parseInt(n, 10) || 0);
+        parts[2] = (parts[2] || 0) + 1; // Tự động tăng số bản vá: 1.2.0 -> 1.2.1 -> 1.2.2...
+        newVersion = parts.join('.');
+        pkg.version = newVersion;
+        pkg.updatedAt = new Date().toISOString();
+        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), 'utf-8');
+        logs.push(`0. Đã tự động nâng phiên bản phần mềm lên v${newVersion}`);
+      }
+    } catch (vErr) {
+      logs.push(`-> Lưu ý tăng phiên bản: ${vErr.message}`);
+    }
+
+    const commitMsg = messageInput?.trim() || `Cap nhat Kyodo Food v${newVersion} - ${dateStr}`;
+
     // 1. Build production frontend
     logs.push('1. Đang đóng gói giao diện sản xuất (npm run build)...');
     try {
@@ -102,7 +121,8 @@ async function pushToGitHub(messageInput) {
     return {
       success: true,
       commitHash: latestHash,
-      message: `Đã đẩy bản cập nhật mới lên GitHub thành công! (Commit: ${latestHash})`,
+      version: newVersion,
+      message: `Đã đẩy bản cập nhật mới (v${newVersion}) lên GitHub thành công! (Commit: ${latestHash})`,
       logs: logs.join('\n')
     };
   } catch (err) {
