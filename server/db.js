@@ -196,6 +196,9 @@ function updateEmployee(id, updateData) {
   const current = db.employees[idx];
   const shortName = (updateData.shortName !== undefined ? updateData.shortName : (updateData.name || current.shortName || current.name || '')).trim();
   const fullName = (updateData.fullName !== undefined ? updateData.fullName : (current.fullName || current.name || shortName)).trim();
+  const hourlyRate = updateData.hourlyRate !== undefined 
+    ? (Number(updateData.hourlyRate) || 0) 
+    : (current.hourlyRate !== undefined ? Number(current.hourlyRate) : 25000);
 
   db.employees[idx] = {
     ...current,
@@ -203,6 +206,7 @@ function updateEmployee(id, updateData) {
     fullName: fullName,
     shortName: shortName || fullName,
     name: shortName || fullName,
+    hourlyRate: hourlyRate,
     branch: "Trưng Nữ Vương", // Cố định cơ sở Trưng Nữ Vương
     id
   };
@@ -711,7 +715,9 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   });
 
   totalCompletedHours = Number(totalCompletedHours.toFixed(2));
-  const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
+  const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
+    ? Number(emp.hourlyRate)
+    : (emp.name === 'Út' ? 25000 : 22000);
   const estimatedSalary = Math.round(totalCompletedHours * hourlyRate);
 
   const advData = getSalaryAdvances(emp.id, currentYM);
@@ -842,7 +848,9 @@ function getMasterMonthlyReport(yearMonth) {
     });
 
     empTotalHours = Number(empTotalHours.toFixed(2));
-    const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
+    const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
+      ? Number(emp.hourlyRate)
+      : (emp.name === 'Út' ? 25000 : 22000);
     const empTotalSalary = Math.round(empTotalHours * hourlyRate);
 
     const advData = getSalaryAdvances(emp.id, currentYM);
