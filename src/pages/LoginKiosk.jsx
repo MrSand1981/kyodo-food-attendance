@@ -183,11 +183,11 @@ export default function LoginKiosk({
             </div>
             <div>
               <div className="font-black text-sm sm:text-base flex items-center gap-2">
-                <span>Đã có phiên bản cập nhật mới (v{updateStatus.latestVersion})!</span>
+                <span>Phần mềm đã có phiên bản mới (v{updateStatus.latestVersion})!</span>
                 <span className="px-2 py-0.5 rounded-full bg-white text-red-700 text-[10px] font-black uppercase tracking-wider">Mới</span>
               </div>
               <p className="text-xs text-red-100 mt-0.5">
-                Quản lý tại Nghệ An vừa cập nhật tính năng mới lên GitHub. Bấm nút bên cạnh để cập nhật ngay.
+                Phần mềm đã có phiên bản mới hãy nhấn cập nhật ngay để cập nhật các tính năng mới.
               </p>
             </div>
           </div>
@@ -432,7 +432,7 @@ export default function LoginKiosk({
           onClick={checkAppUpdate}
           disabled={checkingUpdate}
           className="text-slate-600 hover:text-red-600 flex items-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-slate-50 border border-slate-200/80 shadow-2xs cursor-pointer bg-white"
-          title="Bấm để kiểm tra xem Quản lý tại Nghệ An đã cập nhật phần mềm mới lên GitHub chưa"
+          title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${checkingUpdate ? 'animate-spin text-red-600' : ''}`} />
           <span>{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Kiểm Tra Bản Cập Nhật Mới')}</span>

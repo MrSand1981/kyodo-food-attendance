@@ -6,9 +6,10 @@ import {
   AlertCircle, Printer, RefreshCw, PlusCircle, 
   FileText, ChevronDown, Check, LogOut, Send, MapPin,
   Lock, KeyRound, ShieldCheck, X, Camera, DollarSign,
-  CalendarDays, Trash2, HeartHandshake
+  CalendarDays, Trash2, HeartHandshake, QrCode
 } from 'lucide-react';
 import { api } from '../utils/api';
+import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
 
 export default function StaffAttendance({ 
   employee, 
@@ -23,6 +24,7 @@ export default function StaffAttendance({
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPersonalQrModal, setShowPersonalQrModal] = useState(false);
 
   // Modal đổi ảnh đại diện cá nhân
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -79,16 +81,16 @@ export default function StaffAttendance({
     }
   };
 
-  // Tự động tính số giờ khi đổi giờ vào / giờ ra
+  // Tự động tính số giờ khi đổi giờ vào / giờ ra (làm tròn số giờ, không tính lẻ phút: 5h10p -> 5h, 4h50p -> 5h)
   useEffect(() => {
     if (entryStart && entryEnd) {
       const [sh, sm] = entryStart.split(':').map(Number);
       const [eh, em] = entryEnd.split(':').map(Number);
       let diffMinutes = (eh * 60 + em) - (sh * 60 + sm);
       if (diffMinutes < 0) diffMinutes += 24 * 60; // qua đêm
-      const calculatedH = Number((diffMinutes / 60).toFixed(2));
-      if (!isNaN(calculatedH) && calculatedH > 0) {
-        setEntryHours(String(calculatedH));
+      const roundedHours = Math.round(diffMinutes / 60);
+      if (!isNaN(roundedHours) && roundedHours >= 0) {
+        setEntryHours(String(roundedHours));
       }
     }
   }, [entryStart, entryEnd]);
@@ -392,6 +394,37 @@ export default function StaffAttendance({
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       
+      {/* CẢNH BÁO BẢO MẬT: NHẮC ĐỔI MẬT KHẨU KHI DÙNG 1234 */}
+      {(employee.isDefaultPassword || (!employee.passwordChanged && employee.password === '1234')) && (
+        <div className="mb-6 p-4.5 rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0 shadow-xs">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-amber-950 flex items-center gap-2">
+                <span>⚠️ Cảnh Báo Bảo Mật: Bạn Đang Dùng Mật Khẩu Khởi Tạo (1234)!</span>
+              </h4>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Để bảo vệ quyền riêng tư và số giờ làm của mình, vui lòng đổi sang mật khẩu riêng ngay bây giờ.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowPasswordModal(true);
+              setPwdError("");
+              setPwdMsg("");
+            }}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-md transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Đổi Mật Khẩu Ngay</span>
+          </button>
+        </div>
+      )}
+
       {/* ================= PHẦN 0: TRANG CÁ NHÂN CỦA NHÂN VIÊN ================= */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200 mb-8 no-print">
         <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pb-6 border-b border-slate-100">
@@ -433,7 +466,7 @@ export default function StaffAttendance({
                 Nhân Viên: {employee.name}
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">
-                Tài khoản tự quản lý cá nhân • Đổi ảnh đại diện, ứng tiền lương, xin nghỉ phép và khai báo giờ làm.
+                Tài khoản tự quản lý cá nhân • Đổi ảnh đại diện, ứng tiền lương, thông báo nghỉ làm và khai báo giờ làm.
               </p>
             </div>
           </div>
@@ -462,7 +495,7 @@ export default function StaffAttendance({
           </div>
         </div>
 
-        {/* Thông tin hồ sơ cá nhân của nhân viên */}
+        {/* Thông tin hồ sơ cá nhân & Tài khoản ngân hàng của nhân viên */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-xs">
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Giới Tính</span>
@@ -479,6 +512,26 @@ export default function StaffAttendance({
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Số Điện Thoại</span>
             <strong className="text-slate-800 font-bold font-mono text-sm">{employee.phone || "Chưa cập nhật"}</strong>
+          </div>
+
+          {/* Tài khoản ngân hàng & VietQR */}
+          <div className="col-span-2 sm:col-span-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tài Khoản Nhận Lương (VietQR Napas 247)</span>
+              <strong className="text-slate-800 font-bold text-xs sm:text-sm">
+                {employee.bankAccount ? `${employee.bankName || employee.bankCode}: ${employee.bankAccount} (${employee.accountName || employee.name})` : 'Chưa cập nhật tài khoản ngân hàng'}
+              </strong>
+            </div>
+            {employee.bankAccount && (
+              <button
+                type="button"
+                onClick={() => setShowPersonalQrModal(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>Xem Mã VietQR</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -532,7 +585,7 @@ export default function StaffAttendance({
             className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-xs shadow-md shadow-amber-600/20 transition-all cursor-pointer"
           >
             <DollarSign className="w-4 h-4" />
-            <span>+ Ứng Lương Ngay</span>
+            <span>+ Ghi Nhận Ứng Lương</span>
           </button>
         </div>
 
@@ -636,18 +689,18 @@ export default function StaffAttendance({
         </div>
       </div>
 
-      {/* ================= PHẦN 2: XIN NGÀY NGHỈ (LEAVE REQUEST) ================= */}
+      {/* ================= PHẦN 2: THÔNG BÁO NGHỈ LÀM (LEAVE NOTIFICATION) ================= */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8 no-print">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 mb-5 border-b border-slate-100 gap-4">
           <div>
             <div className="flex items-center gap-2">
               <CalendarDays className="w-5 h-5 text-blue-600" />
               <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                Xin Ngày Nghỉ Phép
+                Thông Báo Nghỉ Làm
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Gửi đơn xin nghỉ ca làm hoặc nghỉ cả ngày để quản lý sắp xếp người thay thế.
+              Thông báo ngày và ca nghỉ của bạn cho cửa hàng để dễ dàng theo dõi và thống kê tổng số ngày nghỉ trong tháng (không cần phê duyệt).
             </p>
           </div>
 
@@ -657,19 +710,37 @@ export default function StaffAttendance({
             className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 transition-all cursor-pointer"
           >
             <CalendarDays className="w-4 h-4" />
-            <span>Tạo Đơn Xin Nghỉ</span>
+            <span>+ Báo Nghỉ Ngay</span>
           </button>
         </div>
 
-        {/* Lịch sử xin nghỉ */}
+        {/* Tổng số ngày nghỉ trong tháng */}
+        <div className="mb-5 p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+              <CalendarDays className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-blue-900 uppercase block">Tổng Số Ngày Nghỉ (Tháng {selectedMonth})</span>
+              <div className="text-2xl font-black text-blue-800 font-mono mt-0.5">
+                {summaryData?.totalLeaveDays || 0} <span className="text-sm font-bold">ngày nghỉ</span>
+              </div>
+            </div>
+          </div>
+          <span className="text-xs font-bold px-3 py-1 rounded-xl bg-blue-200/70 text-blue-900">
+            Tự Động Thống Kê
+          </span>
+        </div>
+
+        {/* Lịch sử thông báo nghỉ */}
         {summaryData?.leaveRequests && summaryData.leaveRequests.length > 0 ? (
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
-                  <th className="py-2.5 px-4">Ngày Xin Nghỉ</th>
+                  <th className="py-2.5 px-4">Ngày Báo Nghỉ</th>
                   <th className="py-2.5 px-4">Ca Nghỉ</th>
-                  <th className="py-2.5 px-4">Lý Do</th>
+                  <th className="py-2.5 px-4">Lý Do / Ghi Chú</th>
                   <th className="py-2.5 px-4 text-center">Trạng Thái</th>
                   <th className="py-2.5 px-4 text-center">Thao Tác</th>
                 </tr>
@@ -686,14 +757,14 @@ export default function StaffAttendance({
                     <td className="py-2.5 px-4 text-slate-600">{leave.reason}</td>
                     <td className="py-2.5 px-4 text-center">
                       <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                        Đã Tiếp Nhận
+                        Đã Thông Báo
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-center">
                       <button
                         onClick={() => handleDeleteLeave(leave.id)}
                         className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
-                        title="Hủy đơn xin nghỉ này"
+                        title="Hủy thông báo nghỉ này"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -705,7 +776,7 @@ export default function StaffAttendance({
           </div>
         ) : (
           <p className="text-xs text-slate-400 italic">
-            Chưa có đơn xin nghỉ phép nào được ghi nhận trong tháng {selectedMonth}.
+            Chưa có thông báo nghỉ nào được ghi nhận trong tháng {selectedMonth}.
           </p>
         )}
       </div>
@@ -750,36 +821,6 @@ export default function StaffAttendance({
               </button>
             )}
           </div>
-        </div>
-
-        {/* Thanh chọn nhanh ca làm việc (Sáng 8-17h, Chiều 17-22h) */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-red-50/60 rounded-2xl border border-red-100">
-          <span className="text-[11px] font-bold text-red-800 uppercase tracking-wider flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-red-600" />
-            Chọn Nhanh Ca:
-          </span>
-          <button
-            type="button"
-            onClick={() => selectQuickShift('SANG')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              entryShiftName === 'Ca Sáng'
-                ? 'bg-red-600 text-white shadow-xs'
-                : 'bg-white text-slate-700 hover:bg-red-100 border border-slate-200'
-            }`}
-          >
-            <span>🌅 Ca Sáng (08:00 - 17:00 • 9 tiếng)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => selectQuickShift('CHIEU')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              entryShiftName === 'Ca Chiều'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-white text-slate-700 hover:bg-amber-100 border border-slate-200'
-            }`}
-          >
-            <span>🌆 Ca Chiều (17:00 - 22:00 • 5 tiếng)</span>
-          </button>
         </div>
 
         {/* Daily Entry Form (Định dạng 24H từ 0-23h, KHÔNG DÙNG AM/PM) */}
@@ -885,7 +926,7 @@ export default function StaffAttendance({
               </div>
             </div>
 
-            {/* Số giờ làm */}
+            {/* Số giờ làm (làm tròn số giờ, không tính lẻ phút: 5h10p = 5h, 4h50p = 5h) */}
             <div>
               <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
                 4. Tổng Số Giờ Làm:
@@ -893,7 +934,7 @@ export default function StaffAttendance({
               <div className="relative">
                 <input
                   type="number"
-                  step="0.1"
+                  step="1"
                   required
                   value={entryHours}
                   onChange={(e) => setEntryHours(e.target.value)}
@@ -905,6 +946,41 @@ export default function StaffAttendance({
               </div>
             </div>
 
+          </div>
+
+          {/* CHỌN NHANH CA LÀM VIỆC ĐƯỢC ĐẶT XUỐNG DƯỚI NGÀY GIỜ LÀM VIỆC */}
+          <div className="p-3 bg-red-50/70 rounded-2xl border border-red-200/80 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-black text-red-900 uppercase tracking-wider flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-red-600" />
+                Chọn Nhanh Ca:
+              </span>
+              <button
+                type="button"
+                onClick={() => selectQuickShift('SANG')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  entryShiftName === 'Ca Sáng'
+                    ? 'bg-red-600 text-white shadow-xs'
+                    : 'bg-white text-slate-700 hover:bg-red-100 border border-slate-200'
+                }`}
+              >
+                <span>🌅 Full Ca Sáng (08:00 - 17:00 • 9 tiếng)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectQuickShift('CHIEU')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  entryShiftName === 'Ca Chiều'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-white text-slate-700 hover:bg-amber-100 border border-slate-200'
+                }`}
+              >
+                <span>🌆 Full Ca Tối (17:00 - 22:00 • 5 tiếng)</span>
+              </button>
+            </div>
+            <span className="text-[11px] text-slate-500 italic">
+              * Nếu đến muộn/về sớm, bạn tự chỉnh Giờ Vào và Giờ Ra ở trên (giờ làm tính tròn, không tính lẻ phút)
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1351,7 +1427,7 @@ export default function StaffAttendance({
                   disabled={advLoading}
                   className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
                 >
-                  {advLoading ? "Đang gửi..." : "Xác Nhận Ứng Lương"}
+                  {advLoading ? "Đang lưu..." : "Lưu Ghi Nhận Ứng Lương"}
                 </button>
               </div>
             </form>
@@ -1359,7 +1435,7 @@ export default function StaffAttendance({
         </div>
       )}
 
-      {/* ================= MODAL: XIN NGÀY NGHỈ ================= */}
+      {/* ================= MODAL: THÔNG BÁO NGHỈ LÀM (KHÔNG CẦN DUYỆT) ================= */}
       {showLeaveModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
@@ -1368,7 +1444,7 @@ export default function StaffAttendance({
                 <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                   <CalendarDays className="w-4 h-4" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900">Tạo Đơn Xin Nghỉ Phép</h3>
+                <h3 className="text-lg font-black text-slate-900">Thông Báo Nghỉ Làm</h3>
               </div>
               <button 
                 onClick={() => setShowLeaveModal(false)}
@@ -1378,10 +1454,14 @@ export default function StaffAttendance({
               </button>
             </div>
 
+            <p className="text-xs text-slate-500 mb-4">
+              Thông báo ngày và ca nghỉ của bạn cho cửa hàng để thuận tiện theo dõi và tổng hợp số ngày nghỉ trong tháng.
+            </p>
+
             <form onSubmit={handleLeaveSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  1. Chọn Ngày Xin Nghỉ:
+                  1. Chọn Ngày Nghỉ:
                 </label>
                 <input
                   type="date"
@@ -1394,7 +1474,7 @@ export default function StaffAttendance({
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  2. Ca Làm Việc Muốn Xin Nghỉ:
+                  2. Ca Làm Việc Nghỉ:
                 </label>
                 <select
                   value={leaveShift}
@@ -1409,7 +1489,7 @@ export default function StaffAttendance({
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  3. Lý Do Xin Nghỉ:
+                  3. Lý Do / Ghi Chú:
                 </label>
                 <input
                   type="text"
@@ -1434,7 +1514,7 @@ export default function StaffAttendance({
                   disabled={leaveLoading}
                   className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-md shadow-blue-600/20 transition-all cursor-pointer"
                 >
-                  {leaveLoading ? "Đang gửi..." : "Gửi Đơn Xin Nghỉ"}
+                  {leaveLoading ? "Đang lưu..." : "Xác Nhận Báo Nghỉ"}
                 </button>
               </div>
             </form>
@@ -1542,6 +1622,54 @@ export default function StaffAttendance({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: XEM MÃ VIETQR TÀI KHOẢN CÁ NHÂN ================= */}
+      {showPersonalQrModal && employee.bankAccount && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                  <QrCode className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-black text-slate-900">Mã VietQR Nhận Lương</h3>
+              </div>
+              <button 
+                onClick={() => setShowPersonalQrModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 mb-4 inline-block">
+              <img
+                src={getVietQRUrl({
+                  bankCode: employee.bankCode,
+                  bankAccount: employee.bankAccount,
+                  accountName: employee.accountName || employee.name
+                })}
+                alt="Mã QR VietQR"
+                className="w-56 h-56 mx-auto rounded-xl object-contain shadow-xs bg-white p-2"
+              />
+            </div>
+
+            <div className="text-xs space-y-1 text-slate-700">
+              <p className="font-extrabold text-slate-900 text-sm">{employee.name}</p>
+              <p>Ngân hàng: <strong>{employee.bankName || employee.bankCode}</strong></p>
+              <p className="font-mono text-base font-extrabold text-red-600">{employee.bankAccount}</p>
+              <p className="uppercase text-[11px] font-bold text-slate-500">{employee.accountName || employee.name}</p>
+            </div>
+
+            <button
+              onClick={() => setShowPersonalQrModal(false)}
+              className="mt-5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all cursor-pointer"
+            >
+              Đóng Cửa Sổ
+            </button>
           </div>
         </div>
       )}

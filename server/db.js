@@ -68,7 +68,18 @@ function saveDatabase(data) {
 function getEmployees(includeConfidential = false) {
   const db = ensureDbFile();
   const list = (db.employees || []).filter(e => e.active !== false);
-  if (includeConfidential) return list;
+  if (includeConfidential) {
+    return list.map(e => ({
+      ...e,
+      password: e.password || '1234',
+      passwordChanged: e.passwordChanged === true,
+      isDefaultPassword: (e.password === '1234' || !e.password) && e.passwordChanged !== true,
+      bankCode: e.bankCode || '',
+      bankName: e.bankName || '',
+      bankAccount: e.bankAccount || '',
+      accountName: e.accountName || e.name.toUpperCase()
+    }));
+  }
   return list.map(e => ({
     id: e.id,
     username: e.username,
@@ -81,9 +92,14 @@ function getEmployees(includeConfidential = false) {
     cccd: e.cccd || "",
     branch: e.branch || "Trưng Nữ Vương",
     role: e.role || "Nhân viên",
+    bankCode: e.bankCode || "",
+    bankName: e.bankName || "",
+    bankAccount: e.bankAccount || "",
+    accountName: e.accountName || e.name.toUpperCase(),
     avatar: e.avatar || (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
     active: e.active,
-    isDefaultPassword: e.password === '1234' && e.passwordChanged !== true
+    passwordChanged: e.passwordChanged === true,
+    isDefaultPassword: (e.password === '1234' || !e.password) && e.passwordChanged !== true
   }));
 }
 
@@ -121,6 +137,10 @@ function addEmployee(employeeData) {
     cccd: employeeData.cccd || "",
     phone: employeeData.phone || "",
     address: employeeData.address || "",
+    bankCode: employeeData.bankCode || "",
+    bankName: employeeData.bankName || "",
+    bankAccount: employeeData.bankAccount || "",
+    accountName: employeeData.accountName || employeeData.name.trim().toUpperCase(),
     branch: "Trưng Nữ Vương",
     role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
@@ -222,7 +242,13 @@ function authenticateUser(username, password) {
     address: emp.address || "",
     branch: emp.branch || "Trưng Nữ Vương",
     role: emp.role || "Nhân viên",
+    bankCode: emp.bankCode || "",
+    bankName: emp.bankName || "",
+    bankAccount: emp.bankAccount || "",
+    accountName: emp.accountName || emp.name.toUpperCase(),
     avatar: emp.avatar || defaultAvatar,
+    passwordChanged: emp.passwordChanged === true,
+    isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
     active: emp.active
   };
 
@@ -569,6 +595,35 @@ function deleteLeaveRequest(id) {
   return true;
 }
 
+// Đếm tổng số ngày nghỉ thực tế trong tháng (không trùng lặp)
+function countLeaveDaysInMonth(leaveList = [], yearMonth) {
+  if (!leaveList || !Array.isArray(leaveList)) return 0;
+  const uniqueDates = new Set();
+  leaveList.forEach(l => {
+    const startStr = l.date;
+    const endStr = l.endDate || l.date;
+    if (!startStr) return;
+    
+    const dStart = new Date(startStr);
+    const dEnd = new Date(endStr);
+    if (isNaN(dStart.getTime())) return;
+    
+    const cur = new Date(dStart);
+    const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
+    
+    let count = 0;
+    while (cur <= stop && count <= 31) {
+      const ymd = cur.toISOString().split('T')[0];
+      if (ymd.startsWith(yearMonth)) {
+        uniqueDates.add(ymd);
+      }
+      cur.setDate(cur.getDate() + 1);
+      count++;
+    }
+  });
+  return uniqueDates.size;
+}
+
 // ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN TỔNG GIỜ LÀM) ----------------
 function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false) {
   const db = ensureDbFile();
@@ -603,6 +658,7 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
 
   const advData = getSalaryAdvances(emp.id, currentYM);
   const leaveData = getLeaveRequests(emp.id, currentYM);
+  const totalLeaveDays = countLeaveDaysInMonth(leaveData, currentYM);
 
   const summary = {
     employee: {
@@ -615,14 +671,21 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
       cccd: emp.cccd || "",
       phone: emp.phone || "",
       address: emp.address || "",
+      bankCode: emp.bankCode || "",
+      bankName: emp.bankName || "",
+      bankAccount: emp.bankAccount || "",
+      accountName: emp.accountName || emp.name.toUpperCase(),
       avatar: emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
       branch: "Trưng Nữ Vương",
-      role: emp.role
+      role: emp.role,
+      passwordChanged: emp.passwordChanged === true,
+      isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true
     },
     yearMonth: currentYM,
     totalHours: totalCompletedHours,
     totalDays: daysWorkedSet.size,
     totalShifts: shiftCount,
+    totalLeaveDays: totalLeaveDays,
     advanceCount: advData.totalCount,
     advanceTotal: advData.totalAmount,
     advances: advData.records,
@@ -729,18 +792,34 @@ function getMasterMonthlyReport(yearMonth) {
     const advanceCount = advData.totalCount || 0;
     const netSalary = empTotalSalary - advanceTotal;
 
+    const leaveData = getLeaveRequests(emp.id, currentYM);
+    const leaveDaysCount = countLeaveDaysInMonth(leaveData, currentYM);
+
     storeTotalHours += empTotalHours;
     storeTotalSalary += empTotalSalary;
     storeTotalAdvance += advanceTotal;
 
+    const sanitizedEmpWithSecrets = {
+      ...emp,
+      password: emp.password || '1234',
+      passwordChanged: emp.passwordChanged === true,
+      isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
+      bankCode: emp.bankCode || '',
+      bankName: emp.bankName || '',
+      bankAccount: emp.bankAccount || '',
+      accountName: emp.accountName || emp.name.toUpperCase()
+    };
+
     return {
-      employee: emp,
+      employee: sanitizedEmpWithSecrets,
       dailyData: dailyData,
       totalHours: empTotalHours,
       daysWorked: daysWorked,
       morningShifts: morningShifts,
       eveningShifts: eveningShifts,
       totalShifts: morningShifts + eveningShifts + otherShifts,
+      leaveDaysCount: leaveDaysCount,
+      leaves: leaveData,
       hourlyRate: hourlyRate,
       totalSalary: empTotalSalary,
       advanceCount: advanceCount,
