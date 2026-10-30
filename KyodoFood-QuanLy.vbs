@@ -8,7 +8,7 @@ WshShell.Run strCmd, 0, False
 
 WScript.Sleep 1500
 
-' 2. Mo ung dung che do Quan Ly & Tinh Luong (Mat khau 20162020)
+' 2. Mo ung dung che do Quan Ly & Tinh Luong
 appUrl = "http://localhost:5000/?mode=manager"
 
 edgePath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"

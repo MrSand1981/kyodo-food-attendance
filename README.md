@@ -20,7 +20,7 @@ Chỉ được đăng nhập, tự nhập thời gian làm việc từng ngày (
   - Cơ sở: Trưng Nữ Vương
 
 ### 2. Tài Khoản Quản Lý / Chủ Cửa Hàng (Admin)
-- Mật khẩu đăng nhập: **`20162020`**
+- Mật khẩu đăng nhập: Được cấp riêng bảo mật cho Chủ cửa hàng
 - Quyền hạn:
   - **Tạo tài khoản mới cho nhân viên**: Đặt mã tài khoản, họ tên, mức lương/giờ và mật khẩu.
   - Xem **Bảng chấm công tổng hợp tháng** của toàn bộ nhân viên cơ sở Trưng Nữ Vương.

@@ -135,7 +135,7 @@ begin
   LblDescAdmin.Top := ScaleY(126);
   LblDescAdmin.Left := ScaleX(35);
   LblDescAdmin.Width := ScaleX(400);
-  LblDescAdmin.Caption := 'Tao bieu tuong "Kyodo Food - Quan Ly" ngoai Desktop.' #13#10 'Toan quyen xem bang luong, tong hop ca thang, xuat Excel va dong bo GitHub.' #13#10 '-> BAT BUOC NHAP MAT KHAU 20162020 DE DUOC PHEP TIEP TUC.';
+  LblDescAdmin.Caption := 'Tao bieu tuong "Kyodo Food - Quan Ly" ngoai Desktop.' #13#10 'Toan quyen xem bang luong, tong hop ca thang, xuat Excel va dong bo GitHub.' #13#10 '-> YEU CAU NHAP DUNG MAT KHAU QUAN TRI (ADMIN) DE TIEP TUC.';
   LblDescAdmin.Font.Color := clGray;
 
   // Trường nhập mật khẩu
@@ -165,7 +165,7 @@ begin
     begin
       if Trim(EdtPass.Text) <> '20162020' then
       begin
-        MsgBox('MAT KHAU QUAN TRI KHONG CHINH XAC!' #13#10#13#10 'Ban da chon cai dat quyen Quan Ly / Admin.' #13#10 'Bat buoc phai nhap dung mat khau 20162020 moi duoc phep tiep tuc cai dat.', mbError, MB_OK);
+        MsgBox('MAT KHAU QUAN TRI KHONG CHINH XAC!' #13#10#13#10 'Ban da chon cai dat quyen Quan Ly / Admin.' #13#10 'Vui long nhap dung mat khau quan tri (Admin) de tiep tuc cai dat phien ban nay.', mbError, MB_OK);
         Result := False;
         Exit;
       end;
