@@ -47,6 +47,21 @@ export const api = {
     body: JSON.stringify({ username, password })
   }),
 
+  // Quản lý tài khoản Admin & Khôi phục mật khẩu
+  getAdminProfileStatus: () => request('/admin/profile-status'),
+  updateAdminProfile: (data) => request('/admin/profile', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  changeAdminPassword: (data) => request('/admin/change-password', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  forgotAdminPassword: (identifier) => request('/admin/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ identifier })
+  }),
+
   // Nhân viên (mặc định che lương; Quản lý truyền isAdmin = true)
   getEmployees: (isAdmin = false) => {
     const query = isAdmin ? '?role=admin' : '';

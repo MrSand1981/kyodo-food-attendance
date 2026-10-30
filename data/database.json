@@ -72,9 +72,12 @@
     "branchName": "Trưng Nữ Vương",
     "tagline": "Cửa hàng Kyodo Food - Trưng Nữ Vương, Đà Nẵng",
     "logoUrl": "/logo-kyodo.png",
-    "adminUsername": "admin",
-    "adminPassword": "20162020",
-    "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance"
+    "adminUsername": "chucuahang",
+    "adminPassword": "Kyodo@3823",
+    "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance",
+    "adminName": "Ch? Qu�n Kyodo Trung N? Vuong",
+    "adminEmail": "mrkhangvo@gmail.com",
+    "adminPhone": "0916010168"
   },
   "attendance": [],
   "salaryAdvances": [],

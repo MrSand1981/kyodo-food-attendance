@@ -88,6 +88,45 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
+// 2.1. ADMIN PROFILE & PASSWORD RECOVERY (ĐĂNG KÝ, ĐỔI MẬT KHẨU & QUÊN MẬT KHẨU ADMIN)
+app.get('/api/admin/profile-status', (req, res) => {
+  try {
+    const status = db.getAdminProfileStatus();
+    res.json({ success: true, ...status });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admin/profile', (req, res) => {
+  try {
+    const result = db.updateAdminProfile(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admin/change-password', (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const result = db.changeAdminPassword(oldPassword, newPassword);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admin/forgot-password', (req, res) => {
+  try {
+    const { identifier } = req.body;
+    const result = db.recoverAdminPassword(identifier);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 // 3. EMPLOYEES CRUD (ADMIN TẠO TÀI KHOẢN CHO NHÂN VIÊN)
 app.get('/api/employees', (req, res) => {
   try {

@@ -8,7 +8,7 @@ import {
   MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle,
   UploadCloud, GitCommit, Terminal, ExternalLink, CheckCircle2,
   Bell, Copy, CalendarDays, Phone, Home, CreditCard, Sparkles,
-  QrCode, Eye, EyeOff, X
+  QrCode, Eye, EyeOff, X, Mail
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
@@ -416,8 +416,65 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   useEffect(() => {
     if (activeTab === 'settings') {
       loadGitStatus();
+      loadAdminProfile();
     }
   }, [activeTab]);
+
+  // Admin Profile & Recovery state in Manager Dashboard
+  const [adminProfileForm, setAdminProfileForm] = useState({
+    adminName: '',
+    adminUsername: 'admin',
+    adminEmail: '',
+    adminPhone: '',
+    currentPassword: '',
+    newPassword: ''
+  });
+  const [adminProfileLoading, setAdminProfileLoading] = useState(false);
+  const [adminProfileMsg, setAdminProfileMsg] = useState('');
+  const [adminProfileError, setAdminProfileError] = useState('');
+
+  const loadAdminProfile = async () => {
+    try {
+      const res = await api.getAdminProfileStatus();
+      if (res && res.success) {
+        setAdminProfileForm(prev => ({
+          ...prev,
+          adminName: res.adminName || '',
+          adminUsername: res.adminUsername || 'admin',
+          adminEmail: res.adminEmail || '',
+          adminPhone: res.adminPhone || '',
+          currentPassword: '',
+          newPassword: ''
+        }));
+      }
+    } catch (err) {
+      console.warn('Lỗi đọc admin profile:', err.message);
+    }
+  };
+
+  const handleSaveAdminProfileSettings = async (e) => {
+    e.preventDefault();
+    try {
+      setAdminProfileLoading(true);
+      setAdminProfileError('');
+      setAdminProfileMsg('');
+      const res = await api.updateAdminProfile(adminProfileForm);
+      setAdminProfileMsg(res.message);
+      setAdminProfileForm(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
+      if (onSettingsChange) {
+        onSettingsChange({
+          ...settings,
+          adminName: adminProfileForm.adminName,
+          adminUsername: adminProfileForm.adminUsername
+        });
+      }
+      setTimeout(() => setAdminProfileMsg(''), 3000);
+    } catch (err) {
+      setAdminProfileError(err.message || 'Lỗi khi cập nhật thông tin Quản trị');
+    } finally {
+      setAdminProfileLoading(false);
+    }
+  };
 
   const openEditEmployee = (emp) => {
     setEditingEmployee(emp);
@@ -1710,25 +1767,154 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             </div>
           </div>
 
-          {/* Admin Info Card */}
+          {/* Admin Account & Security Card */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Key className="w-5 h-5 text-amber-600" />
-              <span>Tài Khoản Quản Trị (Admin)</span>
-            </h3>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                <span className="text-slate-500">Mật khẩu đăng nhập Admin:</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="font-mono text-base font-black text-slate-800">••••••••</span>
-                  <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">Bảo Mật Cao</span>
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-amber-600" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">
+                    Tài Khoản & Bảo Mật Quản Trị Viên (Admin)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Cài đặt tên đăng nhập, đổi mật khẩu và lưu Email / SĐT để khôi phục khi quên
+                  </p>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-500">
-                Chủ cửa hàng sử dụng mật khẩu này để đăng nhập và tạo tài khoản cho nhân viên.
-              </p>
             </div>
+
+            {adminProfileError && (
+              <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{adminProfileError}</span>
+              </div>
+            )}
+
+            {adminProfileMsg && (
+              <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{adminProfileMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveAdminProfileSettings} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Tên Chủ Cửa Hàng / Quản Lý:
+                  </label>
+                  <input
+                    type="text"
+                    value={adminProfileForm.adminName}
+                    onChange={(e) => setAdminProfileForm({ ...adminProfileForm, adminName: e.target.value })}
+                    placeholder="Ví dụ: Chủ Cửa Hàng, Anh Hoàng..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Tên Đăng Nhập Quản Trị (Admin): <span className="text-amber-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={adminProfileForm.adminUsername}
+                    onChange={(e) => setAdminProfileForm({ ...adminProfileForm, adminUsername: e.target.value })}
+                    placeholder="admin hoặc tên bất kỳ..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold font-mono text-slate-900 text-xs focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Khối thông tin khôi phục mật khẩu */}
+              <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-3">
+                <div className="font-extrabold text-amber-900 flex items-center gap-1.5 text-xs">
+                  <Key className="w-4 h-4 text-amber-700" />
+                  <span>Kênh Nhận Mật Khẩu Khôi Phục (Khi Quên Mật Khẩu):</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Email Khôi Phục:
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        value={adminProfileForm.adminEmail}
+                        onChange={(e) => setAdminProfileForm({ ...adminProfileForm, adminEmail: e.target.value })}
+                        placeholder="Ví dụ: chucuahang@gmail.com"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-200 font-medium text-slate-900 text-xs focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Số Điện Thoại Khôi Phục:
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="tel"
+                        value={adminProfileForm.adminPhone}
+                        onChange={(e) => setAdminProfileForm({ ...adminProfileForm, adminPhone: e.target.value })}
+                        placeholder="Ví dụ: 0905123456"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-200 font-mono font-medium text-slate-900 text-xs focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  💡 Nếu bạn quên mật khẩu, hệ thống sẽ xác minh theo Email hoặc Số điện thoại này để cấp lại mật khẩu mới ngay lập tức.
+                </p>
+              </div>
+
+              {/* Khối đổi mật khẩu */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="block text-xs font-bold text-slate-700 mb-2">
+                  Đổi Mật Khẩu Quản Trị (Bỏ trống nếu không muốn đổi):
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      type="password"
+                      value={adminProfileForm.currentPassword}
+                      onChange={(e) => setAdminProfileForm({ ...adminProfileForm, currentPassword: e.target.value })}
+                      placeholder="Mật khẩu hiện tại..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      value={adminProfileForm.newPassword}
+                      onChange={(e) => setAdminProfileForm({ ...adminProfileForm, newPassword: e.target.value })}
+                      placeholder="Mật khẩu mới (ít nhất 4 ký tự)..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  disabled={adminProfileLoading}
+                  className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center gap-2"
+                >
+                  {adminProfileLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>Lưu Cài Đặt Quản Trị Viên</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
