@@ -1,6 +1,6 @@
 {
   "name": "kyodo-food-attendance",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Phần mềm Quản lý Chấm công & Tính Giờ làm Thông minh cho Chuỗi Cửa Hàng Kyodo Food",
   "main": "server/server.js",
   "scripts": {
