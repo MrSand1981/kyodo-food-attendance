@@ -6,11 +6,11 @@ import {
   AlertCircle, Printer, RefreshCw, PlusCircle, 
   FileText, ChevronDown, Check, LogOut, Send, MapPin,
   Lock, KeyRound, ShieldCheck, X, Camera, DollarSign,
-  CalendarDays, Trash2, HeartHandshake, QrCode
+  CalendarDays, Trash2, HeartHandshake, QrCode, UserCheck, Edit3
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
-import { formatDateVN, formatMonthVN } from '../utils/date';
+import { formatDateVN, formatMonthVN, formatShortTime } from '../utils/date';
 
 export default function StaffAttendance({ 
   employee, 
@@ -19,6 +19,11 @@ export default function StaffAttendance({
   settings, 
   shifts = [] 
 }) {
+  const [localEmp, setLocalEmp] = useState(employee);
+  useEffect(() => {
+    setLocalEmp(employee);
+  }, [employee]);
+
   const [activeShift, setActiveShift] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const todayYM = new Date().toISOString().substring(0, 7);
@@ -27,6 +32,24 @@ export default function StaffAttendance({
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [showPersonalQrModal, setShowPersonalQrModal] = useState(false);
+
+  // Modal tự kiểm tra & cập nhật thông tin cá nhân (SĐT, CCCD, Ngày sinh, Ngân hàng...)
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    fullName: '',
+    shortName: '',
+    gender: 'Nữ',
+    dob: '',
+    cccd: '',
+    phone: '',
+    address: '',
+    bankCode: 'VCB',
+    bankName: 'Vietcombank',
+    bankAccount: '',
+    accountName: ''
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   // Modal đổi ảnh đại diện cá nhân
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -204,6 +227,73 @@ export default function StaffAttendance({
       alert(err.message || "Lỗi khi gửi yêu cầu ứng lương!");
     } finally {
       setAdvLoading(false);
+    }
+  };
+
+  // Mở modal kiểm tra & chỉnh sửa thông tin cá nhân
+  const openProfileModal = () => {
+    setProfileForm({
+      fullName: localEmp.fullName || localEmp.name || '',
+      shortName: localEmp.shortName || localEmp.name || '',
+      gender: localEmp.gender || 'Nữ',
+      dob: localEmp.dob || '',
+      cccd: localEmp.cccd || '',
+      phone: localEmp.phone || '',
+      address: localEmp.address || '',
+      bankCode: localEmp.bankCode || 'VCB',
+      bankName: localEmp.bankName || 'Vietcombank',
+      bankAccount: localEmp.bankAccount || '',
+      accountName: localEmp.accountName || (localEmp.fullName || localEmp.name || '').toUpperCase()
+    });
+    setProfileError('');
+    setShowEditProfileModal(true);
+  };
+
+  // Lưu chỉnh sửa thông tin cá nhân của nhân viên
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    if (!profileForm.fullName.trim()) {
+      setProfileError('Vui lòng nhập họ và tên đầy đủ!');
+      return;
+    }
+    try {
+      setProfileLoading(true);
+      setProfileError('');
+
+      const selectedBank = VIETNAM_BANKS.find(b => b.code === profileForm.bankCode);
+      const bankName = selectedBank ? selectedBank.shortName : profileForm.bankName;
+
+      const payload = {
+        fullName: profileForm.fullName.trim(),
+        shortName: (profileForm.shortName || profileForm.fullName).trim(),
+        name: (profileForm.shortName || profileForm.fullName).trim(),
+        gender: profileForm.gender,
+        dob: profileForm.dob,
+        cccd: profileForm.cccd.trim(),
+        phone: profileForm.phone.trim(),
+        address: profileForm.address.trim(),
+        bankCode: profileForm.bankCode,
+        bankName: bankName,
+        bankAccount: profileForm.bankAccount.trim(),
+        accountName: (profileForm.accountName || profileForm.fullName).trim().toUpperCase()
+      };
+
+      const res = await api.updateEmployee(localEmp.id, payload);
+      const updated = res.employee || { ...localEmp, ...payload };
+
+      setLocalEmp(updated);
+      if (onUpdateEmployee) {
+        onUpdateEmployee(updated);
+      }
+
+      confetti({ particleCount: 80, spread: 70 });
+      setFeedbackMsg('🎉 Đã cập nhật thông tin cá nhân thành công! Thông tin mới đã được đồng bộ sang trang Quản Lý.');
+      setShowEditProfileModal(false);
+      await loadData();
+    } catch (err) {
+      setProfileError(err.message || 'Lỗi khi cập nhật thông tin cá nhân');
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -442,15 +532,15 @@ export default function StaffAttendance({
   };
 
   // Avatar hiển thị ưu tiên
-  const currentAvatar = employee.avatar || (employee.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
+  const currentAvatar = localEmp.avatar || (localEmp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
 
-  const displayName = employee.shortName || employee.name;
+  const displayName = localEmp.shortName || localEmp.name;
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
       
       {/* CẢNH BÁO BẢO MẬT: NHẮC ĐỔI MẬT KHẨU KHI DÙNG 1234 */}
-      {(employee.isDefaultPassword || (!employee.passwordChanged && employee.password === '1234')) && (
+      {(localEmp.isDefaultPassword || (!localEmp.passwordChanged && localEmp.password === '1234')) && (
         <div className="mb-3 p-3 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-in fade-in">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0 shadow-xs">
@@ -508,27 +598,43 @@ export default function StaffAttendance({
                   {displayName}
                 </h2>
                 <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black font-mono">
-                  TK: {employee.username || employee.code}
+                  TK: {localEmp.username || localEmp.code}
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold">
-                  {employee.gender || "Nam"}
+                  {localEmp.gender || "Nam"}
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-medium hidden sm:inline-block">
                   Cơ sở Trưng Nữ Vương
                 </span>
               </div>
               
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-500 mt-0.5 font-medium">
-                {employee.dob && <span>NS: <strong className="text-slate-700">{formatDateVN(employee.dob)}</strong></span>}
-                {employee.phone && <span>SĐT: <strong className="text-slate-700 font-mono">{employee.phone}</strong></span>}
-                {employee.cccd && <span>CCCD: <strong className="text-slate-700 font-mono">{employee.cccd}</strong></span>}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-1 font-medium">
+                <span>NS: <strong className="text-slate-700">{formatDateVN(localEmp.dob) || 'Chưa cập nhật'}</strong></span>
+                <span>SĐT: <strong className="text-slate-700 font-mono">{localEmp.phone || 'Chưa cập nhật'}</strong></span>
+                <span>CCCD: <strong className="text-slate-700 font-mono">{localEmp.cccd || 'Chưa cập nhật'}</strong></span>
+                {localEmp.address && <span>ĐC: <strong className="text-slate-700">{localEmp.address}</strong></span>}
+                {localEmp.bankAccount && (
+                  <span>TK: <strong className="text-amber-800 font-mono">{localEmp.bankCode || 'NH'} - {localEmp.bankAccount}</strong> ({localEmp.accountName || displayName})</span>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Nút tác vụ tài khoản & VietQR */}
+          {/* Nút tác vụ tài khoản: Sửa thông tin cá nhân, Xem VietQR, Đổi MK, Đăng xuất */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-            {employee.bankAccount && (
+            
+            {/* Nút tự kiểm tra & chỉnh sửa thông tin cá nhân */}
+            <button
+              type="button"
+              onClick={openProfileModal}
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              title="Tự kiểm tra và chỉnh sửa thông tin cá nhân (SĐT, CCCD, Ngày sinh, Số tài khoản ngân hàng...)"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Sửa Thông Tin</span>
+            </button>
+
+            {localEmp.bankAccount && (
               <button
                 type="button"
                 onClick={() => setShowPersonalQrModal(true)}
@@ -536,8 +642,8 @@ export default function StaffAttendance({
                 title="Xem mã VietQR tài khoản ngân hàng của bạn"
               >
                 <QrCode className="w-3.5 h-3.5 text-amber-600" />
-                <span className="hidden sm:inline">{employee.bankCode || 'VietQR'}:</span>
-                <span className="font-mono">{employee.bankAccount}</span>
+                <span className="hidden sm:inline">{localEmp.bankCode || 'VietQR'}:</span>
+                <span className="font-mono">{localEmp.bankAccount}</span>
               </button>
             )}
 
@@ -1658,7 +1764,7 @@ export default function StaffAttendance({
       )}
 
       {/* ================= MODAL: XEM MÃ VIETQR TÀI KHOẢN CÁ NHÂN ================= */}
-      {showPersonalQrModal && employee.bankAccount && (
+      {showPersonalQrModal && localEmp.bankAccount && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
@@ -1679,9 +1785,9 @@ export default function StaffAttendance({
             <div className="p-3 bg-amber-50/60 rounded-2xl border border-amber-200 mb-4 inline-block">
               <img
                 src={getVietQRUrl({
-                  bankCode: employee.bankCode,
-                  bankAccount: employee.bankAccount,
-                  accountName: employee.accountName || employee.name
+                  bankCode: localEmp.bankCode,
+                  bankAccount: localEmp.bankAccount,
+                  accountName: localEmp.accountName || localEmp.fullName || localEmp.name
                 })}
                 alt="Mã QR VietQR"
                 className="w-56 h-56 mx-auto rounded-xl object-contain shadow-xs bg-white p-2"
@@ -1689,10 +1795,10 @@ export default function StaffAttendance({
             </div>
 
             <div className="text-xs space-y-1 text-slate-700">
-              <p className="font-extrabold text-slate-900 text-sm">{employee.name}</p>
-              <p>Ngân hàng: <strong>{employee.bankName || employee.bankCode}</strong></p>
-              <p className="font-mono text-base font-extrabold text-amber-700">{employee.bankAccount}</p>
-              <p className="uppercase text-[11px] font-bold text-slate-500">{employee.accountName || employee.name}</p>
+              <p className="font-extrabold text-slate-900 text-sm">{localEmp.fullName || localEmp.name}</p>
+              <p>Ngân hàng: <strong>{localEmp.bankName || localEmp.bankCode}</strong></p>
+              <p className="font-mono text-base font-extrabold text-amber-700">{localEmp.bankAccount}</p>
+              <p className="uppercase text-[11px] font-bold text-slate-500">{localEmp.accountName || localEmp.fullName || localEmp.name}</p>
             </div>
 
             <button
@@ -1701,6 +1807,228 @@ export default function StaffAttendance({
             >
               Đóng Cửa Sổ
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: TỰ KIỂM TRA & CẬP NHẬT THÔNG TIN CÁ NHÂN ================= */}
+      {showEditProfileModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                  <UserCheck className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Kiểm Tra & Cập Nhật Hồ Sơ Cá Nhân
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Tự sửa thông tin nếu sai sót • Tự động đồng bộ sang trang Quản Lý
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowEditProfileModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {profileError && (
+              <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{profileError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleProfileSubmit} className="space-y-3.5 text-xs">
+              
+              {/* 1. Họ Tên & Biệt Danh */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Họ và tên đầy đủ: <span className="text-amber-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileForm.fullName}
+                    onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                    placeholder="Ví dụ: Hoàng Thị Lệ"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Tên gọi / Biệt danh:
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.shortName}
+                    onChange={(e) => setProfileForm({ ...profileForm, shortName: e.target.value })}
+                    placeholder="Ví dụ: Út"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* 2. Giới tính & Ngày sinh */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Giới tính:
+                  </label>
+                  <select
+                    value={profileForm.gender}
+                    onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="Nữ">Nữ</option>
+                    <option value="Nam">Nam</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Ngày tháng năm sinh:
+                  </label>
+                  <input
+                    type="date"
+                    value={profileForm.dob}
+                    onChange={(e) => setProfileForm({ ...profileForm, dob: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* 3. Số CCCD & Số điện thoại */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Số CCCD (Căn cước công dân):
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.cccd}
+                    onChange={(e) => setProfileForm({ ...profileForm, cccd: e.target.value })}
+                    placeholder="Ví dụ: 048300002347"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Số điện thoại liên hệ:
+                  </label>
+                  <input
+                    type="tel"
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    placeholder="Ví dụ: 0796163630"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Địa chỉ nơi ở */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Địa chỉ liên hệ:
+                </label>
+                <input
+                  type="text"
+                  value={profileForm.address}
+                  onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                  placeholder="Ví dụ: Hải Châu, Đà Nẵng"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                />
+              </div>
+
+              {/* 5. Tài Khoản Ngân Hàng Nhận Lương (VietQR) */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                <div className="flex items-center gap-1.5 text-amber-900 font-extrabold text-xs">
+                  <QrCode className="w-4 h-4 text-amber-600" />
+                  <span>Tài Khoản Ngân Hàng Nhận Lương (VietQR)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                      Ngân hàng Việt Nam:
+                    </label>
+                    <select
+                      value={profileForm.bankCode}
+                      onChange={(e) => {
+                        const b = VIETNAM_BANKS.find(x => x.code === e.target.value);
+                        setProfileForm({
+                          ...profileForm,
+                          bankCode: e.target.value,
+                          bankName: b ? b.shortName : ''
+                        });
+                      }}
+                      className="w-full px-2.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                    >
+                      {VIETNAM_BANKS.map(b => (
+                        <option key={b.code} value={b.code}>{b.shortName} - {b.name.split(' - ')[1] || b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                      Số tài khoản ngân hàng:
+                    </label>
+                    <input
+                      type="text"
+                      value={profileForm.bankAccount}
+                      onChange={(e) => setProfileForm({ ...profileForm, bankAccount: e.target.value })}
+                      placeholder="Ví dụ: 0796163630"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 font-mono font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                    Tên chủ tài khoản (In hoa không dấu):
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.accountName}
+                    onChange={(e) => setProfileForm({ ...profileForm, accountName: e.target.value.toUpperCase() })}
+                    placeholder="Ví dụ: HOANG THI LE"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 font-bold uppercase text-slate-800 text-xs focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowEditProfileModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={profileLoading}
+                  className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white text-xs font-black shadow-md shadow-amber-600/25 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4 stroke-[2.5]" />
+                  <span>{profileLoading ? "Đang lưu..." : "Lưu Thông Tin Cá Nhân"}</span>
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}
