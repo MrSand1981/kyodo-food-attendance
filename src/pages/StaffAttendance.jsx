@@ -537,7 +537,7 @@ export default function StaffAttendance({
   const displayName = localEmp.shortName || localEmp.name;
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       
       {/* CẢNH BÁO BẢO MẬT: NHẮC ĐỔI MẬT KHẨU KHI DÙNG 1234 */}
       {(localEmp.isDefaultPassword || (!localEmp.passwordChanged && localEmp.password === '1234')) && (
@@ -547,10 +547,10 @@ export default function StaffAttendance({
               <KeyRound className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="font-extrabold text-xs sm:text-sm text-amber-950 flex items-center gap-1.5">
+              <h4 className="font-extrabold text-xs sm:text-sm text-amber-950 flex items-center gap-1.5 whitespace-nowrap">
                 <span>⚠️ Bạn Đang Dùng Mật Khẩu Khởi Tạo (1234)!</span>
               </h4>
-              <p className="text-[11px] text-amber-800 mt-0.5">
+              <p className="text-[11px] text-amber-800 mt-0.5 whitespace-nowrap">
                 Vui lòng đổi sang mật khẩu riêng để bảo vệ quyền riêng tư và số giờ làm của mình.
               </p>
             </div>
@@ -562,10 +562,10 @@ export default function StaffAttendance({
               setPwdError("");
               setPwdMsg("");
             }}
-            className="w-full sm:w-auto px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-xs transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
+            className="w-full sm:w-auto px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-xs transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>Đổi Mật Khẩu Ngay</span>
+            <span className="whitespace-nowrap">Đổi Mật Khẩu Ngay</span>
           </button>
         </div>
       )}
@@ -594,27 +594,27 @@ export default function StaffAttendance({
             
             <div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
                   {displayName}
                 </h2>
-                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black font-mono">
+                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black font-mono whitespace-nowrap">
                   TK: {localEmp.username || localEmp.code}
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold whitespace-nowrap">
                   {localEmp.gender || "Nam"}
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-medium hidden sm:inline-block">
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-medium hidden sm:inline-block whitespace-nowrap">
                   Cơ sở Trưng Nữ Vương
                 </span>
               </div>
               
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-1 font-medium">
-                <span>NS: <strong className="text-slate-700">{formatDateVN(localEmp.dob) || 'Chưa cập nhật'}</strong></span>
-                <span>SĐT: <strong className="text-slate-700 font-mono">{localEmp.phone || 'Chưa cập nhật'}</strong></span>
-                <span>CCCD: <strong className="text-slate-700 font-mono">{localEmp.cccd || 'Chưa cập nhật'}</strong></span>
-                {localEmp.address && <span>ĐC: <strong className="text-slate-700">{localEmp.address}</strong></span>}
+                <span className="whitespace-nowrap inline-flex items-center gap-1">NS: <strong className="text-slate-700">{formatDateVN(localEmp.dob) || 'Chưa cập nhật'}</strong></span>
+                <span className="whitespace-nowrap inline-flex items-center gap-1">SĐT: <strong className="text-slate-700 font-mono">{localEmp.phone || 'Chưa cập nhật'}</strong></span>
+                <span className="whitespace-nowrap inline-flex items-center gap-1">CCCD: <strong className="text-slate-700 font-mono">{localEmp.cccd || 'Chưa cập nhật'}</strong></span>
+                {localEmp.address && <span className="whitespace-nowrap inline-flex items-center gap-1">ĐC: <strong className="text-slate-700">{localEmp.address}</strong></span>}
                 {localEmp.bankAccount && (
-                  <span>TK: <strong className="text-amber-800 font-mono">{localEmp.bankCode || 'NH'} - {localEmp.bankAccount}</strong> ({localEmp.accountName || displayName})</span>
+                  <span className="whitespace-nowrap inline-flex items-center gap-1">TK: <strong className="text-amber-800 font-mono">{localEmp.bankCode || 'NH'} - {localEmp.bankAccount}</strong> ({localEmp.accountName || displayName})</span>
                 )}
               </div>
             </div>
@@ -627,23 +627,22 @@ export default function StaffAttendance({
             <button
               type="button"
               onClick={openProfileModal}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
               title="Tự kiểm tra và chỉnh sửa thông tin cá nhân (SĐT, CCCD, Ngày sinh, Số tài khoản ngân hàng...)"
             >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Sửa Thông Tin</span>
+              <UserCheck className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Sửa Thông Tin</span>
             </button>
 
             {localEmp.bankAccount && (
               <button
                 type="button"
                 onClick={() => setShowPersonalQrModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 border border-slate-200 transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 border border-slate-200 transition-all cursor-pointer whitespace-nowrap shrink-0"
                 title="Xem mã VietQR tài khoản ngân hàng của bạn"
               >
-                <QrCode className="w-3.5 h-3.5 text-amber-600" />
-                <span className="hidden sm:inline">{localEmp.bankCode || 'VietQR'}:</span>
-                <span className="font-mono">{localEmp.bankAccount}</span>
+                <QrCode className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="whitespace-nowrap font-bold">{localEmp.bankCode || 'VietQR'}: {localEmp.bankAccount}</span>
               </button>
             )}
 
@@ -653,19 +652,19 @@ export default function StaffAttendance({
                 setPwdError("");
                 setPwdMsg("");
               }}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
               title="Đổi mật khẩu tài khoản cá nhân"
             >
-              <KeyRound className="w-3.5 h-3.5 text-slate-500" />
-              <span>Đổi MK</span>
+              <KeyRound className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="whitespace-nowrap">Đổi MK</span>
             </button>
 
             <button
               onClick={onLogout}
-              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all border border-amber-200 cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all border border-amber-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5 text-amber-600" />
-              <span>Đăng Xuất</span>
+              <LogOut className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="whitespace-nowrap">Đăng Xuất</span>
             </button>
           </div>
 
@@ -701,38 +700,38 @@ export default function StaffAttendance({
               <Clock className="w-4 h-4 stroke-[2.5]" />
             </span>
             <div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">
                 Nhập Thời Gian Làm Việc Từng Ngày
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 whitespace-nowrap">
                 Bấm chọn nhanh Ca Sáng / Ca Chiều (nếu đủ ca) hoặc chỉnh giờ vào/ra (nếu đi muộn/về sớm) rồi bấm <strong>Xác Nhận Giờ Làm</strong>.
               </p>
             </div>
           </div>
 
           {/* Quick Shifts Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => selectQuickShift('SANG')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 entryShiftName === 'Ca Sáng'
                   ? 'bg-amber-500 text-white shadow-xs'
                   : 'bg-slate-50 text-slate-700 hover:bg-amber-50 border border-slate-200'
               }`}
             >
-              <span>🌅 Ca Sáng (08:00 - 17:00 • 9h)</span>
+              <span className="whitespace-nowrap">🌅 Ca Sáng (08:00 - 17:00 • 9h)</span>
             </button>
             <button
               type="button"
               onClick={() => selectQuickShift('CHIEU')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 entryShiftName === 'Ca Chiều'
                   ? 'bg-amber-700 text-white shadow-xs'
                   : 'bg-slate-50 text-slate-700 hover:bg-amber-50 border border-slate-200'
               }`}
             >
-              <span>🌆 Ca Chiều (17:00 - 22:00 • 5h)</span>
+              <span className="whitespace-nowrap">🌆 Ca Chiều (17:00 - 22:00 • 5h)</span>
             </button>
           </div>
         </div>
@@ -743,7 +742,7 @@ export default function StaffAttendance({
             
             {/* 1. Ngày Làm Việc */}
             <div className="col-span-2 sm:col-span-1">
-              <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
                 1. Ngày Làm Việc:
               </label>
               <div className="relative">
@@ -770,10 +769,10 @@ export default function StaffAttendance({
             {/* 2. Giờ Đến Cửa Hàng (Giờ Vào) */}
             <div className="col-span-1">
               <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider">
+                <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider whitespace-nowrap">
                   2. Giờ Đến (Vào):
                 </label>
-                <span className="text-[10px] font-extrabold text-amber-700 font-mono">
+                <span className="text-[10px] font-extrabold text-amber-700 font-mono whitespace-nowrap">
                   {entryStart}
                 </span>
               </div>
@@ -811,10 +810,10 @@ export default function StaffAttendance({
             {/* 3. Thời Gian Ra Về (Giờ Ra) */}
             <div className="col-span-1">
               <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider">
+                <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider whitespace-nowrap">
                   3. Ra Về (Ra):
                 </label>
-                <span className="text-[10px] font-extrabold text-amber-700 font-mono">
+                <span className="text-[10px] font-extrabold text-amber-700 font-mono whitespace-nowrap">
                   {entryEnd}
                 </span>
               </div>
@@ -851,7 +850,7 @@ export default function StaffAttendance({
 
             {/* 4. Tổng Số Giờ Làm */}
             <div className="col-span-1">
-              <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
                 4. Tổng Giờ Làm:
               </label>
               <div className="relative">
@@ -863,7 +862,7 @@ export default function StaffAttendance({
                   onChange={(e) => setEntryHours(e.target.value)}
                   className="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-200 font-extrabold text-amber-800 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-mono text-center"
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-700">
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-700 whitespace-nowrap">
                   tiếng
                 </span>
               </div>
@@ -872,7 +871,7 @@ export default function StaffAttendance({
             {/* 5. Ghi Chú & Nút Xác Nhận */}
             <div className="col-span-2 sm:col-span-2 flex items-center gap-2">
               <div className="flex-1">
-                <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider">
+                <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
                   Ghi chú (tùy chọn):
                 </label>
                 <input
@@ -887,10 +886,10 @@ export default function StaffAttendance({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px]"
+                className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px] shrink-0"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Xác Nhận Giờ Làm</span>
+                <Send className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Xác Nhận Giờ Làm</span>
               </button>
             </div>
 
@@ -966,10 +965,10 @@ export default function StaffAttendance({
                   <DollarSign className="w-4 h-4 stroke-[3]" />
                 </span>
                 <div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">
                     Ứng Tiền Lương Trước
                   </h3>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 whitespace-nowrap">
                     Chu kỳ: <strong className="text-amber-800">{formatMonthVN(selectedMonth)}</strong> • Khấu trừ trực tiếp vào quyết toán cuối tháng
                   </p>
                 </div>
@@ -983,10 +982,10 @@ export default function StaffAttendance({
                   setAdvDate(selectedMonth === todayYM ? todayStr : `${selectedMonth}-01`);
                   setShowAdvanceModal(true);
                 }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
-                <DollarSign className="w-3.5 h-3.5" />
-                <span>+ Ghi Nhận Ứng Lương</span>
+                <DollarSign className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">+ Ghi Nhận Ứng Lương</span>
               </button>
             </div>
 
@@ -994,28 +993,28 @@ export default function StaffAttendance({
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div className="bg-white rounded-xl p-2.5 border border-amber-200 shadow-2xs flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block whitespace-nowrap">
                     Số Lần Đã Ứng
                   </span>
-                  <div className="text-xl font-black text-amber-700 font-mono mt-0.5">
+                  <div className="text-xl font-black text-amber-700 font-mono mt-0.5 whitespace-nowrap">
                     {summaryData?.advanceCount || 0} <span className="text-xs font-bold">lần</span>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                   <FileText className="w-4 h-4" />
                 </div>
               </div>
 
               <div className="bg-white rounded-xl p-2.5 border border-amber-200 shadow-2xs flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block whitespace-nowrap">
                     Tổng Tiền Đã Ứng
                   </span>
-                  <div className="text-xl font-black text-amber-700 font-mono mt-0.5">
+                  <div className="text-xl font-black text-amber-700 font-mono mt-0.5 whitespace-nowrap">
                     {Number(summaryData?.advanceTotal || 0).toLocaleString('vi-VN')} <span className="text-xs font-bold">đ</span>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                   <DollarSign className="w-4 h-4 stroke-[2.5]" />
                 </div>
               </div>
@@ -1030,7 +1029,7 @@ export default function StaffAttendance({
                       <th className="py-2 px-3 text-center whitespace-nowrap">Đợt</th>
                       <th className="py-2 px-3 whitespace-nowrap">Ngày Ứng</th>
                       <th className="py-2 px-3 text-right whitespace-nowrap">Số Tiền</th>
-                      <th className="py-2 px-3">Lý Do</th>
+                      <th className="py-2 px-3 whitespace-nowrap">Lý Do</th>
                       <th className="py-2 px-3 text-center whitespace-nowrap">Trạng Thái</th>
                     </tr>
                   </thead>
@@ -1048,11 +1047,11 @@ export default function StaffAttendance({
                         <td className="py-2 px-3 font-mono font-black text-amber-700 text-right whitespace-nowrap">
                           {Number(adv.amount).toLocaleString('vi-VN')} đ
                         </td>
-                        <td className="py-2 px-3 text-slate-600 truncate max-w-28">
+                        <td className="py-2 px-3 text-slate-600 truncate max-w-28 whitespace-nowrap">
                           {adv.reason || "Ứng tiền lương"}
                         </td>
                         <td className="py-2 px-3 text-center whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold whitespace-nowrap">
                             Đã Khấu Trừ
                           </span>
                         </td>
@@ -1061,7 +1060,7 @@ export default function StaffAttendance({
                   </tbody>
                 </table>
               ) : (
-                <div className="py-4 text-center text-slate-400 text-xs italic">
+                <div className="py-4 text-center text-slate-400 text-xs italic whitespace-nowrap">
                   Chưa có đợt tạm ứng lương nào trong tháng {formatMonthVN(selectedMonth)}.
                 </div>
               )}
@@ -1078,10 +1077,10 @@ export default function StaffAttendance({
                   <CalendarDays className="w-4 h-4 stroke-[2.5]" />
                 </span>
                 <div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">
                     Thông Báo Nghỉ Làm
                   </h3>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 whitespace-nowrap">
                     Báo ngày/ca nghỉ cho cửa hàng (không cần duyệt) • Tự động thống kê số ngày nghỉ
                   </p>
                 </div>
@@ -1090,29 +1089,29 @@ export default function StaffAttendance({
               <button
                 type="button"
                 onClick={() => setShowLeaveModal(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
-                <CalendarDays className="w-3.5 h-3.5" />
-                <span>+ Báo Nghỉ Ngay</span>
+                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">+ Báo Nghỉ Ngay</span>
               </button>
             </div>
 
             {/* Thống kê Tổng số ngày nghỉ trong tháng */}
             <div className="mb-3 p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                   <CalendarDays className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-blue-900 uppercase block">
+                  <span className="text-[10px] font-bold text-blue-900 uppercase block whitespace-nowrap">
                     Tổng Số Ngày Nghỉ ({formatMonthVN(selectedMonth)})
                   </span>
-                  <div className="text-xl font-black text-blue-800 font-mono mt-0.5">
+                  <div className="text-xl font-black text-blue-800 font-mono mt-0.5 whitespace-nowrap">
                     {summaryData?.totalLeaveDays || 0} <span className="text-xs font-bold">ngày nghỉ</span>
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-200/70 text-blue-900">
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-200/70 text-blue-900 whitespace-nowrap">
                 Tự Động Thống Kê
               </span>
             </div>
@@ -1125,7 +1124,7 @@ export default function StaffAttendance({
                     <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
                       <th className="py-2 px-3 whitespace-nowrap">Ngày Nghỉ</th>
                       <th className="py-2 px-3 whitespace-nowrap">Ca Nghỉ</th>
-                      <th className="py-2 px-3">Lý Do</th>
+                      <th className="py-2 px-3 whitespace-nowrap">Lý Do</th>
                       <th className="py-2 px-3 text-center whitespace-nowrap">Trạng Thái</th>
                       <th className="py-2 px-3 text-center whitespace-nowrap">Hủy</th>
                     </tr>
@@ -1135,13 +1134,13 @@ export default function StaffAttendance({
                       <tr key={leave.id} className="hover:bg-slate-50">
                         <td className="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">{formatDateVN(leave.date)}</td>
                         <td className="py-2 px-3 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px]">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px] whitespace-nowrap">
                             {leave.shift}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-slate-600 truncate max-w-28">{leave.reason}</td>
+                        <td className="py-2 px-3 text-slate-600 truncate max-w-28 whitespace-nowrap">{leave.reason}</td>
                         <td className="py-2 px-3 text-center whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold whitespace-nowrap">
                             Đã Báo
                           </span>
                         </td>
@@ -1159,7 +1158,7 @@ export default function StaffAttendance({
                   </tbody>
                 </table>
               ) : (
-                <p className="text-xs text-slate-400 italic py-4 text-center">
+                <p className="text-xs text-slate-400 italic py-4 text-center whitespace-nowrap">
                   Chưa có thông báo nghỉ nào trong tháng {formatMonthVN(selectedMonth)}.
                 </p>
               )}
@@ -1222,16 +1221,16 @@ export default function StaffAttendance({
           {/* Card 1: Tổng Số Giờ Làm Việc */}
           <div className="bg-amber-50/80 rounded-2xl p-3 sm:p-4 border border-amber-200 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] sm:text-xs font-black text-amber-900 uppercase tracking-wider">Tổng Giờ Làm</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+              <span className="text-[10px] sm:text-xs font-black text-amber-900 uppercase tracking-wider whitespace-nowrap">Tổng Giờ Làm</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <Clock className="w-3.5 h-3.5" />
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono">
+              <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono whitespace-nowrap">
                 {summaryData?.totalHours ?? 0} <span className="text-xs sm:text-sm font-bold">giờ</span>
               </div>
-              <p className="text-[10px] text-amber-700/80 font-semibold mt-0.5">
+              <p className="text-[10px] text-amber-700/80 font-semibold mt-0.5 whitespace-nowrap">
                 Tích lũy trong {formatMonthVN(selectedMonth)}
               </p>
             </div>
@@ -1240,16 +1239,16 @@ export default function StaffAttendance({
           {/* Card 2: Số Ca Làm Việc (Gộp Số ngày đi làm / Số ca làm thành 1 chỉ số duy nhất) */}
           <div className="bg-blue-50/70 rounded-2xl p-3 sm:p-4 border border-blue-200 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] sm:text-xs font-black text-blue-800 uppercase tracking-wider">Số Ca Làm Việc</span>
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+              <span className="text-[10px] sm:text-xs font-black text-blue-800 uppercase tracking-wider whitespace-nowrap">Số Ca Làm Việc</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                 <Calendar className="w-3.5 h-3.5" />
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-blue-800 font-mono">
+              <div className="text-2xl sm:text-3xl font-black text-blue-800 font-mono whitespace-nowrap">
                 {summaryData?.totalShifts ?? summaryData?.totalDays ?? 0} <span className="text-xs sm:text-sm font-bold">ca</span>
               </div>
-              <p className="text-[10px] text-blue-700/80 font-semibold mt-0.5">
+              <p className="text-[10px] text-blue-700/80 font-semibold mt-0.5 whitespace-nowrap">
                 Ca làm hoàn thành
               </p>
             </div>
@@ -1258,16 +1257,16 @@ export default function StaffAttendance({
           {/* Card 3: Số Ngày Đã Nghỉ Trong Tháng */}
           <div className="bg-amber-50/70 rounded-2xl p-3 sm:p-4 border border-amber-200 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] sm:text-xs font-black text-amber-800 uppercase tracking-wider">Số Ngày Đã Nghỉ</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+              <span className="text-[10px] sm:text-xs font-black text-amber-800 uppercase tracking-wider whitespace-nowrap">Số Ngày Đã Nghỉ</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <CalendarDays className="w-3.5 h-3.5" />
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono">
+              <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono whitespace-nowrap">
                 {summaryData?.totalLeaveDays ?? 0} <span className="text-xs sm:text-sm font-bold">ngày</span>
               </div>
-              <p className="text-[10px] text-amber-700/80 font-semibold mt-0.5">
+              <p className="text-[10px] text-amber-700/80 font-semibold mt-0.5 whitespace-nowrap">
                 Tổng ngày nghỉ trong tháng
               </p>
             </div>
@@ -1280,15 +1279,15 @@ export default function StaffAttendance({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3">Ngày Làm</th>
-                <th className="py-2.5 px-3">Thứ</th>
-                <th className="py-2.5 px-3">Ca Làm Việc</th>
-                <th className="py-2.5 px-3">Giờ Vào</th>
-                <th className="py-2.5 px-3">Giờ Ra</th>
-                <th className="py-2.5 px-3 text-center">Tổng Giờ</th>
-                <th className="py-2.5 px-3 text-center">Trạng Thái</th>
-                <th className="py-2.5 px-3">Ghi Chú</th>
-                <th className="py-2.5 px-3 text-center">Thao Tác</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Ngày Làm</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Thứ</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Ca Làm Việc</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Giờ Vào</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Giờ Ra</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tổng Giờ</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Trạng Thái</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Ghi Chú</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1306,7 +1305,7 @@ export default function StaffAttendance({
                         {getDayOfWeekName(rec.date)}
                       </td>
                       <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold whitespace-nowrap">
                           {rec.shiftName || rec.shiftCode}
                         </span>
                       </td>
@@ -1317,14 +1316,14 @@ export default function StaffAttendance({
                         {formatShortTime(rec.checkOut)}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 font-bold font-mono">
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 font-bold font-mono whitespace-nowrap">
                           {rec.totalHours} giờ
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold">Đã chốt giờ</span>
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold whitespace-nowrap">Đã chốt giờ</span>
                       </td>
-                      <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px]">
+                      <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px] whitespace-nowrap">
                         {rec.note || '-'}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">

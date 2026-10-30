@@ -211,11 +211,11 @@ export default function LoginKiosk({
 
       {/* Quick Select Staff Cards (Chỉ hiện khi đăng nhập Nhân Viên) */}
       {activeTab === 'employee' && (
-        <div className="w-full mb-2.5 sm:mb-3.5">
-          <div className="text-center text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+        <div className="w-full max-w-md mx-auto mb-2.5 sm:mb-3.5 flex flex-col items-center">
+          <div className="text-center text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 whitespace-nowrap">
             Chọn Tài Khoản Của Bạn (Mỗi Nhân Viên Tự Nhập Mật Khẩu)
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 w-full max-w-xl mx-auto">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
             {employees.map(emp => {
               const displayName = emp.shortName || emp.name;
               const isSelected = username.toUpperCase() === (emp.username || emp.code).toUpperCase();
@@ -224,7 +224,7 @@ export default function LoginKiosk({
                 <div
                   key={emp.id}
                   onClick={() => quickSelectEmployee(emp)}
-                  className={`w-40 sm:w-50 p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-2.5 text-left ${
+                  className={`p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-2.5 text-left ${
                     isSelected 
                       ? 'border-amber-500 bg-amber-50/80 shadow-sm scale-102 ring-2 ring-amber-500/20' 
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
@@ -233,7 +233,7 @@ export default function LoginKiosk({
                   <img src={avatarSrc} alt={displayName} className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <h3 className="text-sm font-extrabold text-slate-900 truncate">
+                      <h3 className="text-sm font-extrabold text-slate-900 truncate whitespace-nowrap">
                         {displayName}
                       </h3>
                       {isSelected && (
@@ -242,7 +242,7 @@ export default function LoginKiosk({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-amber-700 font-bold font-mono truncate">
+                    <div className="text-[11px] text-amber-700 font-bold font-mono truncate whitespace-nowrap">
                       TK: {emp.username || emp.code}
                     </div>
                   </div>
@@ -298,7 +298,7 @@ export default function LoginKiosk({
         {activeTab === 'employee' && (
           <form onSubmit={handleEmployeeLogin} className="space-y-3.5 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider whitespace-nowrap">
                 Tài Khoản Nhân Viên:
               </label>
               <div className="relative">
@@ -315,7 +315,7 @@ export default function LoginKiosk({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider whitespace-nowrap">
                 Mật Khẩu Cá Nhân:
               </label>
               <div className="relative">
@@ -341,14 +341,14 @@ export default function LoginKiosk({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-600/25 transition-all cursor-pointer mt-2"
+              className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-600/25 transition-all cursor-pointer mt-2 whitespace-nowrap"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <LogIn className="w-4 h-4" />
-                  <span>Đăng Nhập Chấm Công</span>
+                  <LogIn className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">Đăng Nhập Chấm Công</span>
                 </>
               )}
             </button>
@@ -363,7 +363,7 @@ export default function LoginKiosk({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider whitespace-nowrap">
                 Mật Khẩu Quản Trị (Admin):
               </label>
               <div className="relative">
@@ -389,14 +389,14 @@ export default function LoginKiosk({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-600/20 transition-all cursor-pointer whitespace-nowrap"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <Shield className="w-4 h-4" />
-                  <span>Đăng Nhập Quản Lý & Bảng Lương</span>
+                  <Shield className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">Đăng Nhập Quản Lý & Bảng Lương</span>
                 </>
               )}
             </button>
@@ -406,16 +406,16 @@ export default function LoginKiosk({
       </div>
 
       {/* Nút kiểm tra cập nhật chủ động dành cho Nhân Viên */}
-      <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs no-print">
+      <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs no-print w-full max-w-md mx-auto">
         <button
           type="button"
           onClick={checkAppUpdate}
           disabled={checkingUpdate}
-          className="text-slate-600 hover:text-amber-700 flex items-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-200 shadow-2xs cursor-pointer bg-white"
+          className="w-full sm:w-auto text-slate-600 hover:text-amber-700 flex items-center justify-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-200 shadow-2xs cursor-pointer bg-white whitespace-nowrap"
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span>{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Kiểm Tra Bản Cập Nhật Mới')}</span>
+          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
+          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Kiểm Tra Bản Cập Nhật Mới')}</span>
         </button>
 
         {updateStatus?.hasUpdate && (
@@ -423,10 +423,10 @@ export default function LoginKiosk({
             type="button"
             onClick={handleApplyUpdate}
             disabled={updatingApp}
-            className="text-xs font-black py-2 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-md transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+            className="w-full sm:w-auto text-xs font-black py-2.5 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer animate-pulse whitespace-nowrap"
           >
-            <ArrowDownCircle className="w-3.5 h-3.5" />
-            <span>Cập Nhật Bản Mới Ngay (v{updateStatus.latestVersion})</span>
+            <ArrowDownCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">Cập Nhật Bản Mới Ngay (v{updateStatus.latestVersion})</span>
           </button>
         )}
       </div>
