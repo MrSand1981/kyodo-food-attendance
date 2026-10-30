@@ -135,39 +135,39 @@ export default function LoginKiosk({
   const isDefaultPassword = selectedEmp ? selectedEmp.isDefaultPassword : true;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-4">
+    <div className="w-full max-w-4xl mx-auto px-4 py-1.5 sm:py-3 my-auto flex flex-col items-center justify-center">
       
       {/* Hero Store Greeting */}
-      <div className="text-center mb-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-2 border border-red-200">
+      <div className="text-center mb-2 sm:mb-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-1.5 border border-red-200">
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
         </div>
 
-        {isEmployeeOnly ? (
+        {activeTab === 'employee' || isEmployeeOnly ? (
           <>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Hệ Thống <span className="text-red-600">Nhân Viên Chấm Công</span>
+            <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Trang Quản Lý <span className="text-red-600">Chấm Công</span>
             </h2>
-            <p className="text-slate-600 mt-1 max-w-xl mx-auto text-xs sm:text-sm">
+            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Mỗi nhân viên tự đăng nhập tài khoản riêng biệt để chấm công và theo dõi số giờ làm việc.
             </p>
           </>
         ) : isManagerOnly ? (
           <>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Cổng Quản Trị & <span className="text-amber-600">Bảng Tính Lương</span>
             </h2>
-            <p className="text-slate-600 mt-1 max-w-xl mx-auto text-xs sm:text-sm">
+            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Dành riêng cho Chủ cửa hàng quản lý nhân sự, xem chi tiết bảng công và duyệt chi lương.
             </p>
           </>
         ) : (
           <>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Hệ Thống Chấm Công & <span className="text-red-600">Quản Lý Nhân Sự</span>
+            <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Trang Quản Lý <span className="text-red-600">Chấm Công</span>
             </h2>
-            <p className="text-slate-600 mt-1 max-w-xl mx-auto text-xs sm:text-sm">
+            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Đăng nhập tài khoản nhân viên để chấm công hoặc tài khoản Quản lý để xem bảng lương.
             </p>
           </>
@@ -176,7 +176,7 @@ export default function LoginKiosk({
 
       {/* THÔNG BÁO CẬP NHẬT PHIÊN BẢN MỚI (DÀNH CHO NHÂN VIÊN CHỦ ĐỘNG CẬP NHẬT) */}
       {updateStatus?.hasUpdate && (
-        <div className="mb-4 p-4 rounded-3xl bg-linear-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
+        <div className="w-full max-w-md mx-auto mb-2.5 sm:mb-3.5 p-3.5 sm:p-4 rounded-3xl bg-linear-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
               <Sparkles className="w-5 h-5 text-amber-200" />
@@ -211,11 +211,11 @@ export default function LoginKiosk({
 
       {/* Quick Select Staff Cards (Chỉ hiện khi đăng nhập Nhân Viên) */}
       {activeTab === 'employee' && (
-        <div className="mb-4">
-          <div className="text-center text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
+        <div className="w-full mb-2.5 sm:mb-3.5">
+          <div className="text-center text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
             Chọn Tài Khoản Của Bạn (Mỗi Nhân Viên Tự Nhập Mật Khẩu)
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 w-full max-w-xl mx-auto">
             {employees.map(emp => {
               const displayName = emp.shortName || emp.name;
               const isSelected = username.toUpperCase() === (emp.username || emp.code).toUpperCase();
@@ -224,15 +224,15 @@ export default function LoginKiosk({
                 <div
                   key={emp.id}
                   onClick={() => quickSelectEmployee(emp)}
-                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 ${
+                  className={`w-40 sm:w-50 p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-2.5 text-left ${
                     isSelected 
-                      ? 'border-red-500 bg-red-50/70 shadow-sm scale-102' 
+                      ? 'border-red-500 bg-red-50/80 shadow-sm scale-102 ring-2 ring-red-500/20' 
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
-                  <img src={avatarSrc} alt={displayName} className="w-11 h-11 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
+                  <img src={avatarSrc} alt={displayName} className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1">
                       <h3 className="text-sm font-extrabold text-slate-900 truncate">
                         {displayName}
                       </h3>
@@ -243,7 +243,7 @@ export default function LoginKiosk({
                       )}
                     </div>
                     <div className="text-[11px] text-red-600 font-bold font-mono truncate">
-                      {emp.username || emp.code}
+                      TK: {emp.username || emp.code}
                     </div>
                   </div>
                 </div>
@@ -254,7 +254,7 @@ export default function LoginKiosk({
       )}
 
       {/* Main Login Card */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200 max-w-md mx-auto">
+      <div className="w-full bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 max-w-md mx-auto">
         
         {/* Tab Switcher (Chỉ hiển thị khi ở chế độ tổng hợp 'all') */}
         {appMode === 'all' && (
