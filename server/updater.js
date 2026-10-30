@@ -62,20 +62,21 @@ async function checkUpdate(githubRepoInput) {
         throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
       }
       const remotePkg = await resMaster.json();
-      const hasUpdate = remotePkg.version !== currentVersion;
+      const remoteVer = remotePkg.version || 'mới';
+      const hasUpdate = remotePkg.version ? remotePkg.version !== currentVersion : true;
       return {
         configured: true,
         repo: repoSlug,
         branch: 'master',
         hasUpdate,
         currentVersion,
-        latestVersion: remotePkg.version,
-        message: hasUpdate ? `Đã có phiên bản mới v${remotePkg.version} trên GitHub!` : 'Phần mềm đang ở phiên bản mới nhất.'
+        latestVersion: remoteVer,
+        message: hasUpdate ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` : 'Phần mềm đang ở phiên bản mới nhất.'
       };
     }
 
-    const remotePkg = await res.json();
-    const hasUpdate = remotePkg.version !== currentVersion;
+    const remoteVer = remotePkg.version || 'mới';
+    const hasUpdate = remotePkg.version ? remotePkg.version !== currentVersion : true;
 
     return {
       configured: true,
@@ -83,8 +84,8 @@ async function checkUpdate(githubRepoInput) {
       branch: 'main',
       hasUpdate,
       currentVersion,
-      latestVersion: remotePkg.version,
-      message: hasUpdate ? `Đã có phiên bản mới v${remotePkg.version} trên GitHub!` : 'Phần mềm đang ở phiên bản mới nhất.'
+      latestVersion: remoteVer,
+      message: hasUpdate ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` : 'Phần mềm đang ở phiên bản mới nhất.'
     };
   } catch (err) {
     return {
