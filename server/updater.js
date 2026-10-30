@@ -46,28 +46,54 @@ async function checkUpdate(githubRepoInput) {
   }
 
   try {
-    // 1. Kiểm tra qua raw package.json trên branch main
-    const rawUrl = `https://raw.githubusercontent.com/${repoSlug}/main/package.json?t=${Date.now()}`;
-    let res = await fetch(rawUrl, {
-      headers: { 'User-Agent': 'KyodoFood-App-Updater' }
-    });
+    let remoteVer = null;
     let branch = 'main';
 
-    if (!res.ok) {
-      // Thử branch master nếu branch main không có
-      const masterUrl = `https://raw.githubusercontent.com/${repoSlug}/master/package.json?t=${Date.now()}`;
-      res = await fetch(masterUrl, {
-        headers: { 'User-Agent': 'KyodoFood-App-Updater' }
+    // 1. Ưu tiên kiểm tra trực tiếp qua GitHub Contents API (không bị cache CDN Fastly)
+    try {
+      const apiRes = await fetch(`https://api.github.com/repos/${repoSlug}/contents/package.json?ref=main`, {
+        headers: { 
+          'User-Agent': 'KyodoFood-App-Updater',
+          'Accept': 'application/vnd.github.v3+json'
+        }
       });
-      branch = 'master';
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        if (apiData.content) {
+          const pkgJson = JSON.parse(Buffer.from(apiData.content, 'base64').toString('utf-8'));
+          remoteVer = pkgJson.version;
+        }
+      }
+    } catch (e) {
+      // Fallback qua raw bên dưới
+    }
+
+    // 2. Fallback sang rawUrl nếu API rate-limited hoặc không có mạng quốc tế
+    if (!remoteVer) {
+      const rawUrl = `https://raw.githubusercontent.com/${repoSlug}/main/package.json?t=${Date.now()}`;
+      let res = await fetch(rawUrl, {
+        headers: { 'User-Agent': 'KyodoFood-App-Updater', 'Cache-Control': 'no-cache' }
+      });
+
       if (!res.ok) {
-        throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
+        const masterUrl = `https://raw.githubusercontent.com/${repoSlug}/master/package.json?t=${Date.now()}`;
+        res = await fetch(masterUrl, {
+          headers: { 'User-Agent': 'KyodoFood-App-Updater', 'Cache-Control': 'no-cache' }
+        });
+        branch = 'master';
+      }
+
+      if (res.ok) {
+        const remotePkg = await res.json();
+        remoteVer = remotePkg.version;
       }
     }
 
-    const remotePkg = await res.json();
-    const remoteVer = remotePkg.version || '1.0.0';
-    const hasUpdate = remotePkg.version ? remotePkg.version !== currentVersion : false;
+    if (!remoteVer) {
+      throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
+    }
+
+    const hasUpdate = remoteVer !== currentVersion;
 
     return {
       configured: true,
