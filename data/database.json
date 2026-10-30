@@ -32,15 +32,15 @@
   "shifts": [
     {
       "code": "SANG",
-      "name": "Ca Sáng",
+      "name": "Full Ca Sáng",
       "duration": 9,
       "defaultStart": "08:00",
       "defaultEnd": "17:00",
       "note": "08:00 - 17:00 (9 tiếng)"
     },
     {
-      "code": "CHIEU",
-      "name": "Ca Chiều",
+      "code": "TOI",
+      "name": "Full Ca Tối",
       "duration": 5,
       "defaultStart": "17:00",
       "defaultEnd": "22:00",
