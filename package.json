@@ -1,0 +1,40 @@
+{
+  "name": "kyodo-food-attendance",
+  "version": "1.0.0",
+  "description": "Phần mềm Quản lý Chấm công & Tính Giờ làm Thông minh cho Chuỗi Cửa Hàng Kyodo Food",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "server": "node server/server.js",
+    "start": "node server/server.js",
+    "test": "node server/test-api.js"
+  },
+  "keywords": [
+    "kyodo-food",
+    "cham-cong",
+    "attendance",
+    "timesheet"
+  ],
+  "author": "Antigravity for Kyodo Food",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "multer": "^2.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "autoprefixer": "^10.6.2",
+    "canvas-confetti": "^1.9.4",
+    "lucide-react": "^1.64.0",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.5"
+  }
+}
