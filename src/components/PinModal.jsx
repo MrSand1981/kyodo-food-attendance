@@ -118,13 +118,11 @@ export default function PinModal({
         {/* User preview if selecting an employee */}
         {targetUser && (
           <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 mb-5">
-            {targetUser.avatar ? (
-              <img src={targetUser.avatar} alt={targetUser.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-red-400" />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-red-100 text-red-700 font-extrabold text-lg flex items-center justify-center">
-                {targetUser.name.charAt(0)}
-              </div>
-            )}
+            <img 
+              src={targetUser.avatar || (targetUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')} 
+              alt={targetUser.name} 
+              className="w-12 h-12 rounded-full object-cover ring-2 ring-red-400 bg-slate-50" 
+            />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-slate-900 truncate">{targetUser.name}</div>
               <div className="text-xs text-slate-500 flex items-center gap-1.5">
