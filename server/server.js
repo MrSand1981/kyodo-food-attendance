@@ -8,6 +8,7 @@ const XLSX = require('xlsx');
 
 const db = require('./db');
 const updater = require('./updater');
+const gitService = require('./gitService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -311,6 +312,26 @@ app.post('/api/system/apply-update', async (req, res) => {
     const repo = req.body?.repo || settings.githubRepo;
     const result = await updater.applyUpdate(repo);
     res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 10. ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB (DÀNH CHO CHỦ CỬA HÀNG)
+app.get('/api/system/git-status', async (req, res) => {
+  try {
+    const status = await gitService.getGitStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/git-push', async (req, res) => {
+  try {
+    const { message } = req.body || {};
+    const result = await gitService.pushToGitHub(message);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
