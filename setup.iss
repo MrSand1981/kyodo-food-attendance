@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "Kyodo Food"
-#define MyAppVersion "1.3.9"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "Kyodo Food - Trưng Nữ Vương"
 #define MyAppURL "https://github.com/MrSand1981/kyodo-food-attendance"
 
@@ -41,7 +41,9 @@ Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Cap-Nha
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\kyodo-icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+; File du lieu database.json: TUYET DOI KHONG GHI DE khi cap nhat (chi tao moi khi may chua tung cai dat)
+Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\data\database.json"; DestDir: "{app}\data"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\data\backups\*"; DestDir: "{app}\data\backups"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\dist\*"; DestDir: "{app}\dist"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\public\*"; DestDir: "{app}\public"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\server\*"; DestDir: "{app}\server"; Flags: ignoreversion recursesubdirs createallsubdirs
