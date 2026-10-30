@@ -104,5 +104,12 @@ export const api = {
 
   // Cập nhật phần mềm từ GitHub
   checkUpdate: () => request('/system/check-update'),
-  applyUpdate: () => request('/system/apply-update', { method: 'POST' })
+  applyUpdate: () => request('/system/apply-update', { method: 'POST' }),
+
+  // Đẩy bản cập nhật mới lên GitHub (Dành cho Chủ cửa hàng)
+  getGitStatus: () => request('/system/git-status'),
+  pushToGitHub: (message) => request('/system/git-push', {
+    method: 'POST',
+    body: JSON.stringify({ message })
+  })
 };

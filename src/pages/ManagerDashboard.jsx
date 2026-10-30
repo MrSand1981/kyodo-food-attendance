@@ -1,10 +1,12 @@
 // src/pages/ManagerDashboard.jsx
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { 
   Users, Calendar, FileSpreadsheet, Settings, 
   Clock, Plus, Edit, Trash2, Download, Printer, 
   Upload, CheckCircle, ShieldCheck, DollarSign, 
-  MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle
+  MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle,
+  UploadCloud, GitCommit, Terminal, ExternalLink, CheckCircle2
 } from 'lucide-react';
 import { api } from '../utils/api';
 
@@ -38,11 +40,18 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const [logoFile, setLogoFile] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
-  // GitHub Auto Update states
-  const [githubRepoUrl, setGithubRepoUrl] = useState(settings?.githubRepo || '');
+  // GitHub Auto Update states (Kéo bản mới về)
+  const [githubRepoUrl, setGithubRepoUrl] = useState(settings?.githubRepo || 'https://github.com/MrSand1981/kyodo-food-attendance');
   const [updateInfo, setUpdateInfo] = useState(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updatingApp, setUpdatingApp] = useState(false);
+
+  // GitHub Push states (Đẩy bản mới lên GitHub từ Nghệ An)
+  const [gitStatus, setGitStatus] = useState(null);
+  const [gitCommitMsg, setGitCommitMsg] = useState('Cập nhật tính năng Kyodo Food');
+  const [pushingGit, setPushingGit] = useState(false);
+  const [gitResult, setGitResult] = useState(null);
+  const [checkingGit, setCheckingGit] = useState(false);
 
   // Tải dữ liệu báo cáo chấm công
   const loadReport = async () => {
@@ -169,6 +178,52 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       setUpdatingApp(false);
     }
   };
+
+  // Tải trạng thái Git
+  const loadGitStatus = async () => {
+    try {
+      setCheckingGit(true);
+      const res = await api.getGitStatus();
+      setGitStatus(res);
+    } catch (err) {
+      console.error('Lỗi kiểm tra git status:', err);
+    } finally {
+      setCheckingGit(false);
+    }
+  };
+
+  // Đẩy bản cập nhật mới lên GitHub (Dành cho Chủ Cửa Hàng ở Nghệ An)
+  const handlePushToGitHub = async (e) => {
+    if (e) e.preventDefault();
+    if (!window.confirm('Hệ thống sẽ tự động đóng gói (build) giao diện mới nhất và đẩy toàn bộ mã nguồn lên GitHub. Sau đó máy tính ở Đà Nẵng chỉ cần nhấn "Cập Nhật" là nhận được ngay. Bạn có muốn tiếp tục?')) {
+      return;
+    }
+    try {
+      setPushingGit(true);
+      setGitResult(null);
+      setError('');
+      setMessage('');
+      const res = await api.pushToGitHub(gitCommitMsg);
+      setGitResult(res);
+      if (res.success) {
+        setMessage(`🎉 ${res.message}`);
+        confetti({ particleCount: 120, spread: 85, origin: { y: 0.6 } });
+        await loadGitStatus();
+      } else {
+        setError(res.message);
+      }
+    } catch (err) {
+      setError(err.message || 'Lỗi khi đẩy lên GitHub');
+    } finally {
+      setPushingGit(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      loadGitStatus();
+    }
+  }, [activeTab]);
 
   const openEditEmployee = (emp) => {
     setEditingEmployee(emp);
@@ -530,6 +585,135 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       {activeTab === 'settings' && (
         <div className="max-w-2xl mx-auto space-y-6">
           
+          {/* Card: ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB (DÀNH CHO CHỦ CỬA HÀNG) */}
+          <div className="bg-linear-to-br from-slate-900 via-slate-850 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-700">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-700/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center">
+                  <UploadCloud className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                    <span>Đẩy Bản Cập Nhật Mới Lên GitHub</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Dành riêng cho bạn tại Nghệ An sau khi Antigravity hoàn tất chỉnh sửa
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                main
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 mb-5 leading-relaxed">
+              Mỗi khi bạn yêu cầu chỉnh sửa phần mềm xong, bạn chỉ cần nhấn nút <strong>"Đẩy Lên GitHub Ngay"</strong> bên dưới. Hệ thống sẽ tự động đóng gói bản mới, commit và đẩy trực tiếp lên kho lưu trữ. Sau đó máy ở Đà Nẵng chỉ cần nhấn nút nhận bản mới!
+            </p>
+
+            {/* Trạng thái Git hiện tại */}
+            <div className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 mb-5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <GitCommit className="w-4 h-4 text-slate-400" />
+                  <span className="text-slate-400 font-semibold">Kho lưu trữ GitHub:</span>
+                  <a 
+                    href="https://github.com/MrSand1981/kyodo-food-attendance" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-red-400 hover:text-red-300 font-mono font-bold flex items-center gap-1 underline"
+                  >
+                    <span>MrSand1981/kyodo-food-attendance</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadGitStatus}
+                  disabled={checkingGit || pushingGit}
+                  className="text-[11px] text-slate-300 hover:text-white flex items-center gap-1 bg-slate-700/60 px-2.5 py-1 rounded-lg transition-all"
+                >
+                  <RefreshCw className={`w-3 h-3 ${checkingGit ? 'animate-spin' : ''}`} />
+                  <span>{checkingGit ? 'Đang kiểm tra...' : 'Làm mới trạng thái'}</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-700/60 text-slate-300">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                  <span>Commit chưa đẩy: <strong className="text-amber-300 font-mono">{gitStatus?.unpushedCount || 0}</strong></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                  <span>Tệp đã sửa đổi: <strong className="text-blue-300 font-mono">{gitStatus?.modifiedFiles || 0}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Form commit message & button */}
+            <form onSubmit={handlePushToGitHub} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Ghi Chú Bản Cập Nhật (Tùy chọn):
+                </label>
+                <input
+                  type="text"
+                  value={gitCommitMsg}
+                  onChange={(e) => setGitCommitMsg(e.target.value)}
+                  placeholder="Ví dụ: Cập nhật giao diện quản lý và bảo mật lương"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-xs font-semibold text-white focus:outline-hidden focus:ring-2 focus:ring-red-500 placeholder-slate-500"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={pushingGit}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-500 active:scale-98 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/30 cursor-pointer disabled:opacity-50"
+                >
+                  {pushingGit ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Đang build & đẩy lên GitHub...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-4 h-4" />
+                      <span>🚀 Đẩy Lên GitHub Ngay</span>
+                    </>
+                  )}
+                </button>
+
+                <p className="text-[11px] text-slate-400 text-center sm:text-left">
+                  Tự động build production và đồng bộ trực tiếp lên GitHub
+                </p>
+              </div>
+            </form>
+
+            {/* Push result output */}
+            {gitResult && (
+              <div className={`mt-5 p-4 rounded-2xl border text-xs font-semibold ${
+                gitResult.success 
+                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200' 
+                  : 'bg-red-950/60 border-red-500/40 text-red-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-2 font-bold text-sm">
+                  {gitResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  )}
+                  <span>{gitResult.message}</span>
+                </div>
+                {gitResult.logs && (
+                  <pre className="mt-2 p-3 rounded-xl bg-black/50 text-slate-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
+                    {gitResult.logs}
+                  </pre>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* GitHub Auto Update Card */}
           <div className="bg-white rounded-3xl p-6 border-2 border-red-200 shadow-sm">
             <div className="flex items-center justify-between mb-2">
