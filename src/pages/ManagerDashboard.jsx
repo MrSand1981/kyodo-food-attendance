@@ -38,6 +38,11 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   // Quản lý hiển thị mật khẩu nhân viên
   const [visiblePasswords, setVisiblePasswords] = useState({});
 
+  // Quản lý nhập/sửa trực tiếp mức lương theo giờ của từng nhân viên
+  const [editingRates, setEditingRates] = useState({});
+  const [savingRateId, setSavingRateId] = useState(null);
+  const [rateSuccessId, setRateSuccessId] = useState(null);
+
   // Modal Ghi nhận Tạm ứng cho nhân viên (Chủ cửa hàng)
   const [showManagerAdvanceModal, setShowManagerAdvanceModal] = useState(false);
   const [mgrAdvTargetEmp, setMgrAdvTargetEmp] = useState(null);
@@ -171,6 +176,29 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       setError(err.message || 'Lỗi khi lưu tài khoản nhân viên');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Cập nhật nhanh mức lương giờ trực tiếp từ ô nhập trong thẻ nhân sự
+  const handleQuickUpdateHourlyRate = async (emp, customRate) => {
+    const rawVal = customRate !== undefined ? customRate : editingRates[emp.id];
+    const rateNum = Number(rawVal);
+    if (isNaN(rateNum) || rateNum < 0) {
+      alert("Vui lòng nhập mức lương theo giờ hợp lệ (số lớn hơn hoặc bằng 0)!");
+      return;
+    }
+    try {
+      setSavingRateId(emp.id);
+      await api.updateEmployee(emp.id, { hourlyRate: rateNum });
+      setEmployees(prev => prev.map(e => e.id === emp.id ? { ...e, hourlyRate: rateNum } : e));
+      await loadReport();
+      setRateSuccessId(emp.id);
+      setTimeout(() => setRateSuccessId(null), 3000);
+      setMessage(`✓ Đã cập nhật mức lương giờ của ${emp.shortName || emp.name}: ${rateNum.toLocaleString('vi-VN')} đ/h! Bảng công đã tự động tính lại.`);
+    } catch (err) {
+      setError(err.message || "Lỗi khi cập nhật mức lương");
+    } finally {
+      setSavingRateId(null);
     }
   };
 
@@ -659,10 +687,49 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         </div>
 
                         <div className="text-right">
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Mức lương</span>
-                          <span className="text-xs font-black font-mono text-slate-800 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
-                            {Number(row.hourlyRate).toLocaleString()} đ/h
-                          </span>
+                          <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                            Lương / Giờ (đ/h):
+                          </label>
+                          <div className="inline-flex items-center gap-1.5 bg-emerald-50/90 px-2.5 py-1 rounded-2xl border border-emerald-300 shadow-2xs">
+                            <input
+                              type="number"
+                              step="1000"
+                              min="0"
+                              value={
+                                editingRates[row.employee.id] !== undefined
+                                  ? editingRates[row.employee.id]
+                                  : (row.hourlyRate ?? 25000)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingRates(prev => ({ ...prev, [row.employee.id]: val }));
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val !== '' && Number(val) !== Number(row.hourlyRate)) {
+                                  handleQuickUpdateHourlyRate(row.employee, val);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.target.blur();
+                                }
+                              }}
+                              className="w-22 px-2 py-0.5 bg-white rounded-xl border border-emerald-300 font-mono font-black text-emerald-800 text-xs sm:text-sm text-right focus:outline-hidden focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                              placeholder="25000"
+                              title="Nhập mức lương giờ và nhấn Enter hoặc bấm ra ngoài để lưu"
+                            />
+                            <span className="text-[11px] font-black font-mono text-emerald-700">
+                              đ/h
+                            </span>
+                            {savingRateId === row.employee.id ? (
+                              <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin shrink-0" />
+                            ) : rateSuccessId === row.employee.id ? (
+                              <span className="text-[9px] font-black text-emerald-800 bg-emerald-200 px-1 py-0.5 rounded-md shrink-0 animate-in fade-in">
+                                ✓ Lưu
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
 
@@ -1064,10 +1131,52 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Lương/giờ</span>
-                        <strong className="text-sm font-black font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block">
-                          {Number(emp.hourlyRate).toLocaleString()} đ
-                        </strong>
+                        <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                          Lương / Giờ (Nhập số):
+                        </label>
+                        <div className="inline-flex items-center gap-1.5 bg-emerald-50/90 px-2.5 py-1.5 rounded-2xl border border-emerald-300 shadow-2xs">
+                          <input
+                            type="number"
+                            step="1000"
+                            min="0"
+                            value={
+                              editingRates[emp.id] !== undefined
+                                ? editingRates[emp.id]
+                                : (emp.hourlyRate ?? 25000)
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditingRates(prev => ({ ...prev, [emp.id]: val }));
+                            }}
+                            onBlur={(e) => {
+                              const val = e.target.value;
+                              if (val !== '' && Number(val) !== Number(emp.hourlyRate)) {
+                                handleQuickUpdateHourlyRate(emp, val);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.target.blur();
+                              }
+                            }}
+                            className="w-24 px-2 py-1 bg-white rounded-xl border border-emerald-300 font-mono font-black text-emerald-800 text-sm text-right focus:outline-hidden focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            placeholder="25000"
+                            title="Nhập mức lương giờ và nhấn Enter hoặc bấm ra ngoài để lưu"
+                          />
+                          <span className="text-xs font-black font-mono text-emerald-700">
+                            đ/h
+                          </span>
+                          {savingRateId === emp.id ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin shrink-0" />
+                          ) : rateSuccessId === emp.id ? (
+                            <span className="text-[10px] font-black text-emerald-800 bg-emerald-200 px-1.5 py-0.5 rounded-lg shrink-0 animate-in fade-in">
+                              ✓ Đã lưu
+                            </span>
+                          ) : null}
+                        </div>
+                        <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">
+                          Nhập trực tiếp để đổi lương
+                        </span>
                       </div>
                     </div>
 
