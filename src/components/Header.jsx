@@ -89,18 +89,18 @@ export default function Header({
   const logoUrl = settings?.logoUrl || '/logo-kyodo.png';
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print w-full">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 gap-2">
           
           {/* Logo & Store Branding */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div 
-              className="flex items-center gap-2.5 cursor-pointer group"
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group"
               onClick={onBackToLogin}
               title="Về màn hình đăng nhập"
             >
-              <div className="relative w-8 h-8 rounded-lg bg-red-50 border border-red-100 p-0.5 flex items-center justify-center overflow-hidden shadow-xs group-hover:scale-105 transition-transform">
+              <div className="relative w-8 h-8 rounded-lg bg-red-50 border border-red-100 p-0.5 flex items-center justify-center overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
                 <img 
                   src={logoUrl} 
                   alt="Kyodo Food Logo" 
@@ -115,15 +115,15 @@ export default function Header({
               
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-base font-black tracking-tight text-slate-900 group-hover:text-red-600 transition-colors">
+                  <h1 className="text-sm sm:text-base font-black tracking-tight text-slate-900 group-hover:text-red-600 transition-colors whitespace-nowrap">
                     {settings?.storeName || 'KYODO FOOD'}
                   </h1>
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 rounded-md flex items-center gap-1">
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 rounded-md flex items-center gap-1 whitespace-nowrap shrink-0">
                     <MapPin className="w-2.5 h-2.5" />
                     Trưng Nữ Vương
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium">
+                <p className="hidden md:block text-[10px] text-slate-500 font-medium truncate max-w-[200px] lg:max-w-none">
                   {settings?.tagline || 'Cửa hàng Kyodo Food - Trưng Nữ Vương, Đà Nẵng'}
                 </p>
               </div>
@@ -131,17 +131,17 @@ export default function Header({
           </div>
 
           {/* Live Digital Vietnamese Clock & Update status */}
-          <div className="hidden md:flex items-center gap-2.5">
-            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl shadow-inner">
-              <Clock className="w-4 h-4 text-red-600 animate-pulse" />
+          <div className="hidden sm:flex items-center gap-2 lg:gap-2.5 shrink-0 mx-auto">
+            <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 border border-slate-200 px-2.5 sm:px-3 py-1 rounded-xl shadow-inner">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-600 animate-pulse shrink-0" />
               <div className="flex items-baseline gap-0.5 font-mono">
-                <span className="text-lg font-bold text-slate-900">{h}</span>
-                <span className="text-lg font-bold text-red-500 animate-pulse">:</span>
-                <span className="text-lg font-bold text-slate-900">{m}</span>
+                <span className="text-base sm:text-lg font-bold text-slate-900">{h}</span>
+                <span className="text-base sm:text-lg font-bold text-red-500 animate-pulse">:</span>
+                <span className="text-base sm:text-lg font-bold text-slate-900">{m}</span>
                 <span className="text-xs font-semibold text-slate-500">:{s}</span>
               </div>
-              <div className="h-4 w-px bg-slate-200 mx-0.5"></div>
-              <span className="text-xs font-semibold text-slate-600">
+              <div className="hidden lg:block h-4 w-px bg-slate-200 mx-0.5"></div>
+              <span className="hidden lg:inline text-xs font-semibold text-slate-600 whitespace-nowrap">
                 {formatVietnameseDate(time)}
               </span>
             </div>
@@ -152,7 +152,7 @@ export default function Header({
                 type="button"
                 onClick={applyHeaderUpdate}
                 disabled={isUpdating}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-linear-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white text-xs font-extrabold shadow-sm animate-pulse transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-2xl bg-linear-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white text-xs font-extrabold shadow-sm animate-pulse transition-all cursor-pointer shrink-0 whitespace-nowrap"
                 title={`Phần mềm đã có phiên bản mới (v${updateInfo.latestVersion})! Nhấn để cập nhật ngay.`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-200" />
@@ -163,7 +163,7 @@ export default function Header({
                 type="button"
                 onClick={() => checkHeaderUpdate(false)}
                 disabled={isCheckingUpdate}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 hover:text-red-600 transition-all cursor-pointer"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 hover:text-red-600 transition-all cursor-pointer shrink-0 whitespace-nowrap"
                 title="Bấm để kiểm tra xem có bản cập nhật mới hay chưa"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isCheckingUpdate ? 'animate-spin text-red-600' : ''}`} />
@@ -173,14 +173,14 @@ export default function Header({
           </div>
 
           {/* User Status / Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {currentRole === 'employee' && currentUser && (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-2.5">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs font-black text-slate-900">
+                  <div className="text-xs font-black text-slate-900 whitespace-nowrap">
                     {currentUser.shortName || currentUser.name} ({currentUser.username || currentUser.code})
                   </div>
-                  <div className="text-[10px] text-slate-500 font-semibold">
+                  <div className="text-[10px] text-slate-500 font-semibold whitespace-nowrap">
                     Nhân viên • Trưng Nữ Vương
                   </div>
                 </div>
@@ -191,7 +191,7 @@ export default function Header({
                 />
                 <button
                   onClick={onLogout}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-slate-200 cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-slate-200 cursor-pointer shrink-0 whitespace-nowrap"
                   title="Đăng xuất tài khoản"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -201,14 +201,14 @@ export default function Header({
             )}
 
             {currentRole === 'admin' && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-bold">
-                  <Shield className="w-4 h-4 text-amber-600" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-bold whitespace-nowrap shrink-0">
+                  <Shield className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>Quản Lý Cửa Hàng (Admin)</span>
                 </div>
                 <button
                   onClick={onLogout}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-red-600 hover:bg-slate-100 rounded-xl transition-all border border-slate-200"
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 hover:text-red-600 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 shrink-0 whitespace-nowrap cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Đăng xuất</span>
@@ -217,14 +217,14 @@ export default function Header({
             )}
 
             {!currentRole && appMode !== 'employee' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center shrink-0">
                 <button
                   onClick={onAdminClick}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-red-700 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition-all shadow-2xs"
+                  className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold text-slate-700 hover:text-red-700 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition-all shadow-2xs whitespace-nowrap shrink-0 cursor-pointer"
                   title="Đăng nhập tài khoản Quản Lý"
                 >
-                  <Shield className="w-4 h-4 text-red-600" />
-                  <span>Chủ Cửa Hàng (Admin)</span>
+                  <Shield className="w-4 h-4 text-red-600 shrink-0" />
+                  <span className="whitespace-nowrap">Chủ Cửa Hàng (Admin)</span>
                 </button>
               </div>
             )}
