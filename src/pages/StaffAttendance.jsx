@@ -805,9 +805,12 @@ export default function StaffAttendance({
                   required
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
-                  placeholder="Mật khẩu cũ (mặc định: 1234)"
+                  placeholder="Nhập mật khẩu hiện tại..."
                   className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
                 />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  (Nếu là tài khoản mới khởi tạo, mật khẩu ban đầu là 1234)
+                </p>
               </div>
 
               <div>

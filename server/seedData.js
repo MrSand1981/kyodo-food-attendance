@@ -14,6 +14,7 @@ function generateSeedData() {
       role: "Nhân viên",
       hourlyRate: 25000,
       password: "1234",
+      passwordChanged: false,
       active: true,
       avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
     },
@@ -27,6 +28,7 @@ function generateSeedData() {
       role: "Nhân viên",
       hourlyRate: 22000,
       password: "1234",
+      passwordChanged: false,
       active: true,
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
     }

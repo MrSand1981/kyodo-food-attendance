@@ -75,7 +75,8 @@ function getEmployees(includeConfidential = false) {
     branch: e.branch || "Trưng Nữ Vương",
     role: e.role || "Nhân viên",
     avatar: e.avatar,
-    active: e.active
+    active: e.active,
+    isDefaultPassword: e.password === '1234' && e.passwordChanged !== true
   }));
 }
 
@@ -110,6 +111,7 @@ function addEmployee(employeeData) {
     role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
     password: employeeData.password || "1234",
+    passwordChanged: false,
     phone: employeeData.phone || "",
     avatar: employeeData.avatar || "",
     active: true
@@ -176,6 +178,9 @@ function authenticateUser(username, password) {
   }
 
   if (emp.password && emp.password !== p) {
+    if (p === '1234' && emp.password !== '1234') {
+      throw new Error(`Tài khoản "${emp.name}" đã đổi mật khẩu riêng! Mật khẩu mặc định 1234 không còn hiệu lực. Vui lòng nhập đúng mật khẩu mới.`);
+    }
     throw new Error('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
   }
 
@@ -218,6 +223,7 @@ function changeEmployeePassword(employeeId, oldPassword, newPassword) {
   }
 
   emp.password = newPass;
+  emp.passwordChanged = true;
   saveDatabase(db);
   return { success: true, message: "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn." };
 }
