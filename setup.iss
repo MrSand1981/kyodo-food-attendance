@@ -116,7 +116,7 @@ begin
   LblDescEmployee.Top := ScaleY(38);
   LblDescEmployee.Left := ScaleX(35);
   LblDescEmployee.Width := ScaleX(400);
-  LblDescEmployee.Caption := 'Tao bieu tuong "Kyodo Food - Nhan Vien" ngoai Desktop.' #13#10 'Moi nhan vien tu dang nhap cham cong. Muc luong hoan toan duoc bao mat bi mat.' #13#10 '-> Khong can mat khau khi cai dat.';
+  LblDescEmployee.Caption := 'Tao bieu tuong "Kyodo Food - Nhan Vien" ngoai Desktop de nhan vien dang nhap cham cong hang ngay.' #13#10 '-> Khong can mat khau khi cai dat.';
   LblDescEmployee.Font.Color := clGray;
 
   // 2. Tùy chọn Quản Lý / Admin
@@ -135,7 +135,7 @@ begin
   LblDescAdmin.Top := ScaleY(126);
   LblDescAdmin.Left := ScaleX(35);
   LblDescAdmin.Width := ScaleX(400);
-  LblDescAdmin.Caption := 'Tao bieu tuong "Kyodo Food - Quan Ly" ngoai Desktop.' #13#10 'Toan quyen xem bang luong, tong hop ca thang, xuat Excel va dong bo GitHub.' #13#10 '-> YEU CAU NHAP DUNG MAT KHAU QUAN TRI (ADMIN) DE TIEP TUC.';
+  LblDescAdmin.Caption := 'Tao bieu tuong "Kyodo Food - Quan Ly" ngoai Desktop danh cho Chu cua hang.' #13#10 '-> YEU CAU NHAP DUNG MAT KHAU QUAN TRI (ADMIN) DE TIEP TUC.';
   LblDescAdmin.Font.Color := clGray;
 
   // Trường nhập mật khẩu

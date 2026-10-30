@@ -570,7 +570,7 @@ export default function StaffAttendance({
               </h3>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Cuối tháng, hệ thống tự động tổng hợp toàn bộ số giờ làm việc và tính tổng thu nhập của bạn.
+              Cuối tháng, hệ thống tự động tổng hợp toàn bộ số giờ làm việc và số ca hoàn thành của bạn.
             </p>
           </div>
 
@@ -602,8 +602,8 @@ export default function StaffAttendance({
           </div>
         </div>
 
-        {/* 4 HERO KPI METRICS CARDS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* 3 HERO KPI METRICS CARDS (HOÀN TOÀN TẬP TRUNG CÔNG VIỆC, KHÔNG NHẮC ĐẾN LƯƠNG) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           
           {/* Card 1: Tổng Số Giờ Làm Việc */}
           <div className="bg-red-50/70 rounded-3xl p-5 border border-red-200 flex flex-col justify-between shadow-2xs">
@@ -655,24 +655,6 @@ export default function StaffAttendance({
               </div>
               <p className="text-[11px] text-amber-700/80 font-semibold mt-1">
                 Ca làm việc hoàn thành
-              </p>
-            </div>
-          </div>
-
-          {/* Card 4: Bảo Mật Tiền Lương */}
-          <div className="bg-emerald-50/70 rounded-3xl p-5 border border-emerald-200 flex flex-col justify-between shadow-2xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">Tiền Lương Tháng</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <Lock className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono tracking-wider">
-                •••••••• <span className="text-xs font-bold">VNĐ</span>
-              </div>
-              <p className="text-[11px] text-emerald-700/80 font-semibold mt-1">
-                Bảo mật riêng bởi Quản lý
               </p>
             </div>
           </div>
