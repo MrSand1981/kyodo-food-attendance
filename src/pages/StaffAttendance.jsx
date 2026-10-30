@@ -578,12 +578,12 @@ export default function StaffAttendance({
       )}
 
       {errorMsg && (
-        <div className="mb-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-800 flex items-center justify-between no-print animate-in fade-in">
+        <div className="mb-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between no-print animate-in fade-in">
           <div className="flex items-center gap-2 text-xs font-bold">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>{errorMsg}</span>
           </div>
-          <button onClick={() => setErrorMsg("")} className="text-xs underline text-red-700 cursor-pointer">Đóng</button>
+          <button onClick={() => setErrorMsg("")} className="text-xs underline text-amber-800 cursor-pointer">Đóng</button>
         </div>
       )}
 
@@ -834,7 +834,7 @@ export default function StaffAttendance({
                       <button
                         type="button"
                         onClick={() => handleDeleteAttendance(r.id, `${formatShortTime(r.checkIn)} - ${formatShortTime(r.checkOut)}`)}
-                        className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"
+                        className="text-slate-400 hover:text-amber-800 p-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-colors"
                         title="Xóa ca này nếu nhập nhầm"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1042,7 +1042,7 @@ export default function StaffAttendance({
                         <td className="py-2 px-3 text-center whitespace-nowrap">
                           <button
                             onClick={() => handleDeleteLeave(leave.id)}
-                            className="p-1 rounded-md hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                            className="p-1 rounded-md hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors cursor-pointer"
                             title="Hủy thông báo nghỉ này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1225,7 +1225,7 @@ export default function StaffAttendance({
                         <button
                           type="button"
                           onClick={() => handleDeleteAttendance(rec.id, `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`)}
-                          className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          className="p-1 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
                           title="Xóa bản ghi ca làm này"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1584,8 +1584,8 @@ export default function StaffAttendance({
             )}
 
             {pwdError && (
-              <div className="mb-4 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>{pwdError}</span>
               </div>
             )}

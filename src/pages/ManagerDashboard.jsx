@@ -516,9 +516,9 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       )}
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs sm:text-sm font-bold flex items-center justify-between no-print animate-in fade-in">
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm font-bold flex items-center justify-between no-print animate-in fade-in">
           <span>{error}</span>
-          <button onClick={() => setError('')} className="underline text-xs cursor-pointer">Đóng</button>
+          <button onClick={() => setError('')} className="underline text-xs cursor-pointer text-amber-800">Đóng</button>
         </div>
       )}
 
@@ -839,7 +839,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <span className="font-mono font-black text-red-600 whitespace-nowrap">
+                                      <span className="font-mono font-black text-amber-800 whitespace-nowrap">
                                         -{Number(adv.amount).toLocaleString('vi-VN')} đ
                                       </span>
                                       <button
@@ -853,7 +853,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteAdvanceByManager(adv.id, row.employee.name, adv.amount)}
-                                        className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 cursor-pointer transition-colors"
+                                        className="text-slate-400 hover:text-amber-800 p-1 rounded-md hover:bg-amber-100 cursor-pointer transition-colors"
                                         title="Xóa đợt ứng này"
                                       >
                                         <Trash2 className="w-3 h-3" />
@@ -1333,7 +1333,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     </button>
                     <button
                       onClick={() => handleDeleteEmployee(emp.id, emp.name, emp.username)}
-                      className="px-3.5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all cursor-pointer"
+                      className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-amber-800 text-xs font-bold transition-all cursor-pointer"
                       title="Xóa tài khoản"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1429,7 +1429,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                             </button>
                             <button
                               onClick={() => handleDeleteAdvanceByManager(adv.id, adv.employeeShortName || adv.employeeName, adv.amount)}
-                              className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                              className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors cursor-pointer"
                               title="Xóa khoản tạm ứng này"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1489,7 +1489,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         <td className="py-3 px-4 text-center">
                           <button
                             onClick={() => handleDeleteLeaveByManager(leave.id, leave.employeeShortName || leave.employeeName, leave.date)}
-                            className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                            className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors"
                             title="Xóa thông báo nghỉ này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
