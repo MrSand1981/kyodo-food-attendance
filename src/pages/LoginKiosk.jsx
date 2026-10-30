@@ -60,7 +60,7 @@ export default function LoginKiosk({
       setError('');
       await onLoginSubmit({ username: 'admin', password: adminPassword.trim() });
     } catch (err) {
-      setError(err.message || 'Mật khẩu Admin không đúng (Mặc định: 20162020)!');
+      setError(err.message || 'Mật khẩu Quản trị không chính xác! Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -295,7 +295,7 @@ export default function LoginKiosk({
                 <input
                   type={showAdminPassword ? "text" : "password"}
                   required
-                  placeholder="Nhập mật khẩu: 20162020"
+                  placeholder="Nhập mật khẩu quản trị..."
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono tracking-widest text-center"
@@ -308,9 +308,6 @@ export default function LoginKiosk({
                   {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1 text-center">
-                Mật khẩu quản trị mặc định: <strong>20162020</strong>
-              </p>
             </div>
 
             <button

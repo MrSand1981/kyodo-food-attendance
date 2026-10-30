@@ -6,13 +6,14 @@ import {
   Clock, Plus, Edit, Trash2, Download, Printer, 
   Upload, CheckCircle, ShieldCheck, DollarSign, 
   MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle,
-  UploadCloud, GitCommit, Terminal, ExternalLink, CheckCircle2
+  UploadCloud, GitCommit, Terminal, ExternalLink, CheckCircle2,
+  Bell, Copy
 } from 'lucide-react';
 import { api } from '../utils/api';
 
 export default function ManagerDashboard({ settings, onSettingsChange, shifts }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'settings'
-  const [selectedMonth, setSelectedMonth] = useState('2026-10');
+  const [selectedMonth, setSelectedMonth] = useState('2026-11');
   
   // Data states
   const [report, setReport] = useState(null);
@@ -321,9 +322,12 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500"
+                  className="px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500 cursor-pointer"
                 >
-                  <option value="2026-10">Tháng 10/2026 (Hiện tại)</option>
+                  <option value="2026-11">Tháng 11/2026 (Bắt đầu sử dụng)</option>
+                  <option value="2026-12">Tháng 12/2026</option>
+                  <option value="2027-01">Tháng 01/2027</option>
+                  <option value="2026-10">Tháng 10/2026</option>
                   <option value="2026-09">Tháng 09/2026</option>
                   <option value="2026-08">Tháng 08/2026</option>
                 </select>
@@ -375,6 +379,134 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <div className="text-2xl font-black text-emerald-700 font-mono mt-1">
                 {Number(report?.summary?.storeTotalSalary || 0).toLocaleString()} <span className="text-sm font-semibold text-emerald-600">VNĐ</span>
               </div>
+            </div>
+          </div>
+
+          {/* ================= BẢNG TỔNG HỢP CA LÀM & THÔNG BÁO LƯƠNG NHÂN VIÊN THEO THÁNG ================= */}
+          <div className="bg-gradient-to-br from-amber-500/10 via-white to-red-500/10 rounded-3xl p-6 border border-amber-200/80 shadow-xs mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-5 border-b border-amber-200/60 gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5" />
+                    Bảng Tổng Hợp Ca & Thông Báo Lương
+                  </span>
+                  <span className="text-xs font-bold text-slate-700">
+                    Áp dụng: <strong>{selectedMonth}</strong> • Cơ sở Trưng Nữ Vương
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                  Tổng Hợp Ca & Quyết Toán Tiền Lương Từng Nhân Viên
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold bg-white/90 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                <span>Ca làm:</span>
+                <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-bold">Sáng: 8h-17h (9h)</span>
+                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold">Chiều: 17h-22h (5h)</span>
+              </div>
+            </div>
+
+            {/* Chi tiết ca & lương từng nhân viên */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {report?.rows?.map((row) => {
+                const isUt = (row.employee.name === 'Út' || row.employee.code === 'UTNVTNV');
+                const accentBg = isUt ? 'bg-red-50/70 border-red-200' : 'bg-blue-50/70 border-blue-200';
+                const badgeColor = isUt ? 'bg-red-600 text-white' : 'bg-blue-600 text-white';
+
+                const copyNotifyText = () => {
+                  const text = `📢 Kyodo Food Trưng Nữ Vương thông báo kết quả công tháng ${selectedMonth} cho nhân viên ${row.employee.name} (${row.employee.code}):\n- Ca Sáng (8h-17h • 9 tiếng): ${row.morningShifts || 0} ca\n- Ca Chiều (17h-22h • 5 tiếng): ${row.eveningShifts || 0} ca\n- Tổng số ca hoàn thành: ${row.totalShifts || 0} ca (${row.daysWorked || 0} ngày)\n- Tổng số giờ làm việc: ${row.totalHours} giờ\n- Mức lương: ${Number(row.hourlyRate).toLocaleString()} VNĐ/h\n👉 TỔNG TIỀN LƯƠNG NHẬN: ${Number(row.totalSalary).toLocaleString()} VNĐ.\nCảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
+                  navigator.clipboard.writeText(text);
+                  alert(`Đã sao chép tin nhắn thông báo lương cho ${row.employee.name}! Bạn có thể dán (Paste) để gửi qua Zalo hoặc tin nhắn.`);
+                };
+
+                return (
+                  <div key={row.employee.id} className={`rounded-2xl p-5 border ${accentBg} shadow-2xs flex flex-col justify-between bg-white`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shadow-xs ${badgeColor}`}>
+                            {row.employee.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                              <span>{row.employee.name}</span>
+                              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700">
+                                {row.employee.code || row.employee.username}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-500 font-semibold">
+                              Cơ sở Trưng Nữ Vương • {row.employee.gender}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Mức lương</span>
+                          <span className="text-xs font-black font-mono text-slate-800 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                            {Number(row.hourlyRate).toLocaleString()} đ/h
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Phân rã số ca sáng / số ca chiều */}
+                      <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 my-2 text-center text-xs">
+                        <div className="bg-red-50/50 rounded-xl p-2 border border-red-100">
+                          <span className="text-[10px] text-red-700 font-bold block uppercase">Ca Sáng (8-17h)</span>
+                          <strong className="text-base font-mono font-black text-red-800">
+                            {row.morningShifts || 0} <span className="text-xs font-normal">ca</span>
+                          </strong>
+                        </div>
+                        <div className="bg-amber-50/50 rounded-xl p-2 border border-amber-100">
+                          <span className="text-[10px] text-amber-700 font-bold block uppercase">Ca Chiều (17-22h)</span>
+                          <strong className="text-base font-mono font-black text-amber-800">
+                            {row.eveningShifts || 0} <span className="text-xs font-normal">ca</span>
+                          </strong>
+                        </div>
+                        <div className="bg-slate-50 rounded-xl p-2 border border-slate-200">
+                          <span className="text-[10px] text-slate-500 font-bold block uppercase">Số Ngày Đi Làm</span>
+                          <strong className="text-base font-mono font-black text-slate-800">
+                            {row.daysWorked || 0} <span className="text-xs font-normal">ngày</span>
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* 2 số liệu cốt lõi người dùng yêu cầu: SỐ GIỜ LÀM VIỆC & TIỀN LƯƠNG TỪNG NHÂN VIÊN */}
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase block">1. Số Giờ Làm Việc</span>
+                          <div className="text-2xl font-black font-mono text-red-700 mt-0.5">
+                            {row.totalHours} <span className="text-sm font-bold">giờ</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-200">
+                          <span className="text-[11px] font-bold text-emerald-800 uppercase block">2. Tiền Lương Tháng</span>
+                          <div className="text-2xl font-black font-mono text-emerald-700 mt-0.5">
+                            {Number(row.totalSalary).toLocaleString()} <span className="text-sm font-bold">VNĐ</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tiện ích copy gửi nhân viên */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between no-print">
+                      <span className="text-[11px] text-slate-500 italic">
+                        {row.totalHours}h × {Number(row.hourlyRate).toLocaleString()}đ
+                      </span>
+                      <button
+                        type="button"
+                        onClick={copyNotifyText}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                        title="Sao chép thông báo gửi qua Zalo / SMS cho nhân viên"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Sao Chép Báo Lương</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -838,8 +970,11 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
 
             <div className="space-y-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                <span className="text-slate-500">Mật khẩu đăng nhập Admin hiện tại:</span>
-                <strong className="block text-slate-900 font-mono text-base mt-1">20162020</strong>
+                <span className="text-slate-500">Mật khẩu đăng nhập Admin:</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="font-mono text-base font-black text-slate-800">••••••••</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">Bảo Mật Cao</span>
+                </div>
               </div>
               <p className="text-[11px] text-slate-500">
                 Chủ cửa hàng sử dụng mật khẩu này để đăng nhập và tạo tài khoản cho nhân viên.

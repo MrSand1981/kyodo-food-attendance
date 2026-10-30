@@ -29,36 +29,20 @@
   ],
   "shifts": [
     {
-      "code": "CA1",
+      "code": "SANG",
       "name": "Ca Sáng",
-      "duration": 4,
-      "defaultStart": "07:30",
-      "defaultEnd": "11:30",
-      "note": "4 tiếng"
-    },
-    {
-      "code": "CA2",
-      "name": "Ca Chiều",
-      "duration": 4,
-      "defaultStart": "13:30",
-      "defaultEnd": "17:30",
-      "note": "4 tiếng"
-    },
-    {
-      "code": "CA3",
-      "name": "Ca Tối",
-      "duration": 4.5,
-      "defaultStart": "17:30",
-      "defaultEnd": "22:00",
-      "note": "4.5 tiếng"
-    },
-    {
-      "code": "FULL",
-      "name": "Ca Cả Ngày",
       "duration": 9,
       "defaultStart": "08:00",
       "defaultEnd": "17:00",
-      "note": "9 tiếng"
+      "note": "08:00 - 17:00 (9 tiếng)"
+    },
+    {
+      "code": "CHIEU",
+      "name": "Ca Chiều",
+      "duration": 5,
+      "defaultStart": "17:00",
+      "defaultEnd": "22:00",
+      "note": "17:00 - 22:00 (5 tiếng)"
     }
   ],
   "settings": {
@@ -70,5 +54,22 @@
     "adminPassword": "20162020",
     "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance"
   },
-  "attendance": []
+  "attendance": [
+    {
+      "id": "att-1793337660044",
+      "employeeId": "emp-ut",
+      "employeeCode": "UTNVTNV",
+      "employeeName": "Út",
+      "branch": "Trưng Nữ Vương",
+      "date": "2026-10-30",
+      "checkIn": "2026-10-30T05:21:00.043Z",
+      "checkOut": null,
+      "totalHours": 0,
+      "shiftCode": "CA1",
+      "shiftName": "Ca Sáng",
+      "status": "working",
+      "note": "Vào ca trực tiếp",
+      "photo": null
+    }
+  ]
 }
