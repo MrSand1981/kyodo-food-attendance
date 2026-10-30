@@ -149,8 +149,8 @@ export default function LoginKiosk({
             <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Trang Quản Lý <span className="text-amber-600">Chấm Công</span>
             </h2>
-            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
-              Mỗi nhân viên tự đăng nhập tài khoản riêng biệt để chấm công và theo dõi số giờ làm việc.
+            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm whitespace-nowrap">
+              Mỗi nhân viên đăng nhập để chấm công và theo dõi giờ làm việc.
             </p>
           </>
         ) : isManagerOnly ? (
@@ -158,7 +158,7 @@ export default function LoginKiosk({
             <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Cổng Quản Trị & <span className="text-amber-600">Bảng Tính Lương</span>
             </h2>
-            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
+            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm whitespace-nowrap">
               Dành riêng cho Chủ cửa hàng quản lý nhân sự, xem chi tiết bảng công và duyệt chi lương.
             </p>
           </>
@@ -167,8 +167,8 @@ export default function LoginKiosk({
             <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Trang Quản Lý <span className="text-amber-600">Chấm Công</span>
             </h2>
-            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
-              Đăng nhập tài khoản nhân viên để chấm công hoặc tài khoản Quản lý để xem bảng lương.
+            <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm whitespace-nowrap">
+              Đăng nhập tài khoản để chấm công và theo dõi giờ làm việc.
             </p>
           </>
         )}
@@ -224,27 +224,31 @@ export default function LoginKiosk({
                 <div
                   key={emp.id}
                   onClick={() => quickSelectEmployee(emp)}
-                  className={`p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-2.5 text-left ${
+                  className={`p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2 text-left ${
                     isSelected 
-                      ? 'border-amber-500 bg-amber-50/80 shadow-sm scale-102 ring-2 ring-amber-500/20' 
+                      ? 'border-amber-500 bg-amber-50/80 shadow-sm ring-2 ring-amber-500/20' 
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
-                  <img src={avatarSrc} alt={displayName} className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <h3 className="text-sm font-extrabold text-slate-900 truncate whitespace-nowrap">
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <img src={avatarSrc} alt={displayName} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
+                    <div className="min-w-0">
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 truncate whitespace-nowrap">
                         {displayName}
                       </h3>
-                      {isSelected && (
-                        <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0">
-                          <Check className="w-2.5 h-2.5 stroke-[3]" />
-                        </span>
-                      )}
+                      <div className="text-[10px] sm:text-[11px] text-amber-700 font-bold font-mono truncate whitespace-nowrap">
+                        TK: {emp.username || emp.code}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-amber-700 font-bold font-mono truncate whitespace-nowrap">
-                      TK: {emp.username || emp.code}
-                    </div>
+                  </div>
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                    {isSelected ? (
+                      <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+                      </span>
+                    ) : (
+                      <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-slate-300"></span>
+                    )}
                   </div>
                 </div>
               );
