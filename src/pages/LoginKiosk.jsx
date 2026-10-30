@@ -92,10 +92,7 @@ export default function LoginKiosk({
               Hệ Thống <span className="text-red-600">Nhân Viên Chấm Công</span>
             </h2>
             <p className="text-slate-600 mt-2 max-w-xl mx-auto text-sm sm:text-base">
-              Mỗi nhân viên tự đăng nhập tài khoản riêng biệt để chấm công và xem tổng giờ làm.
-              <span className="block text-emerald-700 font-semibold text-xs mt-1">
-                🔒 Thông tin mức lương và thu nhập được bảo mật riêng bởi Quản lý.
-              </span>
+              Mỗi nhân viên tự đăng nhập tài khoản riêng biệt để chấm công và theo dõi số giờ làm việc.
             </p>
           </>
         ) : isManagerOnly ? (
