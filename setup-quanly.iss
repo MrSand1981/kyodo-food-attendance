@@ -33,6 +33,7 @@ Name: "desktopicon"; Description: "Tao bieu tuong loi tat Quan Ly & Bang Luong n
 
 [Files]
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\KyodoFood-QuanLy.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Day-Len-GitHub.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Cap-Nhat-Phan-Mem.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\kyodo-icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\package.json"; DestDir: "{app}"; Flags: ignoreversion
@@ -46,6 +47,7 @@ Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\node_mo
 [Icons]
 Name: "{autodesktop}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-QuanLy.vbs"; IconFilename: "{app}\kyodo-icon.ico"; Tasks: desktopicon
 Name: "{group}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-QuanLy.vbs"; IconFilename: "{app}\kyodo-icon.ico"
+Name: "{group}\Day Ban Cap Nhat Len GitHub"; Filename: "{app}\Day-Len-GitHub.bat"; IconFilename: "{app}\kyodo-icon.ico"
 Name: "{group}\Cap Nhat Phan Mem Tu GitHub"; Filename: "{app}\Cap-Nhat-Phan-Mem.bat"; IconFilename: "{app}\kyodo-icon.ico"
 Name: "{group}\Go cai dat Kyodo Food"; Filename: "{uninstallexe}"
 
