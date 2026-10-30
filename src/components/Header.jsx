@@ -151,7 +151,7 @@ export default function Header({
                 <button
                   onClick={onAdminClick}
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-red-700 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition-all shadow-2xs"
-                  title="Đăng nhập tài khoản Quản Lý (Mật khẩu: 20162020)"
+                  title="Đăng nhập tài khoản Quản Lý"
                 >
                   <Shield className="w-4 h-4 text-red-600" />
                   <span>Chủ Cửa Hàng (Admin)</span>

@@ -17,7 +17,7 @@ export default function StaffAttendance({
 }) {
   const [activeShift, setActiveShift] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState("2026-10");
+  const [selectedMonth, setSelectedMonth] = useState("2026-11");
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -31,13 +31,32 @@ export default function StaffAttendance({
   const [pwdMsg, setPwdMsg] = useState("");
   const [pwdError, setPwdError] = useState("");
 
-  // Form: Nhập thời gian làm việc từng ngày
+  // Form: Nhập thời gian làm việc từng ngày (2 ca: Sáng 8-17h, Chiều 17-22h | Định dạng 24h từ 0-23h, không có AM/PM)
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
-  const [entryStart, setEntryStart] = useState("07:30");
-  const [entryEnd, setEntryEnd] = useState("11:30");
-  const [entryHours, setEntryHours] = useState("4.0");
+  const [entryStart, setEntryStart] = useState("08:00");
+  const [entryEnd, setEntryEnd] = useState("17:00");
+  const [entryHours, setEntryHours] = useState("9.0");
   const [entryShiftName, setEntryShiftName] = useState("Ca Sáng");
   const [entryNote, setEntryNote] = useState("");
+
+  // Mảng 24 giờ (00 -> 23) và phút (00 -> 55) theo chuẩn 24H (KHÔNG AM/PM)
+  const HOURS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const MINUTES_LIST = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+
+  // Hàm chọn nhanh ca làm việc
+  const selectQuickShift = (shiftType) => {
+    if (shiftType === 'SANG') {
+      setEntryShiftName("Ca Sáng");
+      setEntryStart("08:00");
+      setEntryEnd("17:00");
+      setEntryHours("9.0");
+    } else if (shiftType === 'CHIEU') {
+      setEntryShiftName("Ca Chiều");
+      setEntryStart("17:00");
+      setEntryEnd("22:00");
+      setEntryHours("5.0");
+    }
+  };
 
   // Tự động tính số giờ khi đổi giờ vào / giờ ra
   useEffect(() => {
@@ -335,7 +354,37 @@ export default function StaffAttendance({
           </div>
         </div>
 
-        {/* Daily Entry Form */}
+        {/* Thanh chọn nhanh ca làm việc (Sáng 8-17h, Chiều 17-22h) */}
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-red-50/60 rounded-2xl border border-red-100">
+          <span className="text-[11px] font-bold text-red-800 uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-red-600" />
+            Chọn Nhanh Ca:
+          </span>
+          <button
+            type="button"
+            onClick={() => selectQuickShift('SANG')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              entryShiftName === 'Ca Sáng'
+                ? 'bg-red-600 text-white shadow-xs'
+                : 'bg-white text-slate-700 hover:bg-red-100 border border-slate-200'
+            }`}
+          >
+            <span>🌅 Ca Sáng (08:00 - 17:00 • 9 tiếng)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => selectQuickShift('CHIEU')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              entryShiftName === 'Ca Chiều'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-white text-slate-700 hover:bg-amber-100 border border-slate-200'
+            }`}
+          >
+            <span>🌆 Ca Chiều (17:00 - 22:00 • 5 tiếng)</span>
+          </button>
+        </div>
+
+        {/* Daily Entry Form (Định dạng 24H từ 0-23h, KHÔNG DÙNG AM/PM) */}
         <form onSubmit={handleDailyEntrySubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             
@@ -356,32 +405,86 @@ export default function StaffAttendance({
               </div>
             </div>
 
-            {/* Giờ Vào */}
+            {/* Giờ Vào (Chuẩn 24H: 0h - 23h, KHÔNG CÓ AM/PM) */}
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                2. Giờ Vào Ca:
-              </label>
-              <input
-                type="time"
-                required
-                value={entryStart}
-                onChange={(e) => setEntryStart(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden font-mono text-center"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="font-bold text-slate-700 uppercase text-[11px] tracking-wider">
+                  2. Giờ Vào Ca:
+                </label>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-700 font-mono">
+                  {entryStart} (24H)
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={entryStart.split(':')[0] || '08'}
+                  onChange={(e) => {
+                    const m = entryStart.split(':')[1] || '00';
+                    setEntryStart(`${e.target.value}:${m}`);
+                  }}
+                  className="w-1/2 px-2.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  title="Chọn giờ vào từ 0 đến 23 giờ"
+                >
+                  {HOURS_24.map(h => (
+                    <option key={h} value={h}>{h} giờ</option>
+                  ))}
+                </select>
+                <span className="font-bold text-slate-400">:</span>
+                <select
+                  value={entryStart.split(':')[1] || '00'}
+                  onChange={(e) => {
+                    const h = entryStart.split(':')[0] || '08';
+                    setEntryStart(`${h}:${e.target.value}`);
+                  }}
+                  className="w-1/2 px-2.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  title="Chọn phút vào"
+                >
+                  {MINUTES_LIST.map(m => (
+                    <option key={m} value={m}>{m}p</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Giờ Ra */}
+            {/* Giờ Ra (Chuẩn 24H: 0h - 23h, KHÔNG CÓ AM/PM) */}
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                3. Giờ Ra Ca:
-              </label>
-              <input
-                type="time"
-                required
-                value={entryEnd}
-                onChange={(e) => setEntryEnd(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden font-mono text-center"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="font-bold text-slate-700 uppercase text-[11px] tracking-wider">
+                  3. Giờ Ra Ca:
+                </label>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-700 font-mono">
+                  {entryEnd} (24H)
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={entryEnd.split(':')[0] || '17'}
+                  onChange={(e) => {
+                    const m = entryEnd.split(':')[1] || '00';
+                    setEntryEnd(`${e.target.value}:${m}`);
+                  }}
+                  className="w-1/2 px-2.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  title="Chọn giờ ra từ 0 đến 23 giờ"
+                >
+                  {HOURS_24.map(h => (
+                    <option key={h} value={h}>{h} giờ</option>
+                  ))}
+                </select>
+                <span className="font-bold text-slate-400">:</span>
+                <select
+                  value={entryEnd.split(':')[1] || '00'}
+                  onChange={(e) => {
+                    const h = entryEnd.split(':')[0] || '17';
+                    setEntryEnd(`${h}:${e.target.value}`);
+                  }}
+                  className="w-1/2 px-2.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  title="Chọn phút ra"
+                >
+                  {MINUTES_LIST.map(m => (
+                    <option key={m} value={m}>{m}p</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Số giờ làm */}
@@ -413,14 +516,17 @@ export default function StaffAttendance({
               </label>
               <select
                 value={entryShiftName}
-                onChange={(e) => setEntryShiftName(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEntryShiftName(val);
+                  if (val === 'Ca Sáng') selectQuickShift('SANG');
+                  else if (val === 'Ca Chiều') selectQuickShift('CHIEU');
+                }}
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden"
               >
-                <option value="Ca Sáng">Ca Sáng (07:30 - 11:30)</option>
-                <option value="Ca Chiều">Ca Chiều (13:30 - 17:30)</option>
-                <option value="Ca Tối">Ca Tối (17:30 - 22:00)</option>
-                <option value="Ca Cả Ngày">Ca Cả Ngày (8h - 10h)</option>
-                <option value="Ca Tăng Cường">Ca Tăng Cường / Tăng Ca</option>
+                <option value="Ca Sáng">Ca Sáng (08:00 - 17:00 • 9 tiếng)</option>
+                <option value="Ca Chiều">Ca Chiều (17:00 - 22:00 • 5 tiếng)</option>
+                <option value="Ca Tùy Chọn">Ca Tùy Chọn / Tăng Cường</option>
               </select>
             </div>
 
@@ -431,7 +537,7 @@ export default function StaffAttendance({
               <div className="flex gap-3">
                 <input
                   type="text"
-                  placeholder="Ví dụ: Phụ dọn kho hàng, làm thay ca cho đồng nghiệp..."
+                  placeholder="Ví dụ: Phụ dọn kho hàng, đổi ca cùng Bảo..."
                   value={entryNote}
                   onChange={(e) => setEntryNote(e.target.value)}
                   className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden"
@@ -475,7 +581,10 @@ export default function StaffAttendance({
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="appearance-none pl-4 pr-10 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500 cursor-pointer transition-colors"
               >
-                <option value="2026-10">Tháng 10/2026 (Hiện tại)</option>
+                <option value="2026-11">Tháng 11/2026 (Bắt đầu sử dụng)</option>
+                <option value="2026-12">Tháng 12/2026</option>
+                <option value="2027-01">Tháng 01/2027</option>
+                <option value="2026-10">Tháng 10/2026</option>
                 <option value="2026-09">Tháng 09/2026</option>
                 <option value="2026-08">Tháng 08/2026</option>
               </select>

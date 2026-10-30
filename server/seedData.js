@@ -33,10 +33,8 @@ function generateSeedData() {
   ];
 
   const shifts = [
-    { code: "CA1", name: "Ca Sáng", duration: 4, defaultStart: "07:30", defaultEnd: "11:30", note: "4 tiếng" },
-    { code: "CA2", name: "Ca Chiều", duration: 4, defaultStart: "13:30", defaultEnd: "17:30", note: "4 tiếng" },
-    { code: "CA3", name: "Ca Tối", duration: 4.5, defaultStart: "17:30", defaultEnd: "22:00", note: "4.5 tiếng" },
-    { code: "FULL", name: "Ca Cả Ngày", duration: 9, defaultStart: "08:00", defaultEnd: "17:00", note: "9 tiếng" }
+    { code: "SANG", name: "Ca Sáng", duration: 9, defaultStart: "08:00", defaultEnd: "17:00", note: "08:00 - 17:00 (9 tiếng)" },
+    { code: "CHIEU", name: "Ca Chiều", duration: 5, defaultStart: "17:00", defaultEnd: "22:00", note: "17:00 - 22:00 (5 tiếng)" }
   ];
 
   const settings = {

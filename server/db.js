@@ -265,8 +265,8 @@ function checkIn({ employeeId, shiftCode, note }) {
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
   const shift = (db.shifts || []).find(s => s.code === shiftCode) || {
-    name: "Ca Làm Việc",
-    code: shiftCode || "CA1"
+    name: "Ca Sáng",
+    code: shiftCode || "SANG"
   };
 
   const newRecord = {
@@ -494,6 +494,23 @@ function getMasterMonthlyReport(yearMonth) {
     const dailyData = {};
     let empTotalHours = 0;
     let daysWorked = 0;
+    let morningShifts = 0;
+    let eveningShifts = 0;
+    let otherShifts = 0;
+
+    empRecords.forEach(log => {
+      if (log.status === 'completed' || log.status === 'working') {
+        const sName = (log.shiftName || '').toLowerCase();
+        const sCode = (log.shiftCode || '').toUpperCase();
+        if (sName.includes('sáng') || sCode === 'SANG' || sCode === 'CA1') {
+          morningShifts++;
+        } else if (sName.includes('chiều') || sName.includes('tối') || sCode === 'CHIEU' || sCode === 'CA2' || sCode === 'CA3') {
+          eveningShifts++;
+        } else {
+          otherShifts++;
+        }
+      }
+    });
 
     days.forEach(dayInfo => {
       const dayLogs = empRecords.filter(a => a.date === dayInfo.date);
@@ -533,6 +550,9 @@ function getMasterMonthlyReport(yearMonth) {
       dailyData: dailyData,
       totalHours: empTotalHours,
       daysWorked: daysWorked,
+      morningShifts: morningShifts,
+      eveningShifts: eveningShifts,
+      totalShifts: morningShifts + eveningShifts + otherShifts,
       hourlyRate: hourlyRate,
       totalSalary: empTotalSalary
     };
