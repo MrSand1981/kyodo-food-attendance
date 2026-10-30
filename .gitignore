@@ -3,3 +3,5 @@ node_modules/
 cloudflared.exe
 *.tmp
 .DS_Store
+
+installer_output/
