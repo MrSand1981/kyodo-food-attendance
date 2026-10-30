@@ -196,6 +196,11 @@ function updateEmployee(id, updateData) {
   const current = db.employees[idx];
   const shortName = (updateData.shortName !== undefined ? updateData.shortName : (updateData.name || current.shortName || current.name || '')).trim();
   const fullName = (updateData.fullName !== undefined ? updateData.fullName : (current.fullName || current.name || shortName)).trim();
+  const gender = updateData.gender || current.gender || 'Nữ';
+  let avatar = updateData.avatar || current.avatar;
+  if (!avatar || avatar === '/avatar-female.svg' || avatar === '/avatar-male.svg') {
+    avatar = gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
+  }
   const hourlyRate = updateData.hourlyRate !== undefined 
     ? (Number(updateData.hourlyRate) || 0) 
     : (current.hourlyRate !== undefined ? Number(current.hourlyRate) : 25000);
@@ -206,6 +211,8 @@ function updateEmployee(id, updateData) {
     fullName: fullName,
     shortName: shortName || fullName,
     name: shortName || fullName,
+    gender: gender,
+    avatar: avatar,
     hourlyRate: hourlyRate,
     branch: "Trưng Nữ Vương", // Cố định cơ sở Trưng Nữ Vương
     id
