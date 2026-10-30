@@ -443,66 +443,66 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-3 mb-3 border-b border-slate-200 gap-3 no-print">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              Cổng Quản Trị Cửa Hàng
+            <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Cổng Quản Trị Cửa Hàng</span>
             </span>
-            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-amber-600" />
-              Cơ sở duy nhất: Trưng Nữ Vương
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1 whitespace-nowrap">
+              <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
+              <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
             Bảng Chấm Công & Quản Trị Nhân Sự
           </h2>
         </div>
 
         {/* Action Tabs */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl overflow-x-auto shrink-0">
           <button
             onClick={() => setActiveTab('timesheet')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'timesheet' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Bảng Công & Lương</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">Bảng Công & Lương</span>
           </button>
 
           <button
             onClick={() => setActiveTab('employees')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'employees' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Hồ Sơ Nhân Sự ({employees.length})</span>
+            <Users className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">Hồ Sơ Nhân Sự ({employees.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('advances-leaves')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'advances-leaves' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <DollarSign className="w-3.5 h-3.5 text-amber-600" />
-            <span>Tạm Ứng & Báo Nghỉ ({allAdvances.length + allLeaves.length})</span>
+            <DollarSign className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="whitespace-nowrap">Tạm Ứng & Báo Nghỉ ({allAdvances.length + allLeaves.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'settings' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Settings className="w-4 h-4" />
-            <span>Cài Đặt Cửa Hàng</span>
+            <Settings className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Cài Đặt Cửa Hàng</span>
           </button>
         </div>
       </div>
@@ -530,7 +530,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
             
             <div className="flex items-center gap-3 w-full md:w-auto">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Chọn Tháng Chấm Công:</label>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1 whitespace-nowrap">Chọn Tháng Chấm Công:</label>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
@@ -544,7 +544,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
                   <option value="2026-08">Tháng 08/2026</option>
                 </select>
               </div>
-              <div className="pt-5 text-xs text-slate-500 font-bold">
+              <div className="pt-5 text-xs text-slate-500 font-bold whitespace-nowrap">
                 Cơ sở: <strong>Trưng Nữ Vương</strong>
               </div>
             </div>
@@ -553,18 +553,18 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <a
                 href={api.getExportExcelUrl(selectedMonth)}
                 download={`Bang_Cham_Cong_Kyodo_Trung_Nu_Vuong_${selectedMonth}.xlsx`}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Download className="w-4 h-4" />
-                <span>Xuất File Excel (.xlsx)</span>
+                <Download className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Xuất File Excel (.xlsx)</span>
               </a>
 
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer whitespace-nowrap"
               >
-                <Printer className="w-4 h-4 text-slate-600" />
-                <span>In Báo Cáo</span>
+                <Printer className="w-4 h-4 text-slate-600 shrink-0" />
+                <span className="whitespace-nowrap">In Báo Cáo</span>
               </button>
             </div>
 
@@ -573,36 +573,36 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
           {/* Store Monthly Metrics Header (5 Cards: Nhân sự, Tổng giờ, Tổng lương ca, Tạm ứng, Thực chi) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-slate-500 uppercase">Nhân Sự</span>
-              <div className="text-xl font-black text-slate-900 font-mono mt-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap block">Nhân Sự</span>
+              <div className="text-xl font-black text-slate-900 font-mono mt-1 whitespace-nowrap">
                 {report?.summary?.totalEmployees || 0} <span className="text-xs font-semibold text-slate-500">nhân viên</span>
               </div>
             </div>
 
             <div className="bg-amber-50/70 rounded-3xl p-4 border border-amber-200/80 shadow-2xs">
-              <span className="text-[11px] font-bold text-amber-800 uppercase">Tổng Giờ Làm</span>
-              <div className="text-xl font-black text-amber-700 font-mono mt-1">
+              <span className="text-[11px] font-bold text-amber-800 uppercase whitespace-nowrap block">Tổng Giờ Làm</span>
+              <div className="text-xl font-black text-amber-700 font-mono mt-1 whitespace-nowrap">
                 {report?.summary?.storeTotalHours || 0} <span className="text-xs font-semibold text-amber-600">giờ</span>
               </div>
             </div>
 
             <div className="bg-slate-50 rounded-3xl p-4 border border-slate-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-slate-600 uppercase">Lương Ca Làm</span>
-              <div className="text-xl font-black text-slate-800 font-mono mt-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase whitespace-nowrap block">Lương Ca Làm</span>
+              <div className="text-xl font-black text-slate-800 font-mono mt-1 whitespace-nowrap">
                 {Number(report?.summary?.storeTotalSalary || 0).toLocaleString()} <span className="text-xs font-semibold text-slate-500">đ</span>
               </div>
             </div>
 
             <div className="bg-amber-50/70 rounded-3xl p-4 border border-amber-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-amber-800 uppercase">Tổng Tạm Ứng</span>
-              <div className="text-xl font-black text-amber-700 font-mono mt-1">
+              <span className="text-[11px] font-bold text-amber-800 uppercase whitespace-nowrap block">Tổng Tạm Ứng</span>
+              <div className="text-xl font-black text-amber-700 font-mono mt-1 whitespace-nowrap">
                 {Number(report?.summary?.storeTotalAdvance || 0).toLocaleString()} <span className="text-xs font-semibold text-amber-600">đ</span>
               </div>
             </div>
 
             <div className="bg-emerald-50/70 rounded-3xl p-4 border border-emerald-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-emerald-800 uppercase">Thực Chi (Net)</span>
-              <div className="text-xl font-black text-emerald-700 font-mono mt-1">
+              <span className="text-[11px] font-bold text-emerald-800 uppercase whitespace-nowrap block">Thực Chi (Net)</span>
+              <div className="text-xl font-black text-emerald-700 font-mono mt-1 whitespace-nowrap">
                 {Number(report?.summary?.storeTotalNetSalary ?? report?.summary?.storeTotalSalary ?? 0).toLocaleString()} <span className="text-xs font-semibold text-emerald-600">đ</span>
               </div>
             </div>
@@ -737,26 +737,26 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       {/* Phân rã số ca sáng / số ca chiều / số ngày làm / số ngày nghỉ */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2.5 border-y border-slate-100 my-2.5 text-center text-xs">
                         <div className="bg-amber-50/60 rounded-xl p-2 border border-amber-200/80">
-                          <span className="text-[10px] text-amber-800 font-bold block uppercase">Ca Sáng (8-17h)</span>
-                          <strong className="text-base font-mono font-black text-amber-900">
+                          <span className="text-[10px] text-amber-800 font-bold block uppercase whitespace-nowrap">Ca Sáng (8-17h)</span>
+                          <strong className="text-base font-mono font-black text-amber-900 whitespace-nowrap">
                             {row.morningShifts || 0} <span className="text-xs font-normal">ca</span>
                           </strong>
                         </div>
                         <div className="bg-amber-50/50 rounded-xl p-2 border border-amber-100">
-                          <span className="text-[10px] text-amber-700 font-bold block uppercase">Ca Chiều (17-22h)</span>
-                          <strong className="text-base font-mono font-black text-amber-800">
+                          <span className="text-[10px] text-amber-700 font-bold block uppercase whitespace-nowrap">Ca Chiều (17-22h)</span>
+                          <strong className="text-base font-mono font-black text-amber-800 whitespace-nowrap">
                             {row.eveningShifts || 0} <span className="text-xs font-normal">ca</span>
                           </strong>
                         </div>
                         <div className="bg-slate-50 rounded-xl p-2 border border-slate-200">
-                          <span className="text-[10px] text-slate-500 font-bold block uppercase">Số Ngày Đi Làm</span>
-                          <strong className="text-base font-mono font-black text-slate-800">
+                          <span className="text-[10px] text-slate-500 font-bold block uppercase whitespace-nowrap">Số Ngày Đi Làm</span>
+                          <strong className="text-base font-mono font-black text-slate-800 whitespace-nowrap">
                             {row.daysWorked || 0} <span className="text-xs font-normal">ngày</span>
                           </strong>
                         </div>
                         <div className="bg-blue-50/60 rounded-xl p-2 border border-blue-100">
-                          <span className="text-[10px] text-blue-700 font-bold block uppercase">Số Ngày Nghỉ</span>
-                          <strong className="text-base font-mono font-black text-blue-800">
+                          <span className="text-[10px] text-blue-700 font-bold block uppercase whitespace-nowrap">Số Ngày Nghỉ</span>
+                          <strong className="text-base font-mono font-black text-blue-800 whitespace-nowrap">
                             {row.leaveDaysCount || 0} <span className="text-xs font-normal">ngày</span>
                           </strong>
                         </div>
@@ -768,21 +768,21 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">1</span>
+                              <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">1</span>
                               <div>
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide whitespace-nowrap block">
                                   Số Tiền Lương Đã Làm Trong Tháng:
                                 </span>
-                                <p className="text-[11px] text-slate-500">
+                                <p className="text-[11px] text-slate-500 whitespace-nowrap">
                                   {row.totalHours} giờ × {Number(row.hourlyRate).toLocaleString()} đ/h ({row.totalShifts || 0} ca)
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className="text-lg font-black font-mono text-slate-900">
+                            <div className="text-right shrink-0">
+                              <span className="text-lg font-black font-mono text-slate-900 whitespace-nowrap">
                                 {Number(row.totalSalary).toLocaleString()}
                               </span>
-                              <span className="text-xs font-bold text-slate-500 ml-1">VNĐ</span>
+                              <span className="text-xs font-bold text-slate-500 ml-1 whitespace-nowrap">VNĐ</span>
                             </div>
                           </div>
                         </div>
@@ -791,21 +791,21 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-xs">2</span>
+                              <span className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0">2</span>
                               <div>
-                                <span className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                                <span className="text-xs font-bold text-amber-900 uppercase tracking-wide whitespace-nowrap block">
                                   Tổng Số Tiền Lương Đã Tạm Ứng:
                                 </span>
-                                <p className="text-[11px] text-amber-700 font-medium">
+                                <p className="text-[11px] text-amber-700 font-medium whitespace-nowrap">
                                   Chu kỳ tháng {selectedMonth} • <strong>{row.advanceCount || 0} lần ứng lương</strong>
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className="text-lg font-black font-mono text-amber-800">
+                            <div className="text-right shrink-0">
+                              <span className="text-lg font-black font-mono text-amber-800 whitespace-nowrap">
                                 {Number(row.advanceTotal || 0).toLocaleString()}
                               </span>
-                              <span className="text-xs font-bold text-amber-700 ml-1">VNĐ</span>
+                              <span className="text-xs font-bold text-amber-700 ml-1 whitespace-nowrap">VNĐ</span>
                             </div>
                           </div>
 
@@ -874,21 +874,21 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         <div className="p-4 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-lg bg-white text-emerald-700 flex items-center justify-center font-bold text-xs">3</span>
+                              <span className="w-6 h-6 rounded-lg bg-white text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">3</span>
                               <div>
-                                <span className="text-xs font-black uppercase tracking-wide block">
+                                <span className="text-xs font-black uppercase tracking-wide block whitespace-nowrap">
                                   Số Tiền Lương Còn Lại Sau Trừ Tạm Ứng (Thực Lĩnh):
                                 </span>
-                                <p className="text-[11px] text-emerald-100 font-medium">
+                                <p className="text-[11px] text-emerald-100 font-medium whitespace-nowrap">
                                   Lương ca làm ({Number(row.totalSalary).toLocaleString()} đ) - Tạm ứng ({Number(row.advanceTotal || 0).toLocaleString()} đ)
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className="text-2xl font-black font-mono text-white">
+                            <div className="text-right shrink-0">
+                              <span className="text-2xl font-black font-mono text-white whitespace-nowrap">
                                 {Number(row.netSalary ?? row.totalSalary).toLocaleString()}
                               </span>
-                              <span className="text-xs font-bold text-emerald-100 ml-1">VNĐ</span>
+                              <span className="text-xs font-bold text-emerald-100 ml-1 whitespace-nowrap">VNĐ</span>
                             </div>
                           </div>
 
@@ -909,11 +909,11 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                 });
                                 setShowQrModal(true);
                               }}
-                              className="mt-3 w-full py-2.5 px-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/30 shadow-inner"
+                              className="mt-3 w-full py-2.5 px-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/30 shadow-inner whitespace-nowrap"
                               title="Tạo mã VietQR quét bằng App ngân hàng chuyển khoản đúng số tiền thực lĩnh"
                             >
-                              <QrCode className="w-4 h-4" />
-                              <span>📲 Quét QR Chuyển Khoản Lương Ngay</span>
+                              <QrCode className="w-4 h-4 shrink-0" />
+                              <span className="whitespace-nowrap">📲 Quét QR Chuyển Khoản Lương Ngay</span>
                             </button>
                           )}
                         </div>
@@ -922,17 +922,17 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
                     {/* Tiện ích copy gửi nhân viên */}
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between no-print">
-                      <span className="text-[11px] text-slate-500 italic">
+                      <span className="text-[11px] text-slate-500 italic whitespace-nowrap">
                         Thực lĩnh = Lương ca - Đã ứng
                       </span>
                       <button
                         type="button"
                         onClick={copyNotifyText}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
                         title="Sao chép thông báo gửi qua Zalo / SMS cho nhân viên"
                       >
-                        <Copy className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Sao Chép Báo Lương</span>
+                        <Copy className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span className="whitespace-nowrap">Sao Chép Báo Lương</span>
                       </button>
                     </div>
                   </div>
@@ -1134,10 +1134,10 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
         <div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-lg font-bold text-slate-900 whitespace-nowrap">
                 Hồ Sơ Nhân Sự Cửa Hàng Trưng Nữ Vương
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
                 Chủ cửa hàng quản lý đầy đủ thông tin: Ngày sinh, Địa chỉ, Số điện thoại, CCCD, Giới tính và Mức lương.
               </p>
             </div>
@@ -1161,10 +1161,10 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 });
                 setShowAddEmployeeModal(true);
               }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>Tạo Tài Khoản Mới</span>
+              <UserPlus className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Tạo Tài Khoản Mới</span>
             </button>
           </div>
 
@@ -1186,26 +1186,26 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         />
                         <div>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 text-xs font-black font-mono">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 text-xs font-black font-mono whitespace-nowrap">
                               TK: {emp.username || emp.code}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold whitespace-nowrap">
                               {emp.gender || "Nam"}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold whitespace-nowrap">
                               Biệt danh: {emp.shortName || emp.name}
                             </span>
                           </div>
-                          <h4 className="text-lg font-black text-slate-900 mt-1">{emp.fullName || emp.name}</h4>
-                          <p className="text-xs text-slate-500 font-medium">Trưng Nữ Vương • {emp.role}</p>
+                          <h4 className="text-lg font-black text-slate-900 mt-1 whitespace-nowrap">{emp.fullName || emp.name}</h4>
+                          <p className="text-xs text-slate-500 font-medium whitespace-nowrap">Trưng Nữ Vương • {emp.role}</p>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                      <div className="text-right shrink-0">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1 whitespace-nowrap">
                           Lương / Giờ (Nhập số):
                         </label>
-                        <div className="inline-flex items-center gap-1.5 bg-emerald-50/90 px-2.5 py-1.5 rounded-2xl border border-emerald-300 shadow-2xs">
+                        <div className="inline-flex items-center gap-1.5 bg-emerald-50/90 px-2.5 py-1.5 rounded-2xl border border-emerald-300 shadow-2xs whitespace-nowrap">
                           <input
                             type="number"
                             step="1000"
@@ -1234,18 +1234,18 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                             placeholder="25000"
                             title="Nhập mức lương giờ và nhấn Enter hoặc bấm ra ngoài để lưu"
                           />
-                          <span className="text-xs font-black font-mono text-emerald-700">
+                          <span className="text-xs font-black font-mono text-emerald-700 whitespace-nowrap">
                             đ/h
                           </span>
                           {savingRateId === emp.id ? (
                             <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin shrink-0" />
                           ) : rateSuccessId === emp.id ? (
-                            <span className="text-[10px] font-black text-emerald-800 bg-emerald-200 px-1.5 py-0.5 rounded-lg shrink-0 animate-in fade-in">
+                            <span className="text-[10px] font-black text-emerald-800 bg-emerald-200 px-1.5 py-0.5 rounded-lg shrink-0 animate-in fade-in whitespace-nowrap">
                               ✓ Đã lưu
                             </span>
                           ) : null}
                         </div>
-                        <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">
+                        <span className="text-[9px] text-slate-400 block mt-0.5 font-medium whitespace-nowrap">
                           Nhập trực tiếp để đổi lương
                         </span>
                       </div>
@@ -1254,32 +1254,32 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     {/* Lưới thông tin chi tiết: CCCD, Điện thoại, Ngày sinh, Địa chỉ */}
                     <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3.5 rounded-2xl mb-4 border border-slate-100">
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Số CCCD:</span>
-                        <strong className="font-mono text-slate-800">{emp.cccd || "Chưa cập nhật"}</strong>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block whitespace-nowrap">Số CCCD:</span>
+                        <strong className="font-mono text-slate-800 whitespace-nowrap">{emp.cccd || "Chưa cập nhật"}</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Số Điện Thoại:</span>
-                        <strong className="font-mono text-slate-800">{emp.phone || "Chưa cập nhật"}</strong>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block whitespace-nowrap">Số Điện Thoại:</span>
+                        <strong className="font-mono text-slate-800 whitespace-nowrap">{emp.phone || "Chưa cập nhật"}</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Ngày Sinh:</span>
-                        <span className="font-semibold text-slate-700">{formatDateVN(emp.dob) || "Chưa cập nhật"}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block whitespace-nowrap">Ngày Sinh:</span>
+                        <span className="font-semibold text-slate-700 whitespace-nowrap">{formatDateVN(emp.dob) || "Chưa cập nhật"}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật Khẩu Đăng Nhập:</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block whitespace-nowrap">Mật Khẩu Đăng Nhập:</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="font-mono text-amber-700 font-black text-xs">
+                          <span className="font-mono text-amber-700 font-black text-xs whitespace-nowrap">
                             {visiblePasswords[emp.id] ? (emp.password || '1234') : '••••••••'}
                           </span>
                           <button
                             type="button"
                             onClick={() => setVisiblePasswords(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))}
-                            className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                            className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer shrink-0"
                             title={visiblePasswords[emp.id] ? "Ẩn mật khẩu" : "Hiện mật khẩu mới của nhân viên"}
                           >
                             {visiblePasswords[emp.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
-                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md whitespace-nowrap ${
                             emp.passwordChanged ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {emp.passwordChanged ? 'Đã đổi MK' : 'Mặc định'}
@@ -1289,8 +1289,8 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
                       <div className="col-span-2 pt-1.5 border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                         <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Tài Khoản Ngân Hàng (VietQR Napas 247):</span>
-                          <span className="font-semibold text-slate-800">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block whitespace-nowrap">Tài Khoản Ngân Hàng (VietQR Napas 247):</span>
+                          <span className="font-semibold text-slate-800 whitespace-nowrap">
                             {emp.bankAccount ? `${emp.bankName || emp.bankCode}: ${emp.bankAccount} (${emp.accountName || emp.name})` : 'Chưa cập nhật tài khoản ngân hàng'}
                           </span>
                         </div>
@@ -1308,17 +1308,17 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               });
                               setShowQrModal(true);
                             }}
-                            className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 flex items-center gap-1 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                            className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 flex items-center gap-1 shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
                           >
-                            <QrCode className="w-3.5 h-3.5" />
-                            <span>Mã QR TK</span>
+                            <QrCode className="w-3.5 h-3.5 shrink-0" />
+                            <span className="whitespace-nowrap">Mã QR TK</span>
                           </button>
                         )}
                       </div>
 
                       <div className="col-span-2 pt-1 border-t border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Địa Chỉ:</span>
-                        <span className="text-slate-700 font-medium">{emp.address || "Trưng Nữ Vương, Đà Nẵng"}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block whitespace-nowrap">Địa Chỉ:</span>
+                        <span className="text-slate-700 font-medium whitespace-nowrap">{emp.address || "Trưng Nữ Vương, Đà Nẵng"}</span>
                       </div>
                     </div>
                   </div>
@@ -1326,10 +1326,10 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                     <button
                       onClick={() => openEditEmployee(emp)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                     >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Sửa Thông Tin & Lương</span>
+                      <Edit className="w-3.5 h-3.5 shrink-0" />
+                      <span className="whitespace-nowrap">Sửa Thông Tin & Lương</span>
                     </button>
                     <button
                       onClick={() => handleDeleteEmployee(emp.id, emp.name, emp.username)}
@@ -1394,32 +1394,32 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-amber-50/70 border-b border-amber-200 text-amber-900 font-bold uppercase text-[10px] tracking-wider">
-                      <th className="py-3 px-4">Nhân Viên</th>
-                      <th className="py-3 px-4">Ngày Ứng</th>
-                      <th className="py-3 px-4 text-right">Số Tiền Tạm Ứng</th>
-                      <th className="py-3 px-4">Lý Do</th>
-                      <th className="py-3 px-4 text-center">Trạng Thái</th>
-                      <th className="py-3 px-4 text-center">Thao Tác</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày Ứng</th>
+                      <th className="py-3 px-4 text-right whitespace-nowrap">Số Tiền Tạm Ứng</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Lý Do</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Thao Tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {allAdvances.map(adv => (
                       <tr key={adv.id} className="hover:bg-slate-50">
-                        <td className="py-3 px-4 font-bold text-slate-900">
+                        <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
                           {adv.employeeShortName || adv.employeeName} ({adv.employeeCode})
                         </td>
-                        <td className="py-3 px-4 text-slate-600 font-semibold">{formatDateVN(adv.date)}</td>
-                        <td className="py-3 px-4 font-mono font-black text-amber-700 text-right text-sm">
+                        <td className="py-3 px-4 text-slate-600 font-semibold whitespace-nowrap">{formatDateVN(adv.date)}</td>
+                        <td className="py-3 px-4 font-mono font-black text-amber-700 text-right text-sm whitespace-nowrap">
                           {Number(adv.amount).toLocaleString('vi-VN')} đ
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{adv.reason || "Ứng lương"}</td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{adv.reason || "Ứng lương"}</td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold whitespace-nowrap">
                             Đã Khấu Trừ
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5 shrink-0">
                             <button
                               onClick={() => openEditAdvanceModal(adv)}
                               className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
@@ -1460,36 +1460,36 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-blue-50/70 border-b border-blue-200 text-blue-900 font-bold uppercase text-[10px] tracking-wider">
-                      <th className="py-3 px-4">Nhân Viên</th>
-                      <th className="py-3 px-4">Ngày Báo Nghỉ</th>
-                      <th className="py-3 px-4">Ca Nghỉ</th>
-                      <th className="py-3 px-4">Lý Do / Ghi Chú</th>
-                      <th className="py-3 px-4 text-center">Trạng Thái</th>
-                      <th className="py-3 px-4 text-center">Thao Tác</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày Báo Nghỉ</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ca Nghỉ</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Lý Do / Ghi Chú</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Thao Tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {allLeaves.map(leave => (
                       <tr key={leave.id} className="hover:bg-slate-50">
-                        <td className="py-3 px-4 font-bold text-slate-900">
+                        <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
                           {leave.employeeShortName || leave.employeeName} ({leave.employeeCode})
                         </td>
-                        <td className="py-3 px-4 text-slate-600 font-semibold">{formatDateVN(leave.date)}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">
+                        <td className="py-3 px-4 text-slate-600 font-semibold whitespace-nowrap">{formatDateVN(leave.date)}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold whitespace-nowrap">
                             {leave.shift}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{leave.reason}</td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{leave.reason}</td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold whitespace-nowrap">
                             Đã Thông Báo
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
                           <button
                             onClick={() => handleDeleteLeaveByManager(leave.id, leave.employeeShortName || leave.employeeName, leave.date)}
-                            className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors"
+                            className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors cursor-pointer shrink-0"
                             title="Xóa thông báo nghỉ này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

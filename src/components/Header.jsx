@@ -90,8 +90,8 @@ export default function Header({
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print w-full">
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 gap-2">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between h-14 gap-2 sm:gap-4">
           
           {/* Logo & Store Branding */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -123,7 +123,7 @@ export default function Header({
                     Trưng Nữ Vương
                   </span>
                 </div>
-                <p className="hidden md:block text-[10px] text-slate-500 font-medium truncate max-w-[200px] lg:max-w-none">
+                <p className="hidden md:block text-[10px] text-slate-500 font-medium truncate max-w-[200px] lg:max-w-none whitespace-nowrap">
                   {settings?.tagline || 'Cửa hàng Kyodo Food - Trưng Nữ Vương, Đà Nẵng'}
                 </p>
               </div>
@@ -131,10 +131,10 @@ export default function Header({
           </div>
 
           {/* Live Digital Vietnamese Clock & Update status */}
-          <div className="hidden sm:flex items-center gap-2 lg:gap-2.5 shrink-0 mx-auto">
+          <div className="hidden sm:flex items-center justify-center gap-2 lg:gap-2.5 shrink-0">
             <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 border border-slate-200 px-2.5 sm:px-3 py-1 rounded-xl shadow-inner">
               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 animate-pulse shrink-0" />
-              <div className="flex items-baseline gap-0.5 font-mono">
+              <div className="flex items-baseline gap-0.5 font-mono whitespace-nowrap">
                 <span className="text-base sm:text-lg font-bold text-slate-900">{h}</span>
                 <span className="text-base sm:text-lg font-bold text-amber-500 animate-pulse">:</span>
                 <span className="text-base sm:text-lg font-bold text-slate-900">{m}</span>
@@ -156,7 +156,7 @@ export default function Header({
                 title={`Phần mềm đã có phiên bản mới (v${updateInfo.latestVersion})! Nhấn để cập nhật ngay.`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-                <span>Cập Nhật (v{updateInfo.latestVersion})</span>
+                <span className="whitespace-nowrap">Cập Nhật (v{updateInfo.latestVersion})</span>
               </button>
             ) : (
               <button
@@ -167,7 +167,7 @@ export default function Header({
                 title="Bấm để kiểm tra xem có bản cập nhật mới hay chưa"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isCheckingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-                <span>Bản v{updateInfo?.currentVersion || '1.0.0'}</span>
+                <span className="whitespace-nowrap">Bản v{updateInfo?.currentVersion || '1.0.0'}</span>
               </button>
             )}
           </div>
