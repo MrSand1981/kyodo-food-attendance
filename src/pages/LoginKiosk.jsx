@@ -262,25 +262,25 @@ export default function LoginKiosk({
             <button
               type="button"
               onClick={() => { setActiveTab('employee'); setError(''); }}
-              className={`flex-1 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+              className={`flex-1 py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
                 activeTab === 'employee' 
                   ? 'bg-white text-red-600 shadow-xs' 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <User className="w-4 h-4" />
+              <User className="w-4 h-4 shrink-0" />
               <span>Nhân Viên</span>
             </button>
             <button
               type="button"
               onClick={() => { setActiveTab('admin'); setError(''); }}
-              className={`flex-1 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+              className={`flex-1 py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
                 activeTab === 'admin' 
                   ? 'bg-white text-amber-700 shadow-xs' 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4 shrink-0" />
               <span>Chủ Cửa Hàng (Admin)</span>
             </button>
           </div>
