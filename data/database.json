@@ -15,7 +15,7 @@
       "hourlyRate": 25000,
       "password": "1234",
       "passwordChanged": false,
-      "active": false,
+      "active": true,
       "avatar": "/avatar-female.svg"
     },
     {
@@ -30,7 +30,7 @@
       "address": "Thanh Khê, Đà Nẵng",
       "branch": "Trưng Nữ Vương",
       "role": "Nhân viên",
-      "hourlyRate": "22000",
+      "hourlyRate": 22000,
       "password": "1234",
       "passwordChanged": false,
       "active": true,

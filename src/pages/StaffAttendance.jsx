@@ -517,29 +517,34 @@ export default function StaffAttendance({
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Bạn có thể tạo yêu cầu ứng lương khi cần thiết. Số tiền ứng sẽ được khấu trừ vào kỳ lương cuối tháng.
+              Chu kỳ tính lương: <strong className="text-amber-800">Tháng {selectedMonth}</strong> • Toàn bộ các đợt ứng lương sẽ được tự động tổng hợp và khấu trừ vào quyết toán cuối tháng.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => setShowAdvanceModal(true)}
+            onClick={() => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const todayYM = todayStr.substring(0, 7);
+              setAdvDate(selectedMonth === todayYM ? todayStr : `${selectedMonth}-01`);
+              setShowAdvanceModal(true);
+            }}
             className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-xs shadow-md shadow-amber-600/20 transition-all cursor-pointer"
           >
             <DollarSign className="w-4 h-4" />
-            <span>Ứng Lương Ngay</span>
+            <span>+ Ứng Lương Ngay</span>
           </button>
         </div>
 
-        {/* Thống kê Ứng Lương: SỐ LẦN ỨNG LƯƠNG & TỔNG SỐ LƯƠNG ĐÃ ỨNG */}
+        {/* Thống kê Ứng Lương Trong Chu Kỳ: SỐ LẦN ỨNG LƯƠNG & TỔNG SỐ LƯƠNG ĐÃ ỨNG */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 border border-amber-200 shadow-2xs flex items-center justify-between">
             <div>
               <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">
-                Số Lần Ứng Lương (Tháng {selectedMonth})
+                Số Lần Đã Ứng Lương (Tháng {selectedMonth})
               </span>
               <div className="text-3xl font-black text-amber-700 font-mono mt-1">
-                {summaryData?.advanceCount || 0} <span className="text-base font-bold">lần</span>
+                {summaryData?.advanceCount || 0} <span className="text-base font-bold">lần ứng</span>
               </div>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
@@ -550,7 +555,7 @@ export default function StaffAttendance({
           <div className="bg-white rounded-2xl p-5 border border-red-200 shadow-2xs flex items-center justify-between">
             <div>
               <span className="text-xs font-bold text-red-800 uppercase tracking-wider block">
-                Tổng Số Lương Đã Ứng
+                Tổng Số Tiền Lương Đã Ứng Trong Chu Kỳ
               </span>
               <div className="text-3xl font-black text-red-700 font-mono mt-1">
                 {Number(summaryData?.advanceTotal || 0).toLocaleString('vi-VN')} <span className="text-base font-bold">VNĐ</span>
@@ -562,30 +567,52 @@ export default function StaffAttendance({
           </div>
         </div>
 
-        {/* Lịch sử ứng lương trong tháng */}
-        {summaryData?.advances && summaryData.advances.length > 0 && (
-          <div className="overflow-x-auto rounded-2xl border border-amber-200/80 bg-white">
+        {/* Chi tiết từng đợt ứng lương trong chu kỳ */}
+        <div className="overflow-x-auto rounded-2xl border border-amber-200/80 bg-white">
+          <div className="px-4 py-3 bg-amber-50/70 border-b border-amber-100 flex items-center justify-between">
+            <span className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Chi Tiết Từng Đợt Ứng Lương</span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-200 text-amber-800">
+                {summaryData?.advanceCount || 0} đợt
+              </span>
+            </span>
+            <span className="text-xs font-extrabold text-red-700 font-mono">
+              Tổng ứng: {Number(summaryData?.advanceTotal || 0).toLocaleString('vi-VN')} VNĐ
+            </span>
+          </div>
+
+          {summaryData?.advances && summaryData.advances.length > 0 ? (
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-amber-50/70 border-b border-amber-100 text-amber-900 font-bold uppercase text-[10px] tracking-wider">
-                  <th className="py-2.5 px-4">Ngày Ứng</th>
-                  <th className="py-2.5 px-4 text-right">Số Tiền Ứng</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="py-2.5 px-4 text-center w-16">Đợt</th>
+                  <th className="py-2.5 px-4">Ngày Ứng Lương</th>
+                  <th className="py-2.5 px-4 text-right">Số Tiền Ứng Từng Đợt</th>
                   <th className="py-2.5 px-4">Lý Do / Ghi Chú</th>
                   <th className="py-2.5 px-4 text-center">Trạng Thái</th>
-                  <th className="py-2.5 px-4 text-center">Thao Tác</th>
+                  <th className="py-2.5 px-4 text-center w-16">Hủy</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {summaryData.advances.map(adv => (
-                  <tr key={adv.id} className="hover:bg-amber-50/30">
-                    <td className="py-2.5 px-4 font-bold text-slate-800">{adv.date}</td>
-                    <td className="py-2.5 px-4 font-mono font-black text-red-600 text-right">
-                      {Number(adv.amount).toLocaleString('vi-VN')} đ
-                    </td>
-                    <td className="py-2.5 px-4 text-slate-600">{adv.reason || "Ứng tiền lương"}</td>
+                {summaryData.advances.map((adv, idx) => (
+                  <tr key={adv.id || idx} className="hover:bg-amber-50/30">
                     <td className="py-2.5 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                        Đã Ghi Nhận
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px] font-mono">
+                        Đợt {summaryData.advances.length - idx}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-4 font-bold text-slate-800 whitespace-nowrap">
+                      {adv.date}
+                    </td>
+                    <td className="py-2.5 px-4 font-mono font-black text-red-600 text-right text-sm whitespace-nowrap">
+                      {Number(adv.amount).toLocaleString('vi-VN')} VNĐ
+                    </td>
+                    <td className="py-2.5 px-4 text-slate-600">
+                      {adv.reason || "Ứng tiền lương"}
+                    </td>
+                    <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                      <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        Đã Khấu Trừ
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-center">
@@ -601,8 +628,12 @@ export default function StaffAttendance({
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+          ) : (
+            <div className="py-6 text-center text-slate-400 text-xs italic">
+              Bạn chưa có đợt tạm ứng lương nào trong chu kỳ tháng {selectedMonth}.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ================= PHẦN 2: XIN NGÀY NGHỈ (LEAVE REQUEST) ================= */}
@@ -1241,7 +1272,7 @@ export default function StaffAttendance({
             </div>
 
             <p className="text-xs text-slate-500 mb-4">
-              Nhân viên: <strong className="text-slate-800">{employee.name}</strong> • Cơ sở Trưng Nữ Vương
+              Nhân viên: <strong className="text-slate-800">{employee.name}</strong> • Chu kỳ lương: <strong className="text-amber-800">Tháng {selectedMonth}</strong>
             </p>
 
             <form onSubmit={handleSalaryAdvanceSubmit} className="space-y-4 text-xs">

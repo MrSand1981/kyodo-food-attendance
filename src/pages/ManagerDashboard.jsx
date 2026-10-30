@@ -28,6 +28,14 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
 
+  // Modal Ghi nhận Tạm ứng cho nhân viên (Chủ cửa hàng)
+  const [showManagerAdvanceModal, setShowManagerAdvanceModal] = useState(false);
+  const [mgrAdvTargetEmp, setMgrAdvTargetEmp] = useState(null);
+  const [mgrAdvDate, setMgrAdvDate] = useState('');
+  const [mgrAdvAmount, setMgrAdvAmount] = useState('');
+  const [mgrAdvReason, setMgrAdvReason] = useState('Chủ cửa hàng tạm ứng lương');
+  const [mgrAdvLoading, setMgrAdvLoading] = useState(false);
+
   // Form states for new/edit employee with full HR info
   const [empForm, setEmpForm] = useState({
     username: '',
@@ -154,6 +162,46 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       await loadReport();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  // Mở modal tạm ứng lương cho nhân viên
+  const openManagerAdvanceModal = (emp) => {
+    setMgrAdvTargetEmp(emp);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayYM = todayStr.substring(0, 7);
+    setMgrAdvDate(selectedMonth === todayYM ? todayStr : `${selectedMonth}-01`);
+    setMgrAdvAmount('');
+    setMgrAdvReason('Chủ cửa hàng tạm ứng lương');
+    setShowManagerAdvanceModal(true);
+  };
+
+  // Xử lý gửi ghi nhận tạm ứng từ quản lý
+  const handleManagerAdvanceSubmit = async (e) => {
+    e.preventDefault();
+    if (!mgrAdvTargetEmp) return;
+    const num = Number(mgrAdvAmount);
+    if (isNaN(num) || num <= 0) {
+      alert("Vui lòng nhập số tiền tạm ứng lớn hơn 0!");
+      return;
+    }
+    try {
+      setMgrAdvLoading(true);
+      await api.requestSalaryAdvance({
+        employeeId: mgrAdvTargetEmp.id,
+        date: mgrAdvDate,
+        amount: num,
+        reason: mgrAdvReason.trim() || 'Chủ cửa hàng tạm ứng lương'
+      });
+      setMessage(`🎉 Đã ghi nhận tạm ứng ${num.toLocaleString('vi-VN')} đ cho nhân viên ${mgrAdvTargetEmp.name}!`);
+      confetti({ particleCount: 70, spread: 60 });
+      setShowManagerAdvanceModal(false);
+      await loadAdvancesAndLeaves();
+      await loadReport();
+    } catch (err) {
+      setError(err.message || "Lỗi khi ghi nhận tạm ứng");
+    } finally {
+      setMgrAdvLoading(false);
     }
   };
 
@@ -480,29 +528,45 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
             </div>
 
             {/* Chi tiết ca & lương từng nhân viên */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {report?.rows?.map((row) => {
                 const isUt = (row.employee.name === 'Út' || row.employee.code === 'UTNVTNV');
                 const accentBg = isUt ? 'bg-red-50/70 border-red-200' : 'bg-blue-50/70 border-blue-200';
-                const badgeColor = isUt ? 'bg-red-600 text-white' : 'bg-blue-600 text-white';
-
                 const avatarSrc = row.employee.avatar || (row.employee.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
 
                 const copyNotifyText = () => {
-                  const text = `📢 Kyodo Food Trưng Nữ Vương thông báo kết quả công tháng ${selectedMonth} cho nhân viên ${row.employee.name} (${row.employee.code || row.employee.username}):\n- Ca Sáng (8h-17h • 9 tiếng): ${row.morningShifts || 0} ca\n- Ca Chiều (17h-22h • 5 tiếng): ${row.eveningShifts || 0} ca\n- Tổng số ca hoàn thành: ${row.totalShifts || 0} ca (${row.daysWorked || 0} ngày)\n- Tổng số giờ làm việc: ${row.totalHours} giờ\n- Mức lương: ${Number(row.hourlyRate).toLocaleString()} VNĐ/h\n- Tiền lương ca làm: ${Number(row.totalSalary).toLocaleString()} VNĐ\n- Đã tạm ứng lương (${row.advanceCount || 0} lần): ${Number(row.advanceTotal || 0).toLocaleString()} VNĐ\n👉 TIỀN LƯƠNG THỰC LĨNH: ${Number(row.netSalary ?? row.totalSalary).toLocaleString()} VNĐ.\nCảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
+                  let advDetailsText = '- Không có tạm ứng trong chu kỳ này';
+                  if (row.advances && row.advances.length > 0) {
+                    advDetailsText = row.advances.map((a, idx) => `  • Đợt ${row.advances.length - idx} (${a.date}): ${Number(a.amount).toLocaleString('vi-VN')} VNĐ (${a.reason || 'Ứng lương'})`).join('\n');
+                  }
+                  const text = `📢 Kyodo Food Trưng Nữ Vương thông báo kết quả công & lương tháng ${selectedMonth} cho nhân viên ${row.employee.name} (${row.employee.code || row.employee.username}):
+- Ca Sáng (8h-17h • 9 tiếng): ${row.morningShifts || 0} ca
+- Ca Chiều (17h-22h • 5 tiếng): ${row.eveningShifts || 0} ca
+- Tổng số ca hoàn thành: ${row.totalShifts || 0} ca (${row.daysWorked || 0} ngày)
+- Tổng số giờ làm việc: ${row.totalHours} giờ
+- Mức lương: ${Number(row.hourlyRate).toLocaleString()} VNĐ/h
+------------------------------------------
+1. TIỀN LƯƠNG ĐÃ LÀM TRONG THÁNG: ${Number(row.totalSalary).toLocaleString()} VNĐ
+2. TỔNG SỐ TIỀN ĐÃ TẠM ỨNG (${row.advanceCount || 0} lần): ${Number(row.advanceTotal || 0).toLocaleString()} VNĐ
+Chi tiết các đợt tạm ứng:
+${advDetailsText}
+------------------------------------------
+👉 3. TIỀN LƯƠNG THỰC LĨNH CÒN LẠI: ${Number(row.netSalary ?? row.totalSalary).toLocaleString()} VNĐ
+(Thực lĩnh = Lương ca làm - Tổng tiền tạm ứng)
+Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   navigator.clipboard.writeText(text);
                   alert(`Đã sao chép tin nhắn thông báo lương cho ${row.employee.name}! Bạn có thể dán (Paste) để gửi qua Zalo hoặc tin nhắn.`);
                 };
 
                 return (
-                  <div key={row.employee.id} className={`rounded-2xl p-5 border ${accentBg} shadow-2xs flex flex-col justify-between bg-white`}>
+                  <div key={row.employee.id} className={`rounded-3xl p-5 sm:p-6 border ${accentBg} shadow-sm flex flex-col justify-between bg-white`}>
                     <div>
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-3.5">
                         <div className="flex items-center gap-3">
                           <img 
                             src={avatarSrc} 
                             alt={row.employee.name} 
-                            className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-200 bg-slate-50"
+                            className="w-13 h-13 rounded-2xl object-cover ring-2 ring-slate-200 bg-slate-50 shadow-xs"
                           />
                           <div>
                             <div className="font-extrabold text-slate-900 text-base flex items-center gap-2">
@@ -519,14 +583,14 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
 
                         <div className="text-right">
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">Mức lương</span>
-                          <span className="text-xs font-black font-mono text-slate-800 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                          <span className="text-xs font-black font-mono text-slate-800 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
                             {Number(row.hourlyRate).toLocaleString()} đ/h
                           </span>
                         </div>
                       </div>
 
                       {/* Phân rã số ca sáng / số ca chiều */}
-                      <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-slate-100 my-2 text-center text-xs">
+                      <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-slate-100 my-2.5 text-center text-xs">
                         <div className="bg-red-50/50 rounded-xl p-2 border border-red-100">
                           <span className="text-[10px] text-red-700 font-bold block uppercase">Ca Sáng (8-17h)</span>
                           <strong className="text-base font-mono font-black text-red-800">
@@ -547,35 +611,126 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
                         </div>
                       </div>
 
-                      {/* SỐ LIỆU TÀI CHÍNH: Giờ làm, Lương ca, Tạm ứng, THỰC LĨNH */}
-                      <div className="grid grid-cols-2 gap-2.5 mt-3">
-                        <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase block">1. Tổng Giờ Làm</span>
-                          <div className="text-xl font-black font-mono text-red-700 mt-0.5">
-                            {row.totalHours} <span className="text-xs font-bold">giờ</span>
+                      {/* KHỐI QUYẾT TOÁN TÀI CHÍNH CHI TIẾT (3 MỤC RÕ RÀNG) */}
+                      <div className="mt-4 space-y-3">
+                        {/* 1. SỐ TIỀN LƯƠNG ĐÃ LÀM TRONG THÁNG */}
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">1</span>
+                              <div>
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                  Số Tiền Lương Đã Làm Trong Tháng:
+                                </span>
+                                <p className="text-[11px] text-slate-500">
+                                  {row.totalHours} giờ × {Number(row.hourlyRate).toLocaleString()} đ/h ({row.totalShifts || 0} ca)
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-black font-mono text-slate-900">
+                                {Number(row.totalSalary).toLocaleString()}
+                              </span>
+                              <span className="text-xs font-bold text-slate-500 ml-1">VNĐ</span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase block">2. Lương Ca Làm</span>
-                          <div className="text-xl font-black font-mono text-slate-800 mt-0.5">
-                            {Number(row.totalSalary).toLocaleString()} <span className="text-xs font-bold">đ</span>
+                        {/* 2. TỔNG SỐ TIỀN LƯƠNG ĐÃ TẠM ỨNG (KÈM CHI TIẾT TỪNG ĐỢT) */}
+                        <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-xs">2</span>
+                              <div>
+                                <span className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                                  Tổng Số Tiền Lương Đã Tạm Ứng:
+                                </span>
+                                <p className="text-[11px] text-amber-700 font-medium">
+                                  Chu kỳ tháng {selectedMonth} • <strong>{row.advanceCount || 0} lần ứng lương</strong>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-black font-mono text-amber-800">
+                                {Number(row.advanceTotal || 0).toLocaleString()}
+                              </span>
+                              <span className="text-xs font-bold text-amber-700 ml-1">VNĐ</span>
+                            </div>
+                          </div>
+
+                          {/* Chi tiết từng đợt tạm ứng */}
+                          <div className="mt-2.5 pt-2.5 border-t border-amber-200/60">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[11px] font-bold text-amber-800 uppercase">
+                                Chi tiết các đợt ứng ({row.advanceCount || 0} đợt):
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => openManagerAdvanceModal(row.employee)}
+                                className="text-[11px] font-extrabold text-amber-900 hover:text-amber-950 bg-amber-200 hover:bg-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>+ Ghi Nhận Ứng Lương</span>
+                              </button>
+                            </div>
+
+                            {row.advances && row.advances.length > 0 ? (
+                              <div className="space-y-1.5 mt-2">
+                                {row.advances.map((adv, idx) => (
+                                  <div key={adv.id || idx} className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-amber-200/70 text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[10px] font-mono">
+                                        Đợt {row.advances.length - idx}
+                                      </span>
+                                      <span className="font-bold text-slate-800">{adv.date}</span>
+                                      <span className="text-slate-500 text-[11px] italic truncate max-w-44">
+                                        ({adv.reason || 'Ứng lương'})
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono font-black text-red-600">
+                                        -{Number(adv.amount).toLocaleString('vi-VN')} đ
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteAdvanceByManager(adv.id, row.employee.name, adv.amount)}
+                                        className="text-slate-400 hover:text-red-600 p-0.5 cursor-pointer"
+                                        title="Xóa đợt ứng này"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-amber-700/80 italic bg-white/70 p-2 rounded-xl text-center mt-1">
+                                Nhân viên {row.employee.name} chưa có đợt tạm ứng lương nào trong tháng {selectedMonth}.
+                              </p>
+                            )}
                           </div>
                         </div>
 
-                        <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-200">
-                          <span className="text-[10px] font-bold text-amber-800 uppercase block">
-                            3. Đã Tạm Ứng ({row.advanceCount || 0} lần)
-                          </span>
-                          <div className="text-xl font-black font-mono text-amber-700 mt-0.5">
-                            {Number(row.advanceTotal || 0).toLocaleString()} <span className="text-xs font-bold">đ</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-emerald-50 rounded-xl p-2.5 border border-emerald-200">
-                          <span className="text-[10px] font-bold text-emerald-800 uppercase block">4. Thực Lĩnh Còn Lại</span>
-                          <div className="text-xl font-black font-mono text-emerald-700 mt-0.5">
-                            {Number(row.netSalary ?? row.totalSalary).toLocaleString()} <span className="text-xs font-bold">VNĐ</span>
+                        {/* 3. SỐ TIỀN LƯƠNG CÒN LẠI SAU KHI TRỪ ĐI LƯƠNG TẠM ỨNG (THỰC LĨNH) */}
+                        <div className="p-4 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-lg bg-white text-emerald-700 flex items-center justify-center font-bold text-xs">3</span>
+                              <div>
+                                <span className="text-xs font-black uppercase tracking-wide block">
+                                  Số Tiền Lương Còn Lại Sau Trừ Tạm Ứng (Thực Lĩnh):
+                                </span>
+                                <p className="text-[11px] text-emerald-100 font-medium">
+                                  Lương ca làm ({Number(row.totalSalary).toLocaleString()} đ) - Tạm ứng ({Number(row.advanceTotal || 0).toLocaleString()} đ)
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-black font-mono text-white">
+                                {Number(row.netSalary ?? row.totalSalary).toLocaleString()}
+                              </span>
+                              <span className="text-xs font-bold text-emerald-100 ml-1">VNĐ</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -870,10 +1025,21 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
 
           {/* Section: Danh sách tạm ứng */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-            <h4 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-amber-600 stroke-[3]" />
-              <span>Danh Sách Tạm Ứng Lương ({allAdvances.length} bản ghi)</span>
-            </h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-amber-600 stroke-[3]" />
+                <span>Danh Sách Tạm Ứng Lương ({allAdvances.length} bản ghi)</span>
+              </h4>
+
+              <button
+                type="button"
+                onClick={() => openManagerAdvanceModal(employees.find(e => e.active !== false) || employees[0])}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Ghi Nhận Tạm Ứng Mới</span>
+              </button>
+            </div>
 
             {allAdvances.length > 0 ? (
               <div className="overflow-x-auto rounded-2xl border border-slate-200">
@@ -1361,6 +1527,134 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
                   className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer"
                 >
                   {editingEmployee ? 'Lưu Thay Đổi' : 'Tạo Tài Khoản'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: GHI NHẬN TẠM ỨNG LƯƠNG CHO NHÂN VIÊN (QUẢN LÝ) ================= */}
+      {showManagerAdvanceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 border border-slate-100 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 stroke-[3]" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Ghi Nhận Tạm Ứng Lương</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowManagerAdvanceModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4">
+              Cơ sở Trưng Nữ Vương • Chu kỳ tính lương: <strong className="text-amber-800">Tháng {selectedMonth}</strong>
+            </p>
+
+            <form onSubmit={handleManagerAdvanceSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  1. Chọn Nhân Viên Nhận Tạm Ứng:
+                </label>
+                <select
+                  value={mgrAdvTargetEmp?.id || ''}
+                  onChange={(e) => {
+                    const found = employees.find(emp => emp.id === e.target.value);
+                    if (found) setMgrAdvTargetEmp(found);
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer"
+                >
+                  {employees.filter(e => e.active !== false).map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.username || emp.code}) - {emp.gender || 'NV'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  2. Ngày Ghi Nhận Tạm Ứng:
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={mgrAdvDate}
+                  onChange={(e) => setMgrAdvDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  3. Số Tiền Tạm Ứng (VNĐ):
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="50000"
+                    min="50000"
+                    required
+                    placeholder="Ví dụ: 500000"
+                    value={mgrAdvAmount}
+                    onChange={(e) => setMgrAdvAmount(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 font-black font-mono text-amber-900 text-base focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-bold text-amber-700 text-xs">
+                    VNĐ
+                  </span>
+                </div>
+
+                {/* Chọn nhanh số tiền */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold self-center">Chọn nhanh:</span>
+                  {[200000, 500000, 1000000, 2000000].map(val => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setMgrAdvAmount(String(val))}
+                      className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 font-bold font-mono text-[11px] border border-slate-200 cursor-pointer"
+                    >
+                      {val >= 1000000 ? `${val / 1000000} Triệu` : `${val / 1000}k`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  4. Lý Do / Ghi Chú:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Ứng tiền mặt chi tiêu..."
+                  value={mgrAdvReason}
+                  onChange={(e) => setMgrAdvReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowManagerAdvanceModal(false)}
+                  className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={mgrAdvLoading}
+                  className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+                >
+                  {mgrAdvLoading ? "Đang lưu..." : "Xác Nhận Tạm Ứng"}
                 </button>
               </div>
             </form>
