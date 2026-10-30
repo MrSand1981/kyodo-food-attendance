@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { 
-  Clock, Calendar, DollarSign, Award, CheckCircle2, 
+  Clock, Calendar, Award, CheckCircle2, 
   AlertCircle, Printer, RefreshCw, PlusCircle, 
-  FileText, ChevronDown, Check, LogOut, Send, MapPin
+  FileText, ChevronDown, Check, LogOut, Send, MapPin,
+  Lock, KeyRound, ShieldCheck, X
 } from 'lucide-react';
 import { api } from '../utils/api';
 
@@ -20,6 +21,15 @@ export default function StaffAttendance({
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Modal đổi mật khẩu riêng biệt
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdMsg, setPwdMsg] = useState("");
+  const [pwdError, setPwdError] = useState("");
 
   // Form: Nhập thời gian làm việc từng ngày
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
@@ -150,6 +160,40 @@ export default function StaffAttendance({
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 4) {
+      setPwdError("Mật khẩu mới phải có ít nhất 4 ký tự!");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwdError("Xác nhận mật khẩu mới không khớp!");
+      return;
+    }
+
+    try {
+      setPwdLoading(true);
+      setPwdError("");
+      const res = await api.changePassword({
+        employeeId: employee.id,
+        oldPassword: oldPassword,
+        newPassword: newPassword
+      });
+      setPwdMsg(res.message || "Đổi mật khẩu thành công!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPwdMsg("");
+      }, 2000);
+    } catch (err) {
+      setPwdError(err.message || "Lỗi khi đổi mật khẩu!");
+    } finally {
+      setPwdLoading(false);
+    }
+  };
+
   const getDayOfWeekName = (dateStr) => {
     const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const d = new Date(dateStr);
@@ -163,8 +207,6 @@ export default function StaffAttendance({
     const m = String(d.getMinutes()).padStart(2, '0');
     return `${h}:${m}`;
   };
-
-  const hourlyRate = Number(employee.hourlyRate || (employee.name === 'Út' ? 25000 : 22000));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -193,26 +235,41 @@ export default function StaffAttendance({
                 <MapPin className="w-3 h-3 text-red-500" />
                 Cơ sở Trưng Nữ Vương
               </span>
-              <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
-                Mức Lương: {hourlyRate.toLocaleString()} đ/h
+              <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                Tài Khoản Riêng Biệt
               </span>
             </div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">
               Nhân Viên: {employee.name}
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Tài khoản chỉ dùng để đăng nhập, nhập thời gian làm việc từng ngày và xem tổng giờ làm cuối tháng.
+              Tài khoản tự quản lý cá nhân • Nhập thời gian làm việc từng ngày và xem tổng giờ làm cuối tháng.
             </p>
           </div>
         </div>
 
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200"
-        >
-          <LogOut className="w-4 h-4 text-slate-500" />
-          <span>Đăng Xuất</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setShowPasswordModal(true);
+              setPwdError("");
+              setPwdMsg("");
+            }}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200"
+            title="Đổi mật khẩu tài khoản của bạn"
+          >
+            <KeyRound className="w-4 h-4 text-slate-500" />
+            <span>Đổi Mật Khẩu</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all border border-red-200"
+          >
+            <LogOut className="w-4 h-4 text-red-500" />
+            <span>Đăng Xuất</span>
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -475,38 +532,38 @@ export default function StaffAttendance({
             </div>
           </div>
 
-          {/* Card 3: Mức Lương Theo Giờ */}
+          {/* Card 3: Tổng Số Ca Làm Hoàn Thành */}
           <div className="bg-amber-50/70 rounded-3xl p-5 border border-amber-200 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-amber-800 uppercase tracking-wider">Mức Lương/Giờ</span>
+              <span className="text-xs font-black text-amber-800 uppercase tracking-wider">Tổng Số Ca Làm</span>
               <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                <DollarSign className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono">
-                {hourlyRate.toLocaleString()} <span className="text-xs font-bold">đ/h</span>
+              <div className="text-3xl sm:text-4xl font-black text-amber-800 font-mono">
+                {summaryData?.totalShifts ?? 0} <span className="text-base font-bold">ca</span>
               </div>
               <p className="text-[11px] text-amber-700/80 font-semibold mt-1">
-                Đơn giá lương theo giờ
+                Ca làm việc hoàn thành
               </p>
             </div>
           </div>
 
-          {/* Card 4: Tổng Tiền Lương Nhận Được */}
+          {/* Card 4: Bảo Mật Tiền Lương */}
           <div className="bg-emerald-50/70 rounded-3xl p-5 border border-emerald-200 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">Tổng Lương Tháng</span>
+              <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">Tiền Lương Tháng</span>
               <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <Award className="w-4 h-4" />
+                <Lock className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono">
-                {Number(summaryData?.estimatedSalary || 0).toLocaleString()} <span className="text-xs font-bold">VNĐ</span>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono tracking-wider">
+                •••••••• <span className="text-xs font-bold">VNĐ</span>
               </div>
               <p className="text-[11px] text-emerald-700/80 font-semibold mt-1">
-                ({summaryData?.totalHours || 0}h × {hourlyRate.toLocaleString()}đ)
+                Bảo mật riêng bởi Quản lý
               </p>
             </div>
           </div>
@@ -524,7 +581,7 @@ export default function StaffAttendance({
                 <th className="py-3.5 px-4">Giờ Vào</th>
                 <th className="py-3.5 px-4">Giờ Ra</th>
                 <th className="py-3.5 px-4 text-center">Tổng Giờ</th>
-                <th className="py-3.5 px-4 text-right">Tiền Công Ngày</th>
+                <th className="py-3.5 px-4 text-center">Trạng Thái</th>
                 <th className="py-3.5 px-4">Ghi Chú</th>
               </tr>
             </thead>
@@ -532,7 +589,6 @@ export default function StaffAttendance({
               {summaryData?.records && summaryData.records.length > 0 ? (
                 summaryData.records.map((rec) => {
                   const isWorking = rec.status === 'working';
-                  const shiftEarnings = Math.round((rec.totalHours || 0) * hourlyRate);
                   
                   return (
                     <tr 
@@ -569,8 +625,12 @@ export default function StaffAttendance({
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-800 whitespace-nowrap">
-                        {isWorking ? '--' : `${shiftEarnings.toLocaleString()} đ`}
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        {isWorking ? (
+                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-700 text-[11px] font-bold">Đang chạy</span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 text-[11px] font-bold">Đã chốt giờ</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-slate-500 max-w-xs truncate text-xs">
                         {rec.note || '-'}
@@ -606,6 +666,107 @@ export default function StaffAttendance({
         </div>
 
       </div>
+
+      {/* Modal Đổi Mật Khẩu Cá Nhân */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Đổi Mật Khẩu Cá Nhân</h3>
+              </div>
+              <button 
+                onClick={() => setShowPasswordModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4">
+              Tài khoản: <strong className="text-slate-800">{employee.name} ({employee.username || employee.code})</strong>. Hãy đặt mật khẩu riêng chỉ mình bạn biết để bảo mật thông tin tài khoản.
+            </p>
+
+            {pwdMsg && (
+              <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{pwdMsg}</span>
+              </div>
+            )}
+
+            {pwdError && (
+              <div className="mb-4 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{pwdError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Mật khẩu hiện tại:
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="Mật khẩu cũ (mặc định: 1234)"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Mật khẩu mới (ít nhất 4 ký tự):
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu mới..."
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Nhập lại mật khẩu mới:
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Xác nhận mật khẩu mới..."
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={pwdLoading}
+                  className="px-5 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                >
+                  {pwdLoading ? "Đang lưu..." : "Xác Nhận Đổi Mật Khẩu"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

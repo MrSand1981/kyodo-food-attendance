@@ -61,7 +61,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   // Tải danh sách nhân viên
   const loadEmployees = async () => {
     try {
-      const res = await api.getEmployees();
+      const res = await api.getEmployees(true);
       setEmployees(res.employees || []);
     } catch (err) {
       console.error(err);

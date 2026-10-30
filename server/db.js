@@ -62,9 +62,21 @@ function saveDatabase(data) {
 }
 
 // ---------------- EMPLOYEES ----------------
-function getEmployees() {
+function getEmployees(includeConfidential = false) {
   const db = ensureDbFile();
-  return (db.employees || []).filter(e => e.active !== false);
+  const list = (db.employees || []).filter(e => e.active !== false);
+  if (includeConfidential) return list;
+  return list.map(e => ({
+    id: e.id,
+    username: e.username,
+    code: e.code,
+    name: e.name,
+    gender: e.gender,
+    branch: e.branch || "Trưng Nữ Vương",
+    role: e.role || "Nhân viên",
+    avatar: e.avatar,
+    active: e.active
+  }));
 }
 
 function getEmployeeByIdOrUsername(idOrUsername) {
@@ -169,11 +181,45 @@ function authenticateUser(username, password) {
 
   const activeShift = getActiveShift(emp.id);
 
+  // Che giấu tuyệt đối thông tin lương và mật khẩu cho nhân viên
+  const sanitizedEmp = {
+    id: emp.id,
+    username: emp.username,
+    code: emp.code,
+    name: emp.name,
+    gender: emp.gender,
+    branch: emp.branch || "Trưng Nữ Vương",
+    role: emp.role || "Nhân viên",
+    avatar: emp.avatar,
+    active: emp.active
+  };
+
   return {
     role: 'employee',
-    user: emp,
+    user: sanitizedEmp,
     activeShift
   };
+}
+
+// Nhân viên tự đổi mật khẩu riêng biệt
+function changeEmployeePassword(employeeId, oldPassword, newPassword) {
+  const db = ensureDbFile();
+  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+
+  const curPass = String(oldPassword || '').trim();
+  if (emp.password && emp.password !== curPass) {
+    throw new Error("Mật khẩu hiện tại không chính xác!");
+  }
+
+  const newPass = String(newPassword || '').trim();
+  if (!newPass || newPass.length < 4) {
+    throw new Error("Mật khẩu mới phải có ít nhất 4 ký tự!");
+  }
+
+  emp.password = newPass;
+  saveDatabase(db);
+  return { success: true, message: "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn." };
 }
 
 // ---------------- ATTENDANCE / CHẤM CÔNG ----------------
@@ -355,7 +401,7 @@ function deleteAttendance(id) {
 }
 
 // ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN TỔNG GIỜ LÀM) ----------------
-function getEmployeeMonthlySummary(employeeId, yearMonth) {
+function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false) {
   const db = ensureDbFile();
   const emp = db.employees.find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
   if (!emp) throw new Error("Nhân viên không tồn tại");
@@ -386,7 +432,7 @@ function getEmployeeMonthlySummary(employeeId, yearMonth) {
   const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
   const estimatedSalary = Math.round(totalCompletedHours * hourlyRate);
 
-  return {
+  const summary = {
     employee: {
       id: emp.id,
       username: emp.username,
@@ -394,18 +440,24 @@ function getEmployeeMonthlySummary(employeeId, yearMonth) {
       name: emp.name,
       gender: emp.gender,
       branch: "Trưng Nữ Vương",
-      role: emp.role,
-      hourlyRate: hourlyRate
+      role: emp.role
     },
     yearMonth: currentYM,
     totalHours: totalCompletedHours,
     totalDays: daysWorkedSet.size,
     totalShifts: shiftCount,
-    hourlyRate: hourlyRate,
-    estimatedSalary: estimatedSalary,
+    salaryConfidential: !includeSalary,
     activeShift: activeShift,
     records: monthRecords
   };
+
+  if (includeSalary) {
+    summary.employee.hourlyRate = hourlyRate;
+    summary.hourlyRate = hourlyRate;
+    summary.estimatedSalary = estimatedSalary;
+  }
+
+  return summary;
 }
 
 // ---------------- BẢNG TỔNG HỢP CỬA HÀNG TRƯNG NỮ VƯƠNG (ADMIN) ----------------
@@ -527,6 +579,7 @@ module.exports = {
   updateEmployee,
   deleteEmployee,
   authenticateUser,
+  changeEmployeePassword,
   getAttendance,
   getActiveShift,
   checkIn,
