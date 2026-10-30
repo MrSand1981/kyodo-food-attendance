@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Lock, Sparkles, LogIn, Shield, Check, 
-  AlertCircle, ArrowRight, MapPin, Eye, EyeOff, ShieldCheck 
+  AlertCircle, ArrowRight, MapPin, Eye, EyeOff, ShieldCheck,
+  RefreshCw, ArrowDownCircle, CheckCircle2
 } from 'lucide-react';
+import { api } from '../utils/api';
 
 export default function LoginKiosk({ 
   employees = [], 
@@ -20,6 +22,48 @@ export default function LoginKiosk({
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Trạng thái kiểm tra và cập nhật phiên bản mới (Dành cho nhân viên chủ động cập nhật)
+  const [updateStatus, setUpdateStatus] = useState(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updatingApp, setUpdatingApp] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState('');
+
+  const checkAppUpdate = async () => {
+    try {
+      setCheckingUpdate(true);
+      const res = await api.checkUpdate();
+      setUpdateStatus(res);
+      if (res.hasUpdate) {
+        setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
+      } else {
+        setUpdateMsg('Phần mềm đang ở bản mới nhất.');
+      }
+    } catch (err) {
+      console.warn('Lỗi kiểm tra cập nhật:', err.message);
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAppUpdate();
+  }, []);
+
+  const handleApplyUpdate = async () => {
+    if (!window.confirm('Ứng dụng sẽ tự động tải bản cập nhật mới từ GitHub mà không làm mất dữ liệu chấm công. Bạn có muốn tiếp tục?')) return;
+    try {
+      setUpdatingApp(true);
+      setError('');
+      const res = await api.applyUpdate();
+      alert('🎉 ' + res.message);
+      window.location.reload();
+    } catch (err) {
+      setError(err.message || 'Lỗi khi cập nhật phần mềm');
+    } finally {
+      setUpdatingApp(false);
+    }
+  };
 
   useEffect(() => {
     if (appMode === 'manager') setActiveTab('admin');
@@ -76,6 +120,13 @@ export default function LoginKiosk({
   const isEmployeeOnly = appMode === 'employee';
   const isManagerOnly = appMode === 'manager';
 
+  // Xác định nhân viên đang được chọn có đang dùng mật khẩu khởi tạo mặc định 1234 hay đã đổi mật khẩu
+  const selectedEmp = employees.find(e => 
+    (e.username && e.username.toUpperCase() === username.toUpperCase()) ||
+    (e.code && e.code.toUpperCase() === username.toUpperCase())
+  );
+  const isDefaultPassword = selectedEmp ? selectedEmp.isDefaultPassword : true;
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       
@@ -115,6 +166,41 @@ export default function LoginKiosk({
           </>
         )}
       </div>
+
+      {/* THÔNG BÁO CẬP NHẬT PHIÊN BẢN MỚI (DÀNH CHO NHÂN VIÊN CHỦ ĐỘNG CẬP NHẬT) */}
+      {updateStatus?.hasUpdate && (
+        <div className="mb-8 p-5 rounded-3xl bg-linear-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+              <Sparkles className="w-6 h-6 text-amber-200" />
+            </div>
+            <div>
+              <div className="font-black text-sm sm:text-base flex items-center gap-2">
+                <span>Đã có phiên bản cập nhật mới (v{updateStatus.latestVersion})!</span>
+                <span className="px-2 py-0.5 rounded-full bg-white text-red-700 text-[10px] font-black uppercase tracking-wider">Mới</span>
+              </div>
+              <p className="text-xs text-red-100 mt-0.5">
+                Quản lý tại Nghệ An vừa cập nhật tính năng mới lên GitHub. Bấm nút bên cạnh để cập nhật ngay.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyUpdate}
+            disabled={updatingApp}
+            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-white hover:bg-amber-50 active:scale-95 text-red-700 font-black text-xs sm:text-sm shadow-md transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+          >
+            {updatingApp ? (
+              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <ArrowDownCircle className="w-4 h-4" />
+                <span>Cập Nhật Ngay</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Quick Select Staff Cards (Chỉ hiện khi đăng nhập Nhân Viên) */}
       {activeTab === 'employee' && (
@@ -241,7 +327,7 @@ export default function LoginKiosk({
                 <input
                   type={showPassword ? "text" : "password"}
                   required
-                  placeholder="Nhập mật khẩu của bạn (mặc định: 1234)"
+                  placeholder={isDefaultPassword ? "Mật khẩu khởi tạo: 1234" : "Nhập mật khẩu riêng của bạn..."}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all font-mono tracking-widest"
@@ -254,9 +340,15 @@ export default function LoginKiosk({
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Mỗi người tự quản lý mật khẩu riêng biệt. Có thể tự đổi mật khẩu sau khi đăng nhập.
-              </p>
+              {isDefaultPassword ? (
+                <p className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
+                  <span>🔑 Tài khoản mới khởi tạo • Mật khẩu ban đầu: <strong>1234</strong> (Hãy đổi mật khẩu sau khi đăng nhập)</span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-slate-500 font-semibold mt-1 flex items-center gap-1">
+                  <span>🔒 Tài khoản đã đặt mật khẩu riêng. Mật khẩu mặc định 1234 không còn hiệu lực.</span>
+                </p>
+              )}
             </div>
 
             <button
@@ -324,6 +416,32 @@ export default function LoginKiosk({
           </form>
         )}
 
+      </div>
+
+      {/* Nút kiểm tra cập nhật chủ động dành cho Nhân Viên */}
+      <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs no-print">
+        <button
+          type="button"
+          onClick={checkAppUpdate}
+          disabled={checkingUpdate}
+          className="text-slate-600 hover:text-red-600 flex items-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-slate-50 border border-slate-200/80 shadow-2xs cursor-pointer bg-white"
+          title="Bấm để kiểm tra xem Quản lý tại Nghệ An đã cập nhật phần mềm mới lên GitHub chưa"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${checkingUpdate ? 'animate-spin text-red-600' : ''}`} />
+          <span>{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Kiểm Tra Bản Cập Nhật Mới')}</span>
+        </button>
+
+        {updateStatus?.hasUpdate && (
+          <button
+            type="button"
+            onClick={handleApplyUpdate}
+            disabled={updatingApp}
+            className="text-xs font-black py-2 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-md transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+          >
+            <ArrowDownCircle className="w-3.5 h-3.5" />
+            <span>Cập Nhật Bản Mới Ngay (v{updateStatus.latestVersion})</span>
+          </button>
+        )}
       </div>
 
     </div>
