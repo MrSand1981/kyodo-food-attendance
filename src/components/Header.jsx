@@ -31,7 +31,7 @@ export default function Header({
       setUpdateInfo(res);
       if (!silent) {
         if (res.hasUpdate) {
-          if (window.confirm(`🎉 Đã có bản cập nhật mới (v${res.latestVersion}) từ Quản Lý!\nBạn có muốn tự động tải bản mới từ GitHub về ngay bây giờ không? (Dữ liệu chấm công được bảo toàn 100%)`)) {
+          if (window.confirm(`🎉 Phần mềm đã có phiên bản mới (v${res.latestVersion})!\nBạn có muốn cập nhật ngay bây giờ để sử dụng các tính năng mới không? (Dữ liệu chấm công được bảo toàn 100%)`)) {
             applyHeaderUpdate();
           }
         } else {
@@ -153,7 +153,7 @@ export default function Header({
                 onClick={applyHeaderUpdate}
                 disabled={isUpdating}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-linear-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white text-xs font-extrabold shadow-sm animate-pulse transition-all cursor-pointer"
-                title={`Đã có bản cập nhật mới (v${updateInfo.latestVersion}) từ Quản lý trên GitHub! Nhấn để tải và cập nhật ngay.`}
+                title={`Phần mềm đã có phiên bản mới (v${updateInfo.latestVersion})! Nhấn để cập nhật ngay.`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                 <span>Cập Nhật (v{updateInfo.latestVersion})</span>
@@ -164,7 +164,7 @@ export default function Header({
                 onClick={() => checkHeaderUpdate(false)}
                 disabled={isCheckingUpdate}
                 className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 hover:text-red-600 transition-all cursor-pointer"
-                title="Bấm để kiểm tra xem có bản cập nhật mới từ GitHub hay chưa"
+                title="Bấm để kiểm tra xem có bản cập nhật mới hay chưa"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isCheckingUpdate ? 'animate-spin text-red-600' : ''}`} />
                 <span>Bản v{updateInfo?.currentVersion || '1.0.0'}</span>

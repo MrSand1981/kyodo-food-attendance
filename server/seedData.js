@@ -17,6 +17,10 @@ function generateSeedData() {
       branch: "Trưng Nữ Vương",
       role: "Nhân viên",
       hourlyRate: 25000,
+      bankCode: "VCB",
+      bankName: "Vietcombank",
+      bankAccount: "102008151234",
+      accountName: "NGUYEN THI UT",
       password: "1234",
       passwordChanged: false,
       active: true,
@@ -35,6 +39,10 @@ function generateSeedData() {
       branch: "Trưng Nữ Vương",
       role: "Nhân viên",
       hourlyRate: 22000,
+      bankCode: "MB",
+      bankName: "MB Bank",
+      bankAccount: "0905333444",
+      accountName: "LE HOANG BAO",
       password: "1234",
       passwordChanged: false,
       active: true,
@@ -53,7 +61,8 @@ function generateSeedData() {
     tagline: "Cửa hàng Kyodo Food - Trưng Nữ Vương, Đà Nẵng",
     logoUrl: "/logo-kyodo.png",
     adminUsername: "admin",
-    adminPassword: "20162020"
+    adminPassword: "20162020",
+    githubRepo: "https://github.com/MrSand1981/kyodo-food-attendance"
   };
 
   // Dữ liệu chấm công trống 100% để bắt đầu tính từ ngày 01/11/2026

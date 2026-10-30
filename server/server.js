@@ -254,7 +254,7 @@ app.post('/api/leaves', (req, res) => {
     res.json({
       success: true,
       record,
-      message: `Đã gửi đơn xin nghỉ phép ngày ${date} thành công!`
+      message: `Đã lưu thông báo nghỉ làm ngày ${date} thành công!`
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
