@@ -5,3 +5,4 @@ cloudflared.exe
 .DS_Store
 
 installer_output/
+data/backups/
