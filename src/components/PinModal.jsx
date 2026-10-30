@@ -99,7 +99,7 @@ export default function PinModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-amber-100 text-amber-800'}`}>
               <Lock className="w-5 h-5" />
             </div>
             <div>
@@ -121,12 +121,12 @@ export default function PinModal({
             <img 
               src={targetUser.avatar || (targetUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')} 
               alt={targetUser.name} 
-              className="w-12 h-12 rounded-full object-cover ring-2 ring-red-400 bg-slate-50" 
+              className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400 bg-slate-50" 
             />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-slate-900 truncate">{targetUser.name}</div>
               <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                <span className="font-semibold text-red-600">{targetUser.code}</span>
+                <span className="font-semibold text-amber-700">{targetUser.code}</span>
                 <span>•</span>
                 <span>{targetUser.branch}</span>
                 <span>•</span>
@@ -145,7 +145,7 @@ export default function PinModal({
                 key={idx}
                 className={`w-4 h-4 rounded-full transition-all duration-200 ${
                   isFilled
-                    ? (isAdmin ? 'bg-amber-500 scale-125 shadow-xs shadow-amber-300' : 'bg-red-600 scale-125 shadow-xs shadow-red-300')
+                    ? 'bg-amber-500 scale-125 shadow-xs shadow-amber-300'
                     : 'bg-slate-200 scale-100'
                 }`}
               />
@@ -207,7 +207,7 @@ export default function PinModal({
           onClick={handleSubmit}
           className={`w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all shadow-md ${
             pin.length >= 4 && !loading
-              ? (isAdmin ? 'bg-amber-600 hover:bg-amber-700 active:scale-98' : 'bg-red-600 hover:bg-red-700 active:scale-98')
+              ? 'bg-amber-600 hover:bg-amber-700 active:scale-98 shadow-amber-600/25'
               : 'bg-slate-300 cursor-not-allowed text-slate-500'
           }`}
         >

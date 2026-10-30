@@ -438,12 +438,12 @@ export default function StaffAttendance({
               <img 
                 src={currentAvatar} 
                 alt={displayName} 
-                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-red-100 shadow-xs bg-slate-50"
+                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-amber-200 shadow-xs bg-slate-50"
               />
               <button
                 type="button"
                 onClick={() => setShowAvatarModal(true)}
-                className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-xs transition-transform hover:scale-110 cursor-pointer"
+                className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition-transform hover:scale-110 cursor-pointer"
                 title="Thay đổi ảnh đại diện cá nhân của bạn"
               >
                 <Camera className="w-3 h-3" />
@@ -455,7 +455,7 @@ export default function StaffAttendance({
                 <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                   {displayName}
                 </h2>
-                <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[11px] font-black font-mono">
+                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black font-mono">
                   TK: {employee.username || employee.code}
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold">
@@ -483,7 +483,7 @@ export default function StaffAttendance({
                 className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 border border-slate-200 transition-all cursor-pointer"
                 title="Xem mã VietQR tài khoản ngân hàng của bạn"
               >
-                <QrCode className="w-3.5 h-3.5 text-red-600" />
+                <QrCode className="w-3.5 h-3.5 text-amber-600" />
                 <span className="hidden sm:inline">{employee.bankCode || 'VietQR'}:</span>
                 <span className="font-mono">{employee.bankAccount}</span>
               </button>
@@ -504,9 +504,9 @@ export default function StaffAttendance({
 
             <button
               onClick={onLogout}
-              className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all border border-red-200 cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all border border-amber-200 cursor-pointer flex items-center gap-1.5"
             >
-              <LogOut className="w-3.5 h-3.5 text-red-500" />
+              <LogOut className="w-3.5 h-3.5 text-amber-600" />
               <span>Đăng Xuất</span>
             </button>
           </div>
@@ -539,7 +539,7 @@ export default function StaffAttendance({
       <div className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 mb-3 no-print">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
               <Clock className="w-4 h-4 stroke-[2.5]" />
             </span>
             <div>
@@ -559,8 +559,8 @@ export default function StaffAttendance({
               onClick={() => selectQuickShift('SANG')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 entryShiftName === 'Ca Sáng'
-                  ? 'bg-red-600 text-white shadow-xs'
-                  : 'bg-slate-50 text-slate-700 hover:bg-red-50 border border-slate-200'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'bg-slate-50 text-slate-700 hover:bg-amber-50 border border-slate-200'
               }`}
             >
               <span>🌅 Ca Sáng (08:00 - 17:00 • 9h)</span>
@@ -570,7 +570,7 @@ export default function StaffAttendance({
               onClick={() => selectQuickShift('CHIEU')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 entryShiftName === 'Ca Chiều'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-amber-700 text-white shadow-xs'
                   : 'bg-slate-50 text-slate-700 hover:bg-amber-50 border border-slate-200'
               }`}
             >
@@ -595,7 +595,7 @@ export default function StaffAttendance({
                   required
                   value={entryDate}
                   onChange={(e) => setEntryDate(e.target.value)}
-                  className="w-full pl-8 pr-2 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                  className="w-full pl-8 pr-2 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
             </div>
@@ -606,7 +606,7 @@ export default function StaffAttendance({
                 <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider">
                   2. Giờ Đến (Vào):
                 </label>
-                <span className="text-[10px] font-extrabold text-red-600 font-mono">
+                <span className="text-[10px] font-extrabold text-amber-700 font-mono">
                   {entryStart}
                 </span>
               </div>
@@ -617,7 +617,7 @@ export default function StaffAttendance({
                     const m = entryStart.split(':')[1] || '00';
                     setEntryStart(`${e.target.value}:${m}`);
                   }}
-                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 font-mono text-center cursor-pointer"
                 >
                   {HOURS_24.map(h => (
                     <option key={h} value={h}>{h}h</option>
@@ -630,7 +630,7 @@ export default function StaffAttendance({
                     const h = entryStart.split(':')[0] || '08';
                     setEntryStart(`${h}:${e.target.value}`);
                   }}
-                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 font-mono text-center cursor-pointer"
                 >
                   {MINUTES_LIST.map(m => (
                     <option key={m} value={m}>{m}p</option>
@@ -645,7 +645,7 @@ export default function StaffAttendance({
                 <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider">
                   3. Ra Về (Ra):
                 </label>
-                <span className="text-[10px] font-extrabold text-red-600 font-mono">
+                <span className="text-[10px] font-extrabold text-amber-700 font-mono">
                   {entryEnd}
                 </span>
               </div>
@@ -656,7 +656,7 @@ export default function StaffAttendance({
                     const m = entryEnd.split(':')[1] || '00';
                     setEntryEnd(`${e.target.value}:${m}`);
                   }}
-                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 font-mono text-center cursor-pointer"
                 >
                   {HOURS_24.map(h => (
                     <option key={h} value={h}>{h}h</option>
@@ -669,7 +669,7 @@ export default function StaffAttendance({
                     const h = entryEnd.split(':')[0] || '17';
                     setEntryEnd(`${h}:${e.target.value}`);
                   }}
-                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-red-500 font-mono text-center cursor-pointer"
+                  className="w-1/2 px-1 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 font-mono text-center cursor-pointer"
                 >
                   {MINUTES_LIST.map(m => (
                     <option key={m} value={m}>{m}p</option>
@@ -690,9 +690,9 @@ export default function StaffAttendance({
                   required
                   value={entryHours}
                   onChange={(e) => setEntryHours(e.target.value)}
-                  className="w-full px-2 py-2 rounded-xl bg-red-50 border border-red-200 font-extrabold text-red-700 text-sm focus:ring-2 focus:ring-red-500 focus:outline-hidden font-mono text-center"
+                  className="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-200 font-extrabold text-amber-800 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-mono text-center"
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-red-600">
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-700">
                   tiếng
                 </span>
               </div>
@@ -709,14 +709,14 @@ export default function StaffAttendance({
                   placeholder="Ví dụ: Phụ dọn kho, đổi ca..."
                   value={entryNote}
                   onChange={(e) => setEntryNote(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-red-600/20 transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px]"
+                className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px]"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Xác Nhận Giờ Làm</span>
@@ -731,7 +731,7 @@ export default function StaffAttendance({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3 no-print">
         
         {/* CỘT TRÁI: ỨNG TIỀN LƯƠNG TRƯỚC */}
-        <div className="bg-gradient-to-br from-amber-500/10 via-white to-red-500/10 rounded-2xl p-4 shadow-xs border border-amber-200/80 flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-amber-500/10 via-white to-amber-500/10 rounded-2xl p-4 shadow-xs border border-amber-200/80 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-200/60 gap-2">
               <div className="flex items-center gap-2">
@@ -779,16 +779,16 @@ export default function StaffAttendance({
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-2.5 border border-red-200 shadow-2xs flex items-center justify-between">
+              <div className="bg-white rounded-xl p-2.5 border border-amber-200 shadow-2xs flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-red-800 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
                     Tổng Tiền Đã Ứng
                   </span>
-                  <div className="text-xl font-black text-red-700 font-mono mt-0.5">
+                  <div className="text-xl font-black text-amber-700 font-mono mt-0.5">
                     {Number(summaryData?.advanceTotal || 0).toLocaleString('vi-VN')} <span className="text-xs font-bold">đ</span>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
                   <DollarSign className="w-4 h-4 stroke-[2.5]" />
                 </div>
               </div>
@@ -818,7 +818,7 @@ export default function StaffAttendance({
                         <td className="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">
                           {formatDateVN(adv.date)}
                         </td>
-                        <td className="py-2 px-3 font-mono font-black text-red-600 text-right whitespace-nowrap">
+                        <td className="py-2 px-3 font-mono font-black text-amber-700 text-right whitespace-nowrap">
                           {Number(adv.amount).toLocaleString('vi-VN')} đ
                         </td>
                         <td className="py-2 px-3 text-slate-600 truncate max-w-28">
@@ -949,7 +949,7 @@ export default function StaffAttendance({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 mb-3 border-b border-slate-100 gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
                 <Award className="w-4 h-4" />
               </span>
               <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
@@ -966,7 +966,7 @@ export default function StaffAttendance({
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500 cursor-pointer transition-colors"
+                className="appearance-none pl-3 pr-8 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 cursor-pointer transition-colors"
               >
                 <option value="2026-11">Tháng 11/2026 (Bắt đầu sử dụng)</option>
                 <option value="2026-12">Tháng 12/2026</option>
@@ -993,18 +993,18 @@ export default function StaffAttendance({
         <div className="grid grid-cols-3 gap-3 mb-4">
           
           {/* Card 1: Tổng Số Giờ Làm Việc */}
-          <div className="bg-red-50/70 rounded-2xl p-3 sm:p-4 border border-red-200 flex flex-col justify-between shadow-2xs">
+          <div className="bg-amber-50/80 rounded-2xl p-3 sm:p-4 border border-amber-200 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] sm:text-xs font-black text-red-800 uppercase tracking-wider">Tổng Giờ Làm</span>
-              <div className="w-7 h-7 rounded-lg bg-red-100 text-red-700 flex items-center justify-center">
+              <span className="text-[10px] sm:text-xs font-black text-amber-900 uppercase tracking-wider">Tổng Giờ Làm</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
                 <Clock className="w-3.5 h-3.5" />
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-red-700 font-mono">
+              <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono">
                 {summaryData?.totalHours ?? 0} <span className="text-xs sm:text-sm font-bold">giờ</span>
               </div>
-              <p className="text-[10px] text-red-700/80 font-semibold mt-0.5">
+              <p className="text-[10px] text-amber-700/80 font-semibold mt-0.5">
                 Tích lũy trong {formatMonthVN(selectedMonth)}
               </p>
             </div>
@@ -1089,7 +1089,7 @@ export default function StaffAttendance({
                         {formatShortTime(rec.checkOut)}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-lg bg-red-100/70 text-red-700 font-bold font-mono">
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 font-bold font-mono">
                           {rec.totalHours} giờ
                         </span>
                       </td>
@@ -1137,7 +1137,7 @@ export default function StaffAttendance({
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                   <Camera className="w-4 h-4" />
                 </div>
                 <h3 className="text-lg font-black text-slate-900">Cá Nhân Hóa Avatar Của Bạn</h3>
@@ -1180,7 +1180,7 @@ export default function StaffAttendance({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarLoading}
-                className="w-full py-3 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-red-600/20 transition-all cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
                 <span>{avatarLoading ? "Đang xử lý ảnh..." : "Tải Ảnh Từ Thiết Bị Của Bạn"}</span>
@@ -1196,7 +1196,7 @@ export default function StaffAttendance({
                   type="button"
                   onClick={() => saveAvatar('/avatar-female.svg')}
                   disabled={avatarLoading}
-                  className="p-3 rounded-2xl border border-slate-200 hover:border-red-400 bg-slate-50 hover:bg-red-50/50 flex flex-col items-center gap-2 transition-all cursor-pointer"
+                  className="p-3 rounded-2xl border border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/50 flex flex-col items-center gap-2 transition-all cursor-pointer"
                 >
                   <img src="/avatar-female.svg" alt="Nữ" className="w-12 h-12 rounded-2xl" />
                   <span className="text-xs font-bold text-slate-700">Avatar Nữ</span>
@@ -1427,7 +1427,7 @@ export default function StaffAttendance({
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <h3 className="text-lg font-black text-slate-900">Đổi Mật Khẩu Cá Nhân</h3>
@@ -1469,7 +1469,7 @@ export default function StaffAttendance({
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
                   placeholder="Nhập mật khẩu hiện tại..."
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   (Nếu là tài khoản mới khởi tạo, mật khẩu ban đầu là 1234)
@@ -1486,7 +1486,7 @@ export default function StaffAttendance({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Nhập mật khẩu mới..."
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
@@ -1500,7 +1500,7 @@ export default function StaffAttendance({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Xác nhận mật khẩu mới..."
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
@@ -1515,7 +1515,7 @@ export default function StaffAttendance({
                 <button
                   type="submit"
                   disabled={pwdLoading}
-                  className="px-5 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                 >
                   {pwdLoading ? "Đang lưu..." : "Xác Nhận Đổi Mật Khẩu"}
                 </button>
@@ -1531,7 +1531,7 @@ export default function StaffAttendance({
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                   <QrCode className="w-4 h-4" />
                 </div>
                 <h3 className="text-base font-black text-slate-900">Mã VietQR Nhận Lương</h3>
@@ -1544,7 +1544,7 @@ export default function StaffAttendance({
               </button>
             </div>
 
-            <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 mb-4 inline-block">
+            <div className="p-3 bg-amber-50/60 rounded-2xl border border-amber-200 mb-4 inline-block">
               <img
                 src={getVietQRUrl({
                   bankCode: employee.bankCode,
@@ -1559,7 +1559,7 @@ export default function StaffAttendance({
             <div className="text-xs space-y-1 text-slate-700">
               <p className="font-extrabold text-slate-900 text-sm">{employee.name}</p>
               <p>Ngân hàng: <strong>{employee.bankName || employee.bankCode}</strong></p>
-              <p className="font-mono text-base font-extrabold text-red-600">{employee.bankAccount}</p>
+              <p className="font-mono text-base font-extrabold text-amber-700">{employee.bankAccount}</p>
               <p className="uppercase text-[11px] font-bold text-slate-500">{employee.accountName || employee.name}</p>
             </div>
 

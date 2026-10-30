@@ -69,8 +69,8 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="w-16 h-16 rounded-3xl bg-red-100 flex items-center justify-center mb-4">
-          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center mb-4">
+          <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
         <h3 className="text-lg font-black text-slate-800">Đang khởi tạo hệ thống Kyodo Food...</h3>
         <p className="text-xs text-slate-500 mt-1">Cơ sở Trưng Nữ Vương</p>
@@ -79,7 +79,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-red-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-amber-500 selection:text-white">
       {/* Universal Top Header */}
       <Header
         currentUser={currentUser}
