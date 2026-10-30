@@ -1,9 +1,27 @@
 // server/db.js
 const fs = require('fs');
 const path = require('path');
+const { MongoClient } = require('mongodb');
 const { generateSeedData } = require('./seedData');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
+let mongoClient = null;
+let mongoDb = null;
+let isMongo = false;
+
+// Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Render/Railway)
+if (process.env.MONGODB_URI) {
+  MongoClient.connect(process.env.MONGODB_URI)
+    .then(client => {
+      mongoClient = client;
+      mongoDb = client.db('kyodo_food');
+      isMongo = true;
+      console.log('✅ Đã kết nối Cơ sở dữ liệu Cloud MongoDB Atlas thành công!');
+    })
+    .catch(err => {
+      console.warn('⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:', err.message);
+    });
+}
 
 function ensureDbFile() {
   const dir = path.dirname(DB_PATH);
@@ -32,6 +50,15 @@ function saveDatabase(data) {
   const tmpPath = `${DB_PATH}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
   fs.renameSync(tmpPath, DB_PATH);
+
+  // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud
+  if (isMongo && mongoDb) {
+    mongoDb.collection('app_state').updateOne(
+      { _id: 'master_db' },
+      { $set: { data: data, updatedAt: new Date() } },
+      { upsert: true }
+    ).catch(err => console.error('Lỗi sync MongoDB:', err.message));
+  }
 }
 
 // ---------------- EMPLOYEES ----------------
