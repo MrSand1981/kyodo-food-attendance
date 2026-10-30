@@ -71,20 +71,25 @@ function getEmployees(includeConfidential = false) {
   if (includeConfidential) {
     return list.map(e => ({
       ...e,
+      fullName: e.fullName || e.name || '',
+      shortName: e.shortName || e.name || '',
+      name: e.shortName || e.name || '',
       password: e.password || '1234',
       passwordChanged: e.passwordChanged === true,
       isDefaultPassword: (e.password === '1234' || !e.password) && e.passwordChanged !== true,
       bankCode: e.bankCode || '',
       bankName: e.bankName || '',
       bankAccount: e.bankAccount || '',
-      accountName: e.accountName || e.name.toUpperCase()
+      accountName: e.accountName || (e.fullName || e.name || '').toUpperCase()
     }));
   }
   return list.map(e => ({
     id: e.id,
     username: e.username,
     code: e.code,
-    name: e.name,
+    fullName: e.fullName || e.name || '',
+    shortName: e.shortName || e.name || '',
+    name: e.shortName || e.name || '',
     gender: e.gender || "Nam",
     dob: e.dob || "",
     phone: e.phone || "",
@@ -95,7 +100,7 @@ function getEmployees(includeConfidential = false) {
     bankCode: e.bankCode || "",
     bankName: e.bankName || "",
     bankAccount: e.bankAccount || "",
-    accountName: e.accountName || e.name.toUpperCase(),
+    accountName: e.accountName || (e.fullName || e.name || '').toUpperCase(),
     avatar: e.avatar || (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
     active: e.active,
     passwordChanged: e.passwordChanged === true,
@@ -115,7 +120,9 @@ function getEmployeeByIdOrUsername(idOrUsername) {
 
 function addEmployee(employeeData) {
   const db = ensureDbFile();
-  const rawUsername = (employeeData.username || employeeData.code || `NV${db.employees.length + 1}`).trim().toUpperCase();
+  const shortName = (employeeData.shortName || employeeData.name || '').trim();
+  const fullName = (employeeData.fullName || employeeData.name || shortName).trim();
+  const rawUsername = (employeeData.username || employeeData.code || `NV${db.employees.length + 1}TNV`).trim().toUpperCase();
   
   // Kiểm tra trùng username
   const exists = db.employees.find(e => e.username && e.username.toUpperCase() === rawUsername && e.active !== false);
@@ -131,7 +138,9 @@ function addEmployee(employeeData) {
     id: newId,
     username: rawUsername,
     code: rawUsername,
-    name: employeeData.name.trim(),
+    fullName: fullName,
+    shortName: shortName || fullName,
+    name: shortName || fullName,
     gender: gender,
     dob: employeeData.dob || "",
     cccd: employeeData.cccd || "",
@@ -140,7 +149,7 @@ function addEmployee(employeeData) {
     bankCode: employeeData.bankCode || "",
     bankName: employeeData.bankName || "",
     bankAccount: employeeData.bankAccount || "",
-    accountName: employeeData.accountName || employeeData.name.trim().toUpperCase(),
+    accountName: employeeData.accountName || fullName.toUpperCase(),
     branch: "Trưng Nữ Vương",
     role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
@@ -169,9 +178,16 @@ function updateEmployee(id, updateData) {
   const idx = db.employees.findIndex(e => e.id === id);
   if (idx === -1) return null;
 
+  const current = db.employees[idx];
+  const shortName = (updateData.shortName !== undefined ? updateData.shortName : (updateData.name || current.shortName || current.name || '')).trim();
+  const fullName = (updateData.fullName !== undefined ? updateData.fullName : (current.fullName || current.name || shortName)).trim();
+
   db.employees[idx] = {
-    ...db.employees[idx],
+    ...current,
     ...updateData,
+    fullName: fullName,
+    shortName: shortName || fullName,
+    name: shortName || fullName,
     branch: "Trưng Nữ Vương", // Cố định cơ sở Trưng Nữ Vương
     id
   };
@@ -180,12 +196,16 @@ function updateEmployee(id, updateData) {
   return db.employees[idx];
 }
 
-function deleteEmployee(id) {
+function deleteEmployee(id, hard = false) {
   const db = ensureDbFile();
   const idx = db.employees.findIndex(e => e.id === id);
   if (idx === -1) return false;
 
-  db.employees[idx].active = false;
+  if (hard) {
+    db.employees.splice(idx, 1);
+  } else {
+    db.employees[idx].active = false;
+  }
   saveDatabase(db);
   return true;
 }
@@ -234,7 +254,9 @@ function authenticateUser(username, password) {
     id: emp.id,
     username: emp.username,
     code: emp.code,
-    name: emp.name,
+    fullName: emp.fullName || emp.name || '',
+    shortName: emp.shortName || emp.name || '',
+    name: emp.shortName || emp.name || '',
     gender: emp.gender || "Nam",
     dob: emp.dob || "",
     cccd: emp.cccd || "",
@@ -245,7 +267,7 @@ function authenticateUser(username, password) {
     bankCode: emp.bankCode || "",
     bankName: emp.bankName || "",
     bankAccount: emp.bankAccount || "",
-    accountName: emp.accountName || emp.name.toUpperCase(),
+    accountName: emp.accountName || (emp.fullName || emp.name || '').toUpperCase(),
     avatar: emp.avatar || defaultAvatar,
     passwordChanged: emp.passwordChanged === true,
     isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
@@ -475,7 +497,8 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
     id: `adv-${Date.now()}`,
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
-    employeeName: emp.name,
+    employeeName: emp.shortName || emp.name,
+    employeeShortName: emp.shortName || emp.name,
     branch: "Trưng Nữ Vương",
     date: advDate,
     amount: numAmount,
@@ -540,6 +563,25 @@ function deleteSalaryAdvance(id) {
   return true;
 }
 
+function updateSalaryAdvance(id, { amount, date, reason }) {
+  const db = ensureDbFile();
+  if (!db.salaryAdvances) return null;
+  const idx = db.salaryAdvances.findIndex(a => a.id === id);
+  if (idx === -1) return null;
+
+  if (amount !== undefined && !isNaN(Number(amount))) {
+    db.salaryAdvances[idx].amount = Math.round(Number(amount));
+  }
+  if (date !== undefined && date) {
+    db.salaryAdvances[idx].date = date;
+  }
+  if (reason !== undefined) {
+    db.salaryAdvances[idx].reason = String(reason).trim();
+  }
+  saveDatabase(db);
+  return db.salaryAdvances[idx];
+}
+
 // ---------------- XIN NGÀY NGHỈ (LEAVE REQUESTS) ----------------
 function requestLeave({ employeeId, date, endDate, shift, reason }) {
   const db = ensureDbFile();
@@ -552,7 +594,8 @@ function requestLeave({ employeeId, date, endDate, shift, reason }) {
     id: `leave-${Date.now()}`,
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
-    employeeName: emp.name,
+    employeeName: emp.shortName || emp.name,
+    employeeShortName: emp.shortName || emp.name,
     branch: "Trưng Nữ Vương",
     date: date,
     endDate: endDate || date,
@@ -883,6 +926,7 @@ module.exports = {
   updateEmployeeAvatar,
   requestSalaryAdvance,
   getSalaryAdvances,
+  updateSalaryAdvance,
   deleteSalaryAdvance,
   requestLeave,
   getLeaveRequests,

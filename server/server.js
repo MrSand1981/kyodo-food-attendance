@@ -227,6 +227,17 @@ app.post('/api/advances', (req, res) => {
   }
 });
 
+app.put('/api/advances/:id', (req, res) => {
+  try {
+    const { amount, date, reason } = req.body;
+    const updated = db.updateSalaryAdvance(req.params.id, { amount, date, reason });
+    if (!updated) return res.status(404).json({ success: false, message: 'Không tìm thấy khoản tạm ứng' });
+    res.json({ success: true, record: updated, message: 'Đã cập nhật khoản tạm ứng lương thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.delete('/api/advances/:id', (req, res) => {
   try {
     const ok = db.deleteSalaryAdvance(req.params.id);

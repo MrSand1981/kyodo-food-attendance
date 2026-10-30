@@ -25,9 +25,9 @@ If Not fso.FileExists(chromePath) Then
 End If
 
 If fso.FileExists(edgePath) Then
-    WshShell.Run Chr(34) & edgePath & Chr(34) & " --app=" & appUrl, 1, False
+    WshShell.Run Chr(34) & edgePath & Chr(34) & " --app=" & appUrl & " --start-maximized", 1, False
 ElseIf fso.FileExists(chromePath) Then
-    WshShell.Run Chr(34) & chromePath & Chr(34) & " --app=" & appUrl, 1, False
+    WshShell.Run Chr(34) & chromePath & Chr(34) & " --app=" & appUrl & " --start-maximized", 1, False
 Else
     WshShell.Run appUrl, 1, False
 End If

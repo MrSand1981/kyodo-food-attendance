@@ -75,6 +75,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ employeeId, date, amount, reason })
   }),
+  updateSalaryAdvance: (id, { amount, date, reason }) => request(`/advances/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ amount, date, reason })
+  }),
   deleteSalaryAdvance: (id) => request(`/advances/${id}`, { method: 'DELETE' }),
 
   // Xin ngày nghỉ (Leave Requests)
