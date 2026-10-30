@@ -70,5 +70,22 @@
     "adminPassword": "20162020",
     "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance"
   },
-  "attendance": []
+  "attendance": [
+    {
+      "id": "att-1793335752223",
+      "employeeId": "emp-ut",
+      "employeeCode": "UTNVTNV",
+      "employeeName": "Út",
+      "branch": "Trưng Nữ Vương",
+      "date": "2026-10-30",
+      "checkIn": "2026-10-30T04:49:12.223Z",
+      "checkOut": null,
+      "totalHours": 0,
+      "shiftCode": "CA1",
+      "shiftName": "Ca Sáng",
+      "status": "working",
+      "note": "Vào ca trực tiếp",
+      "photo": null
+    }
+  ]
 }
