@@ -15,7 +15,7 @@
       "hourlyRate": 25000,
       "password": "1234",
       "passwordChanged": false,
-      "active": true,
+      "active": false,
       "avatar": "/avatar-female.svg"
     },
     {
