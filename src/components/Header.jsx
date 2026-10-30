@@ -184,17 +184,11 @@ export default function Header({
                     Nhân viên • Trưng Nữ Vương
                   </div>
                 </div>
-                {currentUser.avatar ? (
-                  <img 
-                    src={currentUser.avatar} 
-                    alt={currentUser.shortName || currentUser.name} 
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500 shrink-0" 
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold flex items-center justify-center shrink-0 text-xs">
-                    {(currentUser.shortName || currentUser.name).charAt(0)}
-                  </div>
-                )}
+                <img 
+                  src={currentUser.avatar || (currentUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')} 
+                  alt={currentUser.shortName || currentUser.name} 
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500 shrink-0 bg-slate-50" 
+                />
                 <button
                   onClick={onLogout}
                   className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-slate-200 cursor-pointer"

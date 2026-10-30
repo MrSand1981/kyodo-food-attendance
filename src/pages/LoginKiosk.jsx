@@ -219,6 +219,7 @@ export default function LoginKiosk({
             {employees.map(emp => {
               const displayName = emp.shortName || emp.name;
               const isSelected = username.toUpperCase() === (emp.username || emp.code).toUpperCase();
+              const avatarSrc = emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
               return (
                 <div
                   key={emp.id}
@@ -229,13 +230,7 @@ export default function LoginKiosk({
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
-                  {emp.avatar ? (
-                    <img src={emp.avatar} alt={displayName} className="w-11 h-11 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0" />
-                  ) : (
-                    <div className="w-11 h-11 rounded-xl bg-red-100 text-red-700 font-extrabold text-lg flex items-center justify-center shrink-0">
-                      {displayName.charAt(0)}
-                    </div>
-                  )}
+                  <img src={avatarSrc} alt={displayName} className="w-11 h-11 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-extrabold text-slate-900 truncate">

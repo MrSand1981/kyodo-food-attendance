@@ -40,6 +40,21 @@ function ensureDbFile() {
     const parsed = JSON.parse(content);
     if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
     if (!parsed.leaveRequests) parsed.leaveRequests = [];
+
+    // Tự động chuyển avatar mặc định về hình hiển thị Nam/Nữ (không dùng ảnh cá nhân cũ)
+    let dbUpdated = false;
+    if (parsed.employees && Array.isArray(parsed.employees)) {
+      parsed.employees.forEach(e => {
+        if (!e.avatar || e.avatar.includes('images.unsplash.com') || e.avatar.startsWith('http')) {
+          e.avatar = (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
+          dbUpdated = true;
+        }
+      });
+    }
+    if (dbUpdated) {
+      saveDatabase(parsed);
+    }
+
     return parsed;
   } catch (err) {
     console.error("Lỗi đọc database.json, tạo lại dữ liệu mẫu:", err);
