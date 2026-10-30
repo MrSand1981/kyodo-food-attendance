@@ -8,6 +8,20 @@ const DB_FILE = path.join(APP_DIR, 'data', 'database.json');
 const BACKUP_DIR = path.join(APP_DIR, 'data', 'backups');
 const VERSION_FILE = path.join(APP_DIR, 'package.json');
 
+function isNewerVersion(remoteVer, currentVer) {
+  if (!remoteVer || !currentVer) return false;
+  const parse = v => String(v).split('.').map(n => parseInt(n, 10) || 0);
+  const r = parse(remoteVer);
+  const c = parse(currentVer);
+  for (let i = 0; i < Math.max(r.length, c.length); i++) {
+    const rNum = r[i] || 0;
+    const cNum = c[i] || 0;
+    if (rNum > cNum) return true;
+    if (rNum < cNum) return false;
+  }
+  return false;
+}
+
 function getCurrentVersion() {
   try {
     const pkg = JSON.parse(fs.readFileSync(VERSION_FILE, 'utf-8'));
@@ -93,7 +107,8 @@ async function checkUpdate(githubRepoInput) {
       throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
     }
 
-    const hasUpdate = remoteVer !== currentVersion;
+    const hasUpdate = isNewerVersion(remoteVer, currentVersion);
+    const displayLatest = hasUpdate ? remoteVer : currentVersion;
 
     return {
       configured: true,
@@ -101,10 +116,10 @@ async function checkUpdate(githubRepoInput) {
       branch: branch,
       hasUpdate,
       currentVersion,
-      latestVersion: remoteVer,
+      latestVersion: displayLatest,
       message: hasUpdate 
         ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` 
-        : 'Phần mềm đang ở phiên bản mới nhất.'
+        : `Phần mềm đang ở phiên bản mới nhất (v${currentVersion}).`
     };
   } catch (err) {
     return {
