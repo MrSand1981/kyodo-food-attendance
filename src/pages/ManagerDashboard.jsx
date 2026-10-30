@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
+import { formatDateVN, formatMonthVN } from '../utils/date';
 
 export default function ManagerDashboard({ settings, onSettingsChange, shifts }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
@@ -45,9 +46,19 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const [mgrAdvReason, setMgrAdvReason] = useState('Chủ cửa hàng tạm ứng lương');
   const [mgrAdvLoading, setMgrAdvLoading] = useState(false);
 
+  // Modal Chỉnh Sửa Tạm Ứng (Dành riêng cho Quản Lý: xóa hoặc chỉnh sửa số tiền ứng)
+  const [showEditAdvanceModal, setShowEditAdvanceModal] = useState(false);
+  const [editingAdvance, setEditingAdvance] = useState(null);
+  const [editAdvDate, setEditAdvDate] = useState('');
+  const [editAdvAmount, setEditAdvAmount] = useState('');
+  const [editAdvReason, setEditAdvReason] = useState('');
+  const [editAdvLoading, setEditAdvLoading] = useState(false);
+
   // Form states for new/edit employee with full HR info & Bank account
   const [empForm, setEmpForm] = useState({
     username: '',
+    fullName: '',
+    shortName: '',
     name: '',
     gender: 'Nữ',
     dob: '',
@@ -124,22 +135,33 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
     loadAdvancesAndLeaves();
   }, [selectedMonth]);
 
-  // Xử lý tạo/sửa tài khoản nhân viên (ĐẦY ĐỦ THÔNG TIN: Ngày sinh, CCCD, Điện thoại, Địa chỉ, Giới tính)
+  // Xử lý tạo/sửa tài khoản nhân viên (Họ và tên đầy đủ, Biệt danh ngắn, CCCD, Điện thoại, Địa chỉ, Giới tính, VietQR)
   const handleSaveEmployee = async (e) => {
     e.preventDefault();
-    if (!empForm.username.trim() || !empForm.name.trim()) {
-      setError('Vui lòng điền đầy đủ Tên tài khoản và Họ tên nhân viên!');
+    const shortName = (empForm.shortName || empForm.name || '').trim();
+    const fullName = (empForm.fullName || empForm.name || shortName).trim();
+
+    if (!empForm.username.trim() || !shortName) {
+      setError('Vui lòng điền Tên đăng nhập và Biệt danh (Tên ngắn) của nhân viên!');
       return;
     }
+
+    const payload = {
+      ...empForm,
+      fullName,
+      shortName,
+      name: shortName,
+      accountName: empForm.accountName?.trim() || fullName.toUpperCase()
+    };
 
     try {
       setLoading(true);
       if (editingEmployee) {
-        await api.updateEmployee(editingEmployee.id, empForm);
+        await api.updateEmployee(editingEmployee.id, payload);
         setMessage(`Đã cập nhật thông tin tài khoản "${empForm.username}" thành công!`);
       } else {
-        await api.addEmployee(empForm);
-        setMessage(`🎉 Đã tạo thành công tài khoản mới: "${empForm.username.toUpperCase()}" cho nhân viên ${empForm.name}!`);
+        await api.addEmployee(payload);
+        setMessage(`🎉 Đã tạo thành công tài khoản mới: "${empForm.username.toUpperCase()}" cho nhân viên ${shortName}!`);
       }
       setShowAddEmployeeModal(false);
       setEditingEmployee(null);
@@ -175,6 +197,42 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       await loadReport();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  // Mở modal sửa khoản tạm ứng
+  const openEditAdvanceModal = (adv, emp = null) => {
+    setEditingAdvance(adv);
+    setEditAdvDate(adv.date || '');
+    setEditAdvAmount(String(adv.amount || ''));
+    setEditAdvReason(adv.reason || '');
+    setShowEditAdvanceModal(true);
+  };
+
+  // Lưu chỉnh sửa khoản tạm ứng
+  const handleSaveEditAdvance = async (e) => {
+    e.preventDefault();
+    if (!editingAdvance) return;
+    const num = Number(editAdvAmount);
+    if (isNaN(num) || num <= 0) {
+      alert("Vui lòng nhập số tiền tạm ứng hợp lệ lớn hơn 0!");
+      return;
+    }
+    try {
+      setEditAdvLoading(true);
+      await api.updateSalaryAdvance(editingAdvance.id, {
+        amount: num,
+        date: editAdvDate,
+        reason: editAdvReason.trim()
+      });
+      setMessage("🎉 Đã cập nhật khoản tạm ứng lương thành công!");
+      setShowEditAdvanceModal(false);
+      setEditingAdvance(null);
+      await Promise.all([loadAdvancesAndLeaves(), loadReport()]);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi cập nhật khoản tạm ứng');
+    } finally {
+      setEditAdvLoading(false);
     }
   };
 
@@ -336,7 +394,9 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
     setEditingEmployee(emp);
     setEmpForm({
       username: emp.username || emp.code,
-      name: emp.name,
+      fullName: emp.fullName || emp.name,
+      shortName: emp.shortName || emp.name,
+      name: emp.shortName || emp.name,
       gender: emp.gender || 'Nữ',
       dob: emp.dob || '',
       cccd: emp.cccd || '',
@@ -345,7 +405,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       bankCode: emp.bankCode || 'VCB',
       bankName: emp.bankName || 'Vietcombank',
       bankAccount: emp.bankAccount || '',
-      accountName: emp.accountName || emp.name.toUpperCase(),
+      accountName: emp.accountName || (emp.fullName || emp.name).toUpperCase(),
       role: emp.role || 'Nhân viên',
       hourlyRate: emp.hourlyRate || 25000,
       password: emp.password || '1234'
@@ -354,14 +414,14 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-slate-200 gap-4 no-print">
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-3 mb-3 border-b border-slate-200 gap-3 no-print">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-xl bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-amber-600" />
+            <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
               Cổng Quản Trị Cửa Hàng
             </span>
             <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
@@ -369,46 +429,46 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               Cơ sở duy nhất: Trưng Nữ Vương
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
             Bảng Chấm Công & Quản Trị Nhân Sự
           </h2>
         </div>
 
         {/* Action Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
           <button
             onClick={() => setActiveTab('timesheet')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'timesheet' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Bảng Công & Lương</span>
           </button>
 
           <button
             onClick={() => setActiveTab('employees')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'employees' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-3.5 h-3.5" />
             <span>Hồ Sơ Nhân Sự ({employees.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('advances-leaves')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'advances-leaves' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <DollarSign className="w-4 h-4 text-amber-600" />
+            <DollarSign className="w-3.5 h-3.5 text-amber-600" />
             <span>Tạm Ứng & Báo Nghỉ ({allAdvances.length + allLeaves.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'settings' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -554,9 +614,9 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
                 const copyNotifyText = () => {
                   let advDetailsText = '- Không có tạm ứng trong chu kỳ này';
                   if (row.advances && row.advances.length > 0) {
-                    advDetailsText = row.advances.map((a, idx) => `  • Đợt ${row.advances.length - idx} (${a.date}): ${Number(a.amount).toLocaleString('vi-VN')} VNĐ (${a.reason || 'Ứng lương'})`).join('\n');
+                    advDetailsText = row.advances.map((a, idx) => `  • Đợt ${row.advances.length - idx} (${formatDateVN(a.date)}): ${Number(a.amount).toLocaleString('vi-VN')} VNĐ (${a.reason || 'Ứng lương'})`).join('\n');
                   }
-                  const text = `📢 Kyodo Food Trưng Nữ Vương thông báo kết quả công & lương tháng ${selectedMonth} cho nhân viên ${row.employee.name} (${row.employee.code || row.employee.username}):
+                  const text = `📢 Kyodo Food Trưng Nữ Vương thông báo kết quả công & lương ${formatMonthVN(selectedMonth)} cho nhân viên ${row.employee.shortName || row.employee.name} (${row.employee.code || row.employee.username}):
 - Ca Sáng (8h-17h • 9 tiếng): ${row.morningShifts || 0} ca
 - Ca Chiều (17h-22h • 5 tiếng): ${row.eveningShifts || 0} ca
 - Tổng số ca hoàn thành: ${row.totalShifts || 0} ca (${row.daysWorked || 0} ngày)
@@ -702,22 +762,30 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                 {row.advances.map((adv, idx) => (
                                   <div key={adv.id || idx} className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-amber-200/70 text-xs">
                                     <div className="flex items-center gap-2">
-                                      <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[10px] font-mono">
+                                      <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[10px] font-mono whitespace-nowrap">
                                         Đợt {row.advances.length - idx}
                                       </span>
-                                      <span className="font-bold text-slate-800">{adv.date}</span>
+                                      <span className="font-bold text-slate-800 whitespace-nowrap">{formatDateVN(adv.date)}</span>
                                       <span className="text-slate-500 text-[11px] italic truncate max-w-44">
                                         ({adv.reason || 'Ứng lương'})
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-mono font-black text-red-600">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono font-black text-red-600 whitespace-nowrap">
                                         -{Number(adv.amount).toLocaleString('vi-VN')} đ
                                       </span>
                                       <button
                                         type="button"
+                                        onClick={() => openEditAdvanceModal(adv, row.employee)}
+                                        className="text-slate-400 hover:text-amber-600 p-1 rounded-md hover:bg-amber-50 cursor-pointer transition-colors"
+                                        title="Chỉnh sửa số tiền hoặc ngày ứng"
+                                      >
+                                        <Edit className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        type="button"
                                         onClick={() => handleDeleteAdvanceByManager(adv.id, row.employee.name, adv.amount)}
-                                        className="text-slate-400 hover:text-red-600 p-0.5 cursor-pointer"
+                                        className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 cursor-pointer transition-colors"
                                         title="Xóa đợt ứng này"
                                       >
                                         <Trash2 className="w-3 h-3" />
@@ -941,6 +1009,8 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 setEditingEmployee(null);
                 setEmpForm({
                   username: `NV${employees.length + 1}TNV`,
+                  fullName: '',
+                  shortName: '',
                   name: '',
                   gender: 'Nữ',
                   dob: '',
@@ -973,19 +1043,22 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       <div className="flex items-center gap-3">
                         <img 
                           src={avatarSrc} 
-                          alt={emp.name} 
+                          alt={emp.shortName || emp.name} 
                           className="w-16 h-16 rounded-2xl object-cover ring-2 ring-slate-100 bg-slate-50" 
                         />
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-xs font-black font-mono">
                               TK: {emp.username || emp.code}
                             </span>
                             <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold">
                               {emp.gender || "Nam"}
                             </span>
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                              Biệt danh: {emp.shortName || emp.name}
+                            </span>
                           </div>
-                          <h4 className="text-lg font-bold text-slate-900 mt-1">{emp.name}</h4>
+                          <h4 className="text-lg font-black text-slate-900 mt-1">{emp.fullName || emp.name}</h4>
                           <p className="text-xs text-slate-500 font-medium">Trưng Nữ Vương • {emp.role}</p>
                         </div>
                       </div>
@@ -1010,7 +1083,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       </div>
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Ngày Sinh:</span>
-                        <span className="font-semibold text-slate-700">{emp.dob || "Chưa cập nhật"}</span>
+                        <span className="font-semibold text-slate-700">{formatDateVN(emp.dob) || "Chưa cập nhật"}</span>
                       </div>
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật Khẩu Đăng Nhập:</span>
@@ -1153,9 +1226,9 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     {allAdvances.map(adv => (
                       <tr key={adv.id} className="hover:bg-slate-50">
                         <td className="py-3 px-4 font-bold text-slate-900">
-                          {adv.employeeName} ({adv.employeeCode})
+                          {adv.employeeShortName || adv.employeeName} ({adv.employeeCode})
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{adv.date}</td>
+                        <td className="py-3 px-4 text-slate-600 font-semibold">{formatDateVN(adv.date)}</td>
                         <td className="py-3 px-4 font-mono font-black text-red-600 text-right text-sm">
                           {Number(adv.amount).toLocaleString('vi-VN')} đ
                         </td>
@@ -1166,13 +1239,22 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <button
-                            onClick={() => handleDeleteAdvanceByManager(adv.id, adv.employeeName, adv.amount)}
-                            className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                            title="Xóa khoản tạm ứng này"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => openEditAdvanceModal(adv)}
+                              className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                              title="Chỉnh sửa số tiền hoặc ngày ứng"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAdvanceByManager(adv.id, adv.employeeShortName || adv.employeeName, adv.amount)}
+                              className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                              title="Xóa khoản tạm ứng này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1210,9 +1292,9 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     {allLeaves.map(leave => (
                       <tr key={leave.id} className="hover:bg-slate-50">
                         <td className="py-3 px-4 font-bold text-slate-900">
-                          {leave.employeeName} ({leave.employeeCode})
+                          {leave.employeeShortName || leave.employeeName} ({leave.employeeCode})
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{leave.date}</td>
+                        <td className="py-3 px-4 text-slate-600 font-semibold">{formatDateVN(leave.date)}</td>
                         <td className="py-3 px-4">
                           <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">
                             {leave.shift}
@@ -1226,7 +1308,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         </td>
                         <td className="py-3 px-4 text-center">
                           <button
-                            onClick={() => handleDeleteLeaveByManager(leave.id, leave.employeeName, leave.date)}
+                            onClick={() => handleDeleteLeaveByManager(leave.id, leave.employeeShortName || leave.employeeName, leave.date)}
                             className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
                             title="Xóa thông báo nghỉ này"
                           >
@@ -1486,28 +1568,62 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Họ và Tên Nhân Viên:</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Họ và Tên Đầy Đủ:
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="Ví dụ: Nguyễn Văn A..."
-                    value={empForm.name}
-                    onChange={(e) => setEmpForm({ ...empForm, name: e.target.value })}
+                    placeholder="Ví dụ: Nguyễn Thị Út..."
+                    value={empForm.fullName || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEmpForm(prev => ({
+                        ...prev,
+                        fullName: val,
+                        name: prev.shortName || val
+                      }));
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tên Đăng Nhập / Mã TK:</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Biệt Danh / Tên Ngắn (Hiển thị trang NV & Bảng công):
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="Ví dụ: UTNVTNV..."
-                    value={empForm.username}
-                    onChange={(e) => setEmpForm({ ...empForm, username: e.target.value.toUpperCase() })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-black font-mono uppercase text-red-600"
+                    placeholder="Ví dụ: Út (hoặc Bảo, Mai...)"
+                    value={empForm.shortName || ''}
+                    onChange={(e) => {
+                      const sName = e.target.value;
+                      const genUser = !editingEmployee && sName.trim()
+                        ? sName.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/[^a-zA-Z0-9]/g, "").toUpperCase() + 'TNV'
+                        : empForm.username;
+                      setEmpForm(prev => ({
+                        ...prev,
+                        shortName: sName,
+                        name: sName,
+                        username: genUser
+                      }));
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200 font-bold text-amber-900"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tên Đăng Nhập / Mã TK:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: UTNVTNV..."
+                  value={empForm.username}
+                  onChange={(e) => setEmpForm({ ...empForm, username: e.target.value.toUpperCase() })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-black font-mono uppercase text-red-600"
+                />
               </div>
 
               {/* Giới tính & Ngày tháng năm sinh */}
@@ -1823,6 +1939,119 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
                 >
                   {mgrAdvLoading ? "Đang lưu..." : "Xác Nhận Tạm Ứng"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: CHỈNH SỬA KHOẢN TẠM ỨNG (DÀNH RIÊNG QUẢN LÝ) ================= */}
+      {showEditAdvanceModal && editingAdvance && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 border border-slate-100 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <Edit className="w-4 h-4 stroke-[2.5]" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Chỉnh Sửa Khoản Tạm Ứng</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditAdvanceModal(false);
+                  setEditingAdvance(null);
+                }}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4">
+              Nhân viên: <strong className="text-slate-900">{editingAdvance.employeeShortName || editingAdvance.employeeName}</strong> ({editingAdvance.employeeCode})
+            </p>
+
+            <form onSubmit={handleSaveEditAdvance} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  1. Ngày Tạm Ứng:
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={editAdvDate}
+                  onChange={(e) => setEditAdvDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  2. Số Tiền Tạm Ứng (VNĐ):
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="50000"
+                    min="50000"
+                    required
+                    placeholder="Ví dụ: 500000"
+                    value={editAdvAmount}
+                    onChange={(e) => setEditAdvAmount(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 font-black font-mono text-amber-900 text-base focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-bold text-amber-700 text-xs">
+                    VNĐ
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold self-center">Chọn nhanh:</span>
+                  {[200000, 500000, 1000000, 2000000].map(val => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setEditAdvAmount(String(val))}
+                      className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 font-bold font-mono text-[11px] border border-slate-200 cursor-pointer"
+                    >
+                      {val >= 1000000 ? `${val / 1000000} Triệu` : `${val / 1000}k`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  3. Lý Do / Ghi Chú:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Ứng tiền mặt chi tiêu..."
+                  value={editAdvReason}
+                  onChange={(e) => setEditAdvReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditAdvanceModal(false);
+                    setEditingAdvance(null);
+                  }}
+                  className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={editAdvLoading}
+                  className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+                >
+                  {editAdvLoading ? "Đang lưu..." : "Lưu Thay Đổi"}
                 </button>
               </div>
             </form>

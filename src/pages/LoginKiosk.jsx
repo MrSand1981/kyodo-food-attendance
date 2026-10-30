@@ -135,39 +135,39 @@ export default function LoginKiosk({
   const isDefaultPassword = selectedEmp ? selectedEmp.isDefaultPassword : true;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-4">
       
       {/* Hero Store Greeting */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-3 border border-red-200">
-          <MapPin className="w-4 h-4" />
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-2 border border-red-200">
+          <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
         </div>
 
         {isEmployeeOnly ? (
           <>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Hệ Thống <span className="text-red-600">Nhân Viên Chấm Công</span>
             </h2>
-            <p className="text-slate-600 mt-2 max-w-xl mx-auto text-sm sm:text-base">
+            <p className="text-slate-600 mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Mỗi nhân viên tự đăng nhập tài khoản riêng biệt để chấm công và theo dõi số giờ làm việc.
             </p>
           </>
         ) : isManagerOnly ? (
           <>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Cổng Quản Trị & <span className="text-amber-600">Bảng Tính Lương</span>
             </h2>
-            <p className="text-slate-600 mt-2 max-w-xl mx-auto text-sm sm:text-base">
+            <p className="text-slate-600 mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Dành riêng cho Chủ cửa hàng quản lý nhân sự, xem chi tiết bảng công và duyệt chi lương.
             </p>
           </>
         ) : (
           <>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Hệ Thống Chấm Công & <span className="text-red-600">Quản Lý Nhân Sự</span>
             </h2>
-            <p className="text-slate-600 mt-2 max-w-xl mx-auto text-sm sm:text-base">
+            <p className="text-slate-600 mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Đăng nhập tài khoản nhân viên để chấm công hoặc tài khoản Quản lý để xem bảng lương.
             </p>
           </>
@@ -176,13 +176,13 @@ export default function LoginKiosk({
 
       {/* THÔNG BÁO CẬP NHẬT PHIÊN BẢN MỚI (DÀNH CHO NHÂN VIÊN CHỦ ĐỘNG CẬP NHẬT) */}
       {updateStatus?.hasUpdate && (
-        <div className="mb-8 p-5 rounded-3xl bg-linear-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
-              <Sparkles className="w-6 h-6 text-amber-200" />
+        <div className="mb-4 p-4 rounded-3xl bg-linear-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+              <Sparkles className="w-5 h-5 text-amber-200" />
             </div>
             <div>
-              <div className="font-black text-sm sm:text-base flex items-center gap-2">
+              <div className="font-black text-sm flex items-center gap-2">
                 <span>Phần mềm đã có phiên bản mới (v{updateStatus.latestVersion})!</span>
                 <span className="px-2 py-0.5 rounded-full bg-white text-red-700 text-[10px] font-black uppercase tracking-wider">Mới</span>
               </div>
@@ -195,7 +195,7 @@ export default function LoginKiosk({
             type="button"
             onClick={handleApplyUpdate}
             disabled={updatingApp}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-white hover:bg-amber-50 active:scale-95 text-red-700 font-black text-xs sm:text-sm shadow-md transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-white hover:bg-amber-50 active:scale-95 text-red-700 font-black text-xs shadow-md transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
           >
             {updatingApp ? (
               <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -211,47 +211,44 @@ export default function LoginKiosk({
 
       {/* Quick Select Staff Cards (Chỉ hiện khi đăng nhập Nhân Viên) */}
       {activeTab === 'employee' && (
-        <div className="mb-8">
-          <div className="text-center text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+        <div className="mb-4">
+          <div className="text-center text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
             Chọn Tài Khoản Của Bạn (Mỗi Nhân Viên Tự Nhập Mật Khẩu)
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
             {employees.map(emp => {
+              const displayName = emp.shortName || emp.name;
               const isSelected = username.toUpperCase() === (emp.username || emp.code).toUpperCase();
               return (
                 <div
                   key={emp.id}
                   onClick={() => quickSelectEmployee(emp)}
-                  className={`p-4 rounded-3xl border-2 transition-all cursor-pointer flex items-center gap-4 ${
+                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 ${
                     isSelected 
-                      ? 'border-red-500 bg-red-50/70 shadow-md scale-102' 
+                      ? 'border-red-500 bg-red-50/70 shadow-sm scale-102' 
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
                   {emp.avatar ? (
-                    <img src={emp.avatar} alt={emp.name} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white shadow-xs" />
+                    <img src={emp.avatar} alt={displayName} className="w-11 h-11 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0" />
                   ) : (
-                    <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-700 font-extrabold text-2xl flex items-center justify-center">
-                      {emp.name.charAt(0)}
+                    <div className="w-11 h-11 rounded-xl bg-red-100 text-red-700 font-extrabold text-lg flex items-center justify-center shrink-0">
+                      {displayName.charAt(0)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-extrabold text-slate-900 truncate">
-                        {emp.name}
+                      <h3 className="text-sm font-extrabold text-slate-900 truncate">
+                        {displayName}
                       </h3>
                       {isSelected && (
-                        <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center">
-                          <Check className="w-3 h-3 stroke-[3]" />
+                        <span className="w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-red-600 font-bold font-mono">
-                      TK: {emp.username || emp.code}
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      <span>Cơ sở Trưng Nữ Vương</span>
+                    <div className="text-[11px] text-red-600 font-bold font-mono truncate">
+                      {emp.username || emp.code}
                     </div>
                   </div>
                 </div>
@@ -262,15 +259,15 @@ export default function LoginKiosk({
       )}
 
       {/* Main Login Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 max-w-md mx-auto">
+      <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200 max-w-md mx-auto">
         
         {/* Tab Switcher (Chỉ hiển thị khi ở chế độ tổng hợp 'all') */}
         {appMode === 'all' && (
-          <div className="flex rounded-2xl bg-slate-100 p-1 mb-6">
+          <div className="flex rounded-2xl bg-slate-100 p-1 mb-4">
             <button
               type="button"
               onClick={() => { setActiveTab('employee'); setError(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+              className={`flex-1 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === 'employee' 
                   ? 'bg-white text-red-600 shadow-xs' 
                   : 'text-slate-600 hover:text-slate-900'
@@ -282,7 +279,7 @@ export default function LoginKiosk({
             <button
               type="button"
               onClick={() => { setActiveTab('admin'); setError(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+              className={`flex-1 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === 'admin' 
                   ? 'bg-white text-amber-700 shadow-xs' 
                   : 'text-slate-600 hover:text-slate-900'
@@ -296,7 +293,7 @@ export default function LoginKiosk({
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <div className="mb-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -304,9 +301,9 @@ export default function LoginKiosk({
 
         {/* Form 1: Employee Login */}
         {activeTab === 'employee' && (
-          <form onSubmit={handleEmployeeLogin} className="space-y-4 text-xs">
+          <form onSubmit={handleEmployeeLogin} className="space-y-3.5 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider">
                 Tài Khoản Nhân Viên:
               </label>
               <div className="relative">
@@ -314,19 +311,16 @@ export default function LoginKiosk({
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: UTNVTNV hoặc BAONVTNV"
+                  placeholder="Chọn tài khoản ở trên hoặc nhập mã TK..."
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toUpperCase())}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-bold font-mono text-sm uppercase text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold font-mono text-sm uppercase text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Tài khoản: <strong>UTNVTNV</strong> (Út) hoặc <strong>BAONVTNV</strong> (Bảo)
-              </p>
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider">
                 Mật Khẩu Cá Nhân:
               </label>
               <div className="relative">
@@ -334,10 +328,10 @@ export default function LoginKiosk({
                 <input
                   type={showPassword ? "text" : "password"}
                   required
-                  placeholder={isDefaultPassword ? "Mật khẩu khởi tạo: 1234" : "Nhập mật khẩu riêng của bạn..."}
+                  placeholder="nhập mật khẩu để đăng nhập"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all font-mono tracking-widest"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all font-mono tracking-widest"
                 />
                 <button
                   type="button"
@@ -347,21 +341,12 @@ export default function LoginKiosk({
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {isDefaultPassword ? (
-                <p className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
-                  <span>🔑 Tài khoản mới khởi tạo • Mật khẩu ban đầu: <strong>1234</strong> (Hãy đổi mật khẩu sau khi đăng nhập)</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-slate-500 font-semibold mt-1 flex items-center gap-1">
-                  <span>🔒 Tài khoản đã đặt mật khẩu riêng. Mật khẩu mặc định 1234 không còn hiệu lực.</span>
-                </p>
-              )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-red-600/20 transition-all cursor-pointer"
+              className="w-full py-3 rounded-2xl bg-red-600 hover:bg-red-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-red-600/20 transition-all cursor-pointer mt-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

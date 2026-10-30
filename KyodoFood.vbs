@@ -23,9 +23,9 @@ If Not fso.FileExists(chromePath) Then
 End If
 
 If fso.FileExists(edgePath) Then
-    WshShell.Run Chr(34) & edgePath & Chr(34) & " --app=http://localhost:5000", 1, False
+    WshShell.Run Chr(34) & edgePath & Chr(34) & " --app=http://localhost:5000 --start-maximized", 1, False
 ElseIf fso.FileExists(chromePath) Then
-    WshShell.Run Chr(34) & chromePath & Chr(34) & " --app=http://localhost:5000", 1, False
+    WshShell.Run Chr(34) & chromePath & Chr(34) & " --app=http://localhost:5000 --start-maximized", 1, False
 Else
     WshShell.Run "http://localhost:5000", 1, False
 End If

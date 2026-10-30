@@ -5,8 +5,8 @@ const db = require('./db');
 console.log('🧪 Starting Kyodo Food (Trưng Nữ Vương) Unit Tests...');
 
 try {
-  // Test 1: Employees initialization
-  const employees = db.getEmployees();
+  // Test 1: Employees initialization (includeConfidential = true for admin/manager check)
+  const employees = db.getEmployees(true);
   assert.strictEqual(employees.length, 2, 'Should have exactly 2 initial employees: Út and Bảo');
   
   const ut = employees.find(e => e.username === 'UTNVTNV');
@@ -59,13 +59,13 @@ try {
   assert.strictEqual(newStaff.branch, 'Trưng Nữ Vương');
   console.log('✅ Test 4 Passed: Admin created new employee LINHNVTNV');
 
-  // Test 5: Monthly summary calculation
-  const summaryUt = db.getEmployeeMonthlySummary(ut.id, '2026-10');
+  // Test 5: Monthly summary calculation (includeSalary=true for verification)
+  const summaryUt = db.getEmployeeMonthlySummary(ut.id, '2026-10', true);
   assert(summaryUt.totalHours >= 0);
   assert.strictEqual(summaryUt.estimatedSalary, Math.round(summaryUt.totalHours * 25000));
   console.log(`✅ Test 5 Passed: Út monthly summary = ${summaryUt.totalHours}h -> ${summaryUt.estimatedSalary.toLocaleString()} đ`);
 
-  const summaryBao = db.getEmployeeMonthlySummary(bao.id, '2026-10');
+  const summaryBao = db.getEmployeeMonthlySummary(bao.id, '2026-10', true);
   assert(summaryBao.totalHours >= 0);
   assert.strictEqual(summaryBao.estimatedSalary, Math.round(summaryBao.totalHours * 22000));
   console.log(`✅ Test 5 Passed: Bảo monthly summary = ${summaryBao.totalHours}h -> ${summaryBao.estimatedSalary.toLocaleString()} đ`);
@@ -77,7 +77,7 @@ try {
   console.log(`✅ Test 6 Passed: Master report Trưng Nữ Vương total hours = ${master.summary.storeTotalHours}h`);
 
   // Clean up test staff
-  db.deleteEmployee(newStaff.id);
+  db.deleteEmployee(newStaff.id, true);
   db.deleteAttendance(manualLog.id);
 
   console.log('\n🎉 ALL TESTS PASSED! System perfectly configured for Kyodo Food Trưng Nữ Vương 🚀');
