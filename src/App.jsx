@@ -1,0 +1,120 @@
+// src/App.jsx
+import React, { useState, useEffect } from 'react';
+import Header from './components/Header';
+import LoginKiosk from './pages/LoginKiosk';
+import StaffAttendance from './pages/StaffAttendance';
+import ManagerDashboard from './pages/ManagerDashboard';
+import { api } from './utils/api';
+
+export default function App() {
+  const [currentRole, setCurrentRole] = useState(null); // null | 'employee' | 'admin'
+  const [currentUser, setCurrentUser] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [settings, setSettings] = useState(null);
+  const [shifts, setShifts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Tải dữ liệu hệ thống
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      const [settingsRes, employeesRes] = await Promise.all([
+        api.getSettings(),
+        api.getEmployees()
+      ]);
+      setSettings(settingsRes.settings);
+      setShifts(settingsRes.shifts || []);
+      setEmployees(employeesRes.employees || []);
+    } catch (err) {
+      console.error("Lỗi khởi tạo hệ thống:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  // Xử lý đăng nhập (Nhân viên: UTNVTNV, BAONVTNV | Admin: 20162020)
+  const handleLoginSubmit = async ({ username, password }) => {
+    const res = await api.login({ username, password });
+    if (res.success) {
+      setCurrentRole(res.role);
+      setCurrentUser(res.user);
+    }
+    return res;
+  };
+
+  const handleLogout = () => {
+    setCurrentRole(null);
+    setCurrentUser(null);
+    loadInitialData();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 rounded-3xl bg-red-100 flex items-center justify-center mb-4">
+          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <h3 className="text-lg font-black text-slate-800">Đang khởi tạo hệ thống Kyodo Food...</h3>
+        <p className="text-xs text-slate-500 mt-1">Cơ sở Trưng Nữ Vương</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-red-500 selection:text-white">
+      {/* Universal Top Header */}
+      <Header
+        currentUser={currentUser}
+        currentRole={currentRole}
+        onLogout={handleLogout}
+        onAdminClick={() => {
+          // Thoát về trang đăng nhập và tự động chuyển tab Admin
+          setCurrentRole(null);
+          setCurrentUser(null);
+        }}
+        onBackToLogin={handleLogout}
+        settings={settings}
+      />
+
+      {/* Main Viewport */}
+      <main className="flex-1 pb-16">
+        {/* 1. MÀN HÌNH ĐĂNG NHẬP (ÚT: UTNVTNV, BẢO: BAONVTNV, ADMIN: 20162020) */}
+        {!currentRole && (
+          <LoginKiosk
+            employees={employees}
+            onLoginSubmit={handleLoginSubmit}
+            settings={settings}
+          />
+        )}
+
+        {/* 2. MÀN HÌNH NHÂN VIÊN: NHẬP GIỜ LÀM TỪNG NGÀY & XEM TỔNG CÔNG CUỐI THÁNG */}
+        {currentRole === 'employee' && currentUser && (
+          <StaffAttendance
+            employee={currentUser}
+            onLogout={handleLogout}
+            settings={settings}
+            shifts={shifts}
+          />
+        )}
+
+        {/* 3. MÀN HÌNH QUẢN LÝ / CHỦ CỬA HÀNG: XEM BẢNG CÔNG, TẠO TÀI KHOẢN, XUẤT EXCEL */}
+        {currentRole === 'admin' && (
+          <ManagerDashboard
+            settings={settings}
+            onSettingsChange={loadInitialData}
+            shifts={shifts}
+          />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="py-4 border-t border-slate-200 text-center text-xs text-slate-500 no-print">
+        <p>© 2026 <strong>Kyodo Food</strong> • Cơ sở Trưng Nữ Vương, Đà Nẵng</p>
+      </footer>
+    </div>
+  );
+}
