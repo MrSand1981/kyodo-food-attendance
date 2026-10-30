@@ -26,6 +26,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [tableDensity, setTableDensity] = useState('compact'); // 'compact' (vừa vặn màn hình, hiện đủ 31 ngày) | 'expanded' (rộng rãi)
 
   // Modals & Forms
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
@@ -941,38 +942,99 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
           </div>
 
           {/* Master Table Matrix */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            
+            {/* Header thông tin chu kỳ ngày & chế độ hiển thị */}
+            <div className="px-4 py-3 bg-linear-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  <CalendarDays className="w-4 h-4" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-900 text-xs sm:text-sm">
+                      Bảng Chấm Công Ma Trận: {formatMonthVN(selectedMonth)}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black text-[11px] border border-amber-300">
+                      Chu kỳ chuẩn {report?.days?.length || 31} ngày (Ngày 01 ➔ Ngày {String(report?.days?.length || 31).padStart(2, '0')})
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 font-medium mt-0.5">
+                    Tháng này có đúng <strong>{report?.days?.length || 31} ngày</strong> • Toàn bộ ngày trong tháng được căn chỉnh hiển thị trực diện trên màn hình
+                  </p>
+                </div>
+              </div>
+
+              {/* Bộ chuyển đổi thu phóng: Vừa vặn màn hình (hiện đủ 31 ngày) vs Mở rộng */}
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-amber-200 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setTableDensity('compact')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
+                    tableDensity === 'compact'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Tối ưu kích thước cột để hiện toàn bộ 31 ngày trên màn hình không bị cắt"
+                >
+                  <span>✨ Vừa Màn Hình ({report?.days?.length || 31} Ngày)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTableDensity('expanded')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
+                    tableDensity === 'expanded'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Mở rộng khoảng cách cột và cuộn ngang"
+                >
+                  <span>↔️ Mở Rộng Ô</span>
+                </button>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="py-3 px-3 sticky left-0 bg-slate-100 z-10 w-24">Tài Khoản</th>
-                    <th className="py-3 px-3 sticky left-24 bg-slate-100 z-10 min-w-32">Tên NV</th>
-                    <th className="py-3 px-2 text-center w-12">GT</th>
+                    <th className="py-2.5 px-2.5 sticky left-0 bg-slate-100 z-10 w-28 min-w-[100px] text-left">
+                      <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-800">Nhân Viên</span>
+                    </th>
+                    <th className="py-2.5 px-1 text-center w-8 min-w-[30px] text-slate-600 font-extrabold text-[10px]">
+                      GT
+                    </th>
                     
                     {report?.days?.map(d => (
                       <th 
                         key={d.day} 
-                        className={`py-2 px-1 text-center min-w-10 ${d.isWeekend ? 'bg-amber-100/70 text-amber-900' : ''}`}
+                        className={`py-1.5 px-0.5 text-center transition-all ${
+                          tableDensity === 'compact' 
+                            ? 'w-7 min-w-[24px] max-w-[28px]' 
+                            : 'min-w-10 px-1'
+                        } ${d.isWeekend ? 'bg-amber-100/90 text-amber-950 font-black' : 'text-slate-700'}`}
+                        title={`Ngày ${d.day} (${d.dayOfWeek}) • Tháng ${selectedMonth}`}
                       >
-                        <div className="font-extrabold">{d.day}</div>
-                        <div className="text-[10px] text-slate-500 font-medium">{d.dayOfWeek}</div>
+                        <div className="font-black text-[11px] leading-tight">{d.day}</div>
+                        <div className={`text-[8px] font-bold leading-tight ${d.isWeekend ? 'text-amber-800' : 'text-slate-400'}`}>
+                          {d.dayOfWeek}
+                        </div>
                       </th>
                     ))}
 
-                    <th className="py-3 px-3 text-center bg-amber-50 text-amber-900 font-extrabold min-w-20">
+                    <th className="py-2.5 px-2 text-center bg-amber-50 text-amber-900 font-black min-w-[54px] text-[11px] uppercase">
                       Tổng Giờ
                     </th>
-                    <th className="py-3 px-3 text-right bg-slate-100 min-w-20 font-bold">
+                    <th className="py-2.5 px-2 text-right bg-slate-100 min-w-[60px] font-bold text-slate-600 text-[10px] uppercase">
                       Lương/h
                     </th>
-                    <th className="py-3 px-3 text-right bg-slate-100 min-w-24 font-bold">
+                    <th className="py-2.5 px-2 text-right bg-slate-100 min-w-[68px] font-bold text-slate-700 text-[11px] uppercase">
                       Lương Ca
                     </th>
-                    <th className="py-3 px-3 text-right bg-amber-50 text-amber-900 font-extrabold min-w-24">
+                    <th className="py-2.5 px-2 text-right bg-amber-50 text-amber-900 font-black min-w-[68px] text-[11px] uppercase">
                       Tạm Ứng
                     </th>
-                    <th className="py-3 px-3 text-right bg-emerald-50 text-emerald-900 font-extrabold min-w-28">
+                    <th className="py-2.5 px-2.5 text-right bg-emerald-50 text-emerald-900 font-black min-w-[76px] text-xs uppercase">
                       Thực Lĩnh
                     </th>
                   </tr>
@@ -980,14 +1042,16 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
                 <tbody className="divide-y divide-slate-100">
                   {report?.rows?.map((row) => (
-                    <tr key={row.employee.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-amber-800 sticky left-0 bg-white z-10">
-                        {row.employee.username || row.employee.code}
+                    <tr key={row.employee.id} className="hover:bg-amber-50/30 transition-colors">
+                      <td className="py-2 px-2.5 sticky left-0 bg-white z-10 whitespace-nowrap border-r border-slate-100">
+                        <div className="font-black text-slate-900 text-xs leading-tight">
+                          {row.employee.shortName || row.employee.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-amber-700 font-bold leading-tight mt-0.5">
+                          {row.employee.username || row.employee.code}
+                        </div>
                       </td>
-                      <td className="py-3 px-3 font-bold text-slate-900 sticky left-24 bg-white z-10 whitespace-nowrap">
-                        {row.employee.name}
-                      </td>
-                      <td className="py-3 px-2 text-center text-slate-500 text-[11px]">
+                      <td className="py-2 px-1 text-center text-slate-500 text-[10px] font-bold">
                         {row.employee.gender || "Nam"}
                       </td>
 
@@ -998,36 +1062,38 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         return (
                           <td 
                             key={d.day} 
-                            className={`py-2 px-1 text-center font-mono ${d.isWeekend ? 'bg-amber-50/40' : ''}`}
-                            title={logsTooltip}
+                            className={`py-1 px-0.5 text-center font-mono ${
+                              tableDensity === 'compact' ? 'w-7 min-w-[24px] max-w-[28px]' : 'min-w-10'
+                            } ${d.isWeekend ? 'bg-amber-50/50' : ''}`}
+                            title={logsTooltip || `Ngày ${d.day} (${d.dayOfWeek}): Chưa có giờ làm`}
                           >
                             {hasHours ? (
                               <span 
-                                className="inline-block px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px] cursor-help"
+                                className="inline-flex items-center justify-center w-5 h-5 rounded bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] shadow-2xs transition-transform cursor-pointer"
                                 title={logsTooltip}
                               >
                                 {cellData.hours}
                               </span>
                             ) : (
-                              <span className="text-slate-300 text-[11px]">-</span>
+                              <span className="text-slate-300 text-[10px] select-none">-</span>
                             )}
                           </td>
                         );
                       })}
 
-                      <td className="py-3 px-3 text-center font-mono font-black text-amber-800 bg-amber-50/40 whitespace-nowrap text-sm">
+                      <td className="py-2 px-2 text-center font-mono font-black text-amber-800 bg-amber-50/50 whitespace-nowrap text-xs">
                         {row.totalHours}h
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-700 whitespace-nowrap font-bold">
+                      <td className="py-2 px-2 text-right font-mono text-slate-600 whitespace-nowrap font-bold text-[10px]">
                         {Number(row.hourlyRate).toLocaleString()}đ
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-800 whitespace-nowrap font-bold">
+                      <td className="py-2 px-2 text-right font-mono text-slate-800 whitespace-nowrap font-bold text-[11px]">
                         {Number(row.totalSalary).toLocaleString()}đ
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-black text-amber-700 bg-amber-50/40 whitespace-nowrap text-sm">
+                      <td className="py-2 px-2 text-right font-mono font-black text-amber-700 bg-amber-50/50 whitespace-nowrap text-[11px]">
                         {Number(row.advanceTotal || 0).toLocaleString()}đ
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-black text-emerald-700 bg-emerald-50/40 whitespace-nowrap text-sm">
+                      <td className="py-2 px-2.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/50 whitespace-nowrap text-xs">
                         {Number(row.netSalary ?? row.totalSalary).toLocaleString()}đ
                       </td>
                     </tr>
@@ -1036,24 +1102,24 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
                 <tfoot>
                   <tr className="bg-slate-900 text-white font-extrabold text-xs">
-                    <td colSpan={3} className="py-3 px-4 uppercase tracking-wider sticky left-0 bg-slate-900 z-10">
+                    <td colSpan={2} className="py-2.5 px-3 uppercase tracking-wider sticky left-0 bg-slate-900 z-10 text-[11px]">
                       TỔNG CỘNG ({selectedMonth})
                     </td>
-                    <td colSpan={report?.days?.length || 31} className="py-3 px-2 text-center text-slate-400">
-                      - Kyodo Food Trưng Nữ Vương -
+                    <td colSpan={report?.days?.length || 31} className="py-2 px-1 text-center text-slate-400 text-[10px] truncate">
+                      - Đầy đủ {report?.days?.length || 31} ngày ({formatMonthVN(selectedMonth)}) -
                     </td>
-                    <td className="py-3 px-3 text-center font-mono text-amber-400 text-sm whitespace-nowrap">
+                    <td className="py-2.5 px-2 text-center font-mono text-amber-400 text-xs whitespace-nowrap">
                       {report?.summary?.storeTotalHours || 0}h
                     </td>
-                    <td className="py-3 px-3 text-right text-slate-400">--</td>
-                    <td className="py-3 px-3 text-right font-mono text-slate-300 text-sm whitespace-nowrap">
-                      {Number(report?.summary?.storeTotalSalary || 0).toLocaleString()} đ
+                    <td className="py-2.5 px-2 text-right text-slate-500 text-[10px]">--</td>
+                    <td className="py-2.5 px-2 text-right font-mono text-slate-300 text-[11px] whitespace-nowrap">
+                      {Number(report?.summary?.storeTotalSalary || 0).toLocaleString()}đ
                     </td>
-                    <td className="py-3 px-3 text-right font-mono text-amber-400 text-sm whitespace-nowrap">
-                      {Number(report?.summary?.storeTotalAdvance || 0).toLocaleString()} đ
+                    <td className="py-2.5 px-2 text-right font-mono text-amber-400 text-[11px] whitespace-nowrap">
+                      {Number(report?.summary?.storeTotalAdvance || 0).toLocaleString()}đ
                     </td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-400 text-sm whitespace-nowrap">
-                      {Number(report?.summary?.storeTotalNetSalary ?? report?.summary?.storeTotalSalary ?? 0).toLocaleString()} đ
+                    <td className="py-2.5 px-2.5 text-right font-mono text-emerald-400 text-xs whitespace-nowrap">
+                      {Number(report?.summary?.storeTotalNetSalary ?? report?.summary?.storeTotalSalary ?? 0).toLocaleString()}đ
                     </td>
                   </tr>
                 </tfoot>
