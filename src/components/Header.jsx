@@ -60,6 +60,13 @@ export default function Header({
 
   useEffect(() => {
     checkHeaderUpdate(true);
+    const handleFocus = () => checkHeaderUpdate(true);
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(() => checkHeaderUpdate(true), 60000);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   const formatVietnameseDate = (date) => {

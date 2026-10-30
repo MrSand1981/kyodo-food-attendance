@@ -48,6 +48,13 @@ export default function LoginKiosk({
 
   useEffect(() => {
     checkAppUpdate();
+    const handleFocus = () => checkAppUpdate();
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(checkAppUpdate, 60000); // Tự động kiểm tra mỗi 1 phút
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleApplyUpdate = async () => {
