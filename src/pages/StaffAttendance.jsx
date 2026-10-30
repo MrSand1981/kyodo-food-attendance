@@ -10,7 +10,14 @@ import {
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
-import { formatDateVN, formatMonthVN, formatShortTime } from '../utils/date';
+import { 
+  formatDateVN, 
+  formatMonthVN, 
+  formatShortTime, 
+  getSalaryMonthForAdvance, 
+  getAdvanceCycleRange, 
+  getAdvanceCycleExplanation 
+} from '../utils/date';
 
 export default function StaffAttendance({ 
   employee, 
@@ -969,7 +976,7 @@ export default function StaffAttendance({
                     Ứng Tiền Lương Trước
                   </h3>
                   <p className="text-[11px] text-slate-500 whitespace-nowrap">
-                    Chu kỳ: <strong className="text-amber-800">{formatMonthVN(selectedMonth)}</strong> • Khấu trừ trực tiếp vào quyết toán cuối tháng
+                    Chu kỳ: <strong className="text-amber-800">{getAdvanceCycleRange(selectedMonth)}</strong> • Ngày trả lương: 05 hàng tháng
                   </p>
                 </div>
               </div>
@@ -978,8 +985,8 @@ export default function StaffAttendance({
                 type="button"
                 onClick={() => {
                   const todayStr = new Date().toISOString().split('T')[0];
-                  const todayYM = todayStr.substring(0, 7);
-                  setAdvDate(selectedMonth === todayYM ? todayStr : `${selectedMonth}-01`);
+                  const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
+                  setAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
                   setShowAdvanceModal(true);
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
@@ -1081,7 +1088,7 @@ export default function StaffAttendance({
                     Thông Báo Nghỉ Làm
                   </h3>
                   <p className="text-[11px] text-slate-500 whitespace-nowrap">
-                    Báo ngày/ca nghỉ cho cửa hàng (không cần duyệt) • Tự động thống kê số ngày nghỉ
+                    Báo ngày/ca nghỉ cho cửa hàng
                   </p>
                 </div>
               </div>
@@ -1089,10 +1096,10 @@ export default function StaffAttendance({
               <button
                 type="button"
                 onClick={() => setShowLeaveModal(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                <span className="whitespace-nowrap">+ Báo Nghỉ Ngay</span>
+                <span className="whitespace-nowrap">+ Đăng Ký Ngày Nghỉ</span>
               </button>
             </div>
 
@@ -1111,9 +1118,6 @@ export default function StaffAttendance({
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-200/70 text-blue-900 whitespace-nowrap">
-                Tự Động Thống Kê
-              </span>
             </div>
 
             {/* Lịch sử thông báo nghỉ */}
@@ -1484,7 +1488,7 @@ export default function StaffAttendance({
             </div>
 
             <p className="text-xs text-slate-500 mb-4">
-              Nhân viên: <strong className="text-slate-800">{employee.name}</strong> • Chu kỳ lương: <strong className="text-amber-800">Tháng {selectedMonth}</strong>
+              Nhân viên: <strong className="text-slate-800">{employee.name}</strong> • Chu kỳ lương: <strong className="text-amber-800">{formatMonthVN(selectedMonth)}</strong> ({getAdvanceCycleRange(selectedMonth)})
             </p>
 
             <form onSubmit={handleSalaryAdvanceSubmit} className="space-y-4 text-xs">
@@ -1499,6 +1503,15 @@ export default function StaffAttendance({
                   onChange={(e) => setAdvDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
+                {advDate && (
+                  <div className={`mt-2 p-2.5 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 ${
+                    getSalaryMonthForAdvance(advDate) === selectedMonth 
+                      ? 'bg-amber-50 border-amber-200 text-amber-900' 
+                      : 'bg-blue-50 border-blue-200 text-blue-900'
+                  }`}>
+                    <span>💡 {getAdvanceCycleExplanation(advDate)?.note}</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1580,7 +1593,7 @@ export default function StaffAttendance({
                 <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                   <CalendarDays className="w-4 h-4" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900">Thông Báo Nghỉ Làm</h3>
+                <h3 className="text-lg font-black text-slate-900">Đăng Ký Ngày Nghỉ</h3>
               </div>
               <button 
                 onClick={() => setShowLeaveModal(false)}
@@ -1591,7 +1604,7 @@ export default function StaffAttendance({
             </div>
 
             <p className="text-xs text-slate-500 mb-4">
-              Thông báo ngày và ca nghỉ của bạn cho cửa hàng để thuận tiện theo dõi và tổng hợp số ngày nghỉ trong tháng.
+              Đăng ký ngày và ca nghỉ của bạn cho cửa hàng để thuận tiện theo dõi và tổng hợp số ngày nghỉ trong tháng.
             </p>
 
             <form onSubmit={handleLeaveSubmit} className="space-y-4 text-xs">
@@ -1650,7 +1663,7 @@ export default function StaffAttendance({
                   disabled={leaveLoading}
                   className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-md shadow-blue-600/20 transition-all cursor-pointer"
                 >
-                  {leaveLoading ? "Đang lưu..." : "Xác Nhận Báo Nghỉ"}
+                  {leaveLoading ? "Đang lưu..." : "Xác Nhận Đăng Ký Nghỉ"}
                 </button>
               </div>
             </form>

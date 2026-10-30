@@ -59,3 +59,91 @@ export function formatShortTime(isoString) {
   const m = String(d.getMinutes()).padStart(2, '0');
   return `${h}:${m}`;
 }
+
+/**
+ * Quy tắc nghiệp vụ chu kỳ tạm ứng lương Kyodo Food:
+ * - Chấm công từ ngày 01 đến ngày cuối cùng của tháng.
+ * - Ngày trả lương là ngày 05 hàng tháng.
+ * - Ứng lương trước hoặc vào ngày 05 (ngày 01 - 05): khấu trừ vào lương của THÁNG TRƯỚC ĐÓ.
+ * - Ứng lương từ ngày 06 trở đi (ngày 06 tháng này đến 05 tháng sau): khấu trừ vào lương THÁNG ĐANG CHẤM CÔNG.
+ */
+export function getSalaryMonthForAdvance(dateStr) {
+  if (!dateStr) return '';
+  const s = String(dateStr).trim().split('T')[0];
+  let year = 0, month = 0, day = 0;
+
+  if (s.includes('-')) {
+    const parts = s.split('-');
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[2], 10);
+    } else if (parts[2].length === 4) {
+      year = parseInt(parts[2], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[0], 10);
+    }
+  } else if (s.includes('/')) {
+    const parts = s.split('/');
+    if (parts[2].length === 4) {
+      year = parseInt(parts[2], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[0], 10);
+    }
+  }
+
+  if (!year || !month || isNaN(day)) return s.substring(0, 7);
+
+  // Nếu ngày ứng <= 5: thuộc chu kỳ lương tháng trước
+  if (day <= 5) {
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+/**
+ * Lấy khoảng ngày chu kỳ tạm ứng của một tháng lương:
+ * Ví dụ: '2026-11' -> 'Từ 06/11/2026 đến 05/12/2026'
+ */
+export function getAdvanceCycleRange(yearMonth) {
+  if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) return '';
+  const [y, m] = yearMonth.split('-').map(Number);
+  let nextY = y;
+  let nextM = m + 1;
+  if (nextM > 12) {
+    nextM = 1;
+    nextY += 1;
+  }
+  return `Từ 06/${String(m).padStart(2, '0')}/${y} đến 05/${String(nextM).padStart(2, '0')}/${nextY}`;
+}
+
+/**
+ * Giải thích chi tiết một ngày ứng thuộc chu kỳ lương tháng nào
+ */
+export function getAdvanceCycleExplanation(dateStr) {
+  if (!dateStr) return null;
+  const targetYM = getSalaryMonthForAdvance(dateStr);
+  const s = String(dateStr).trim().split('T')[0];
+  let day = 0;
+  if (s.includes('-')) {
+    const parts = s.split('-');
+    day = parseInt(parts[parts[0].length === 4 ? 2 : 0], 10);
+  } else if (s.includes('/')) {
+    day = parseInt(s.split('/')[0], 10);
+  }
+
+  const isBeforeOrOn5th = day <= 5;
+  return {
+    salaryMonth: targetYM,
+    formattedMonth: formatMonthVN(targetYM),
+    isBeforeOrOn5th,
+    note: isBeforeOrOn5th 
+      ? `Khoản ứng ngày ${formatDateVN(dateStr)} (trước ngày 05) được tính khấu trừ vào kỳ lương ${formatMonthVN(targetYM)}.`
+      : `Khoản ứng ngày ${formatDateVN(dateStr)} (từ ngày 06 trở đi) được tính khấu trừ vào kỳ lương ${formatMonthVN(targetYM)}.`
+  };
+}

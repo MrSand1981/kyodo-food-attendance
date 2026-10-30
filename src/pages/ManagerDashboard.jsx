@@ -12,7 +12,14 @@ import {
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
-import { formatDateVN, formatMonthVN, formatShortTime } from '../utils/date';
+import { 
+  formatDateVN, 
+  formatMonthVN, 
+  formatShortTime, 
+  getSalaryMonthForAdvance, 
+  getAdvanceCycleRange, 
+  getAdvanceCycleExplanation 
+} from '../utils/date';
 
 export default function ManagerDashboard({ settings, onSettingsChange, shifts }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
@@ -269,8 +276,8 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const openManagerAdvanceModal = (emp) => {
     setMgrAdvTargetEmp(emp);
     const todayStr = new Date().toISOString().split('T')[0];
-    const todayYM = todayStr.substring(0, 7);
-    setMgrAdvDate(selectedMonth === todayYM ? todayStr : `${selectedMonth}-01`);
+    const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
+    setMgrAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
     setMgrAdvAmount('');
     setMgrAdvReason('Chủ cửa hàng tạm ứng lương');
     setShowManagerAdvanceModal(true);
@@ -549,7 +556,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
             }`}
           >
             <DollarSign className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span className="whitespace-nowrap">Tạm Ứng & Báo Nghỉ ({allAdvances.length + allLeaves.length})</span>
+            <span className="whitespace-nowrap">Tạm Ứng & Đăng Ký Nghỉ ({allAdvances.length + allLeaves.length})</span>
           </button>
 
           <button
@@ -854,7 +861,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                   Tổng Số Tiền Lương Đã Tạm Ứng:
                                 </span>
                                 <p className="text-[11px] text-amber-700 font-medium whitespace-nowrap">
-                                  Chu kỳ tháng {selectedMonth} • <strong>{row.advanceCount || 0} lần ứng lương</strong>
+                                  Chu kỳ: {getAdvanceCycleRange(selectedMonth)} • <strong>{row.advanceCount || 0} lần ứng lương</strong> (ngày trả lương 05)
                                 </p>
                               </div>
                             </div>
@@ -1409,10 +1416,10 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
           <div className="flex items-center justify-between pb-4 border-b border-slate-200">
             <div>
               <h3 className="text-lg font-bold text-slate-900">
-                Quản Lý Tạm Ứng Lương & Thông Báo Nghỉ Của Nhân Viên
+                Quản Lý Tạm Ứng Lương & Đăng Ký Ngày Nghỉ
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Tổng hợp toàn bộ các khoản tạm ứng lương và thông báo nghỉ của nhân viên tại cơ sở Trưng Nữ Vương (tự động khấu trừ và thống kê, không cần phê duyệt).
+                Tổng hợp các khoản tạm ứng lương và đăng ký ngày nghỉ của nhân viên tại cơ sở Trưng Nữ Vương. Chu kỳ ứng lương: <strong className="text-amber-800">{getAdvanceCycleRange(selectedMonth)}</strong> (ngày trả lương 05 hàng tháng; ứng trước ngày 05 tính vào tháng trước, ứng từ ngày 06 tính vào tháng này).
               </p>
             </div>
             
@@ -1509,7 +1516,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
             <h4 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-blue-600" />
-              <span>Danh Sách Thông Báo Nghỉ Làm ({allLeaves.length} thông báo)</span>
+              <span>Danh Sách Đăng Ký Ngày Nghỉ ({allLeaves.length} bản ghi)</span>
             </h4>
 
             {allLeaves.length > 0 ? (
@@ -1518,7 +1525,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   <thead>
                     <tr className="bg-blue-50/70 border-b border-blue-200 text-blue-900 font-bold uppercase text-[10px] tracking-wider">
                       <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Ngày Báo Nghỉ</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày Đăng Ký Nghỉ</th>
                       <th className="py-3 px-4 whitespace-nowrap">Ca Nghỉ</th>
                       <th className="py-3 px-4 whitespace-nowrap">Lý Do / Ghi Chú</th>
                       <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
@@ -2240,6 +2247,15 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   onChange={(e) => setMgrAdvDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
+                {mgrAdvDate && (
+                  <div className={`mt-2 p-2.5 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 ${
+                    getSalaryMonthForAdvance(mgrAdvDate) === selectedMonth 
+                      ? 'bg-amber-50 border-amber-200 text-amber-900' 
+                      : 'bg-blue-50 border-blue-200 text-blue-900'
+                  }`}>
+                    <span>💡 {getAdvanceCycleExplanation(mgrAdvDate)?.note}</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -2351,6 +2367,15 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   onChange={(e) => setEditAdvDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
+                {editAdvDate && (
+                  <div className={`mt-2 p-2.5 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 ${
+                    getSalaryMonthForAdvance(editAdvDate) === selectedMonth 
+                      ? 'bg-amber-50 border-amber-200 text-amber-900' 
+                      : 'bg-blue-50 border-blue-200 text-blue-900'
+                  }`}>
+                    <span>💡 {getAdvanceCycleExplanation(editAdvDate)?.note}</span>
+                  </div>
+                )}
               </div>
 
               <div>

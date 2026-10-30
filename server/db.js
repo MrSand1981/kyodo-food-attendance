@@ -595,6 +595,7 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
     employeeShortName: emp.shortName || emp.name,
     branch: "Trưng Nữ Vương",
     date: advDate,
+    salaryMonth: getSalaryMonthForAdvance(advDate),
     amount: numAmount,
     reason: reason ? String(reason).trim() : "Ứng tiền lương",
     status: "approved",
@@ -605,6 +606,52 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
   db.salaryAdvances.push(newAdvance);
   saveDatabase(db);
   return newAdvance;
+}
+
+/**
+ * Quy tắc nghiệp vụ chu kỳ tạm ứng lương Kyodo Food:
+ * - Chấm công tính từ ngày 01 đến ngày cuối cùng của tháng.
+ * - Ngày trả lương là ngày 05 hàng tháng.
+ * - Ứng lương trước hoặc vào ngày 05 (ngày 01 - 05): khấu trừ vào lương của THÁNG TRƯỚC ĐÓ.
+ * - Ứng lương từ ngày 06 trở đi (ngày 06 tháng này đến 05 tháng sau): khấu trừ vào lương THÁNG ĐANG CHẤM CÔNG.
+ */
+function getSalaryMonthForAdvance(dateStr) {
+  if (!dateStr) return '';
+  const s = String(dateStr).trim().split('T')[0];
+  let year = 0, month = 0, day = 0;
+
+  if (s.includes('-')) {
+    const parts = s.split('-');
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[2], 10);
+    } else if (parts[2].length === 4) {
+      year = parseInt(parts[2], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[0], 10);
+    }
+  } else if (s.includes('/')) {
+    const parts = s.split('/');
+    if (parts[2].length === 4) {
+      year = parseInt(parts[2], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[0], 10);
+    }
+  }
+
+  if (!year || !month || isNaN(day)) return s.substring(0, 7);
+
+  // Nếu ngày ứng <= 5: thuộc chu kỳ lương tháng trước
+  if (day <= 5) {
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+
+  return `${year}-${String(month).padStart(2, '0')}`;
 }
 
 function extractYearMonth(dateStr) {
@@ -633,9 +680,12 @@ function getSalaryAdvances(employeeId = null, yearMonth = null) {
     );
   }
   if (yearMonth) {
-    list = list.filter(a => extractYearMonth(a.date) === yearMonth || (a.date && a.date.startsWith(yearMonth)));
+    list = list.filter(a => getSalaryMonthForAdvance(a.date) === yearMonth);
   }
-  list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  list = list.map(a => ({
+    ...a,
+    salaryMonth: getSalaryMonthForAdvance(a.date)
+  })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const totalCount = list.length;
   const totalAmount = list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -668,6 +718,7 @@ function updateSalaryAdvance(id, { amount, date, reason }) {
   }
   if (date !== undefined && date) {
     db.salaryAdvances[idx].date = date;
+    db.salaryAdvances[idx].salaryMonth = getSalaryMonthForAdvance(date);
   }
   if (reason !== undefined) {
     db.salaryAdvances[idx].reason = String(reason).trim();
@@ -1148,6 +1199,7 @@ module.exports = {
   updateEmployeeAvatar,
   requestSalaryAdvance,
   getSalaryAdvances,
+  getSalaryMonthForAdvance,
   updateSalaryAdvance,
   deleteSalaryAdvance,
   requestLeave,
