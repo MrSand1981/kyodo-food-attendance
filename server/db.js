@@ -464,14 +464,33 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
   return newAdvance;
 }
 
+function extractYearMonth(dateStr) {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}`;
+    if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}`;
+  }
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}`;
+  }
+  return str.substring(0, 7);
+}
+
 function getSalaryAdvances(employeeId = null, yearMonth = null) {
   const db = ensureDbFile();
   let list = db.salaryAdvances || [];
   if (employeeId) {
-    list = list.filter(a => a.employeeId === employeeId || a.employeeCode === employeeId);
+    const search = String(employeeId).trim().toLowerCase();
+    list = list.filter(a => 
+      (a.employeeId && a.employeeId.toLowerCase() === search) || 
+      (a.employeeCode && a.employeeCode.toLowerCase() === search)
+    );
   }
   if (yearMonth) {
-    list = list.filter(a => a.date && a.date.startsWith(yearMonth));
+    list = list.filter(a => extractYearMonth(a.date) === yearMonth || (a.date && a.date.startsWith(yearMonth)));
   }
   list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -527,10 +546,14 @@ function getLeaveRequests(employeeId = null, yearMonth = null) {
   const db = ensureDbFile();
   let list = db.leaveRequests || [];
   if (employeeId) {
-    list = list.filter(l => l.employeeId === employeeId || l.employeeCode === employeeId);
+    const search = String(employeeId).trim().toLowerCase();
+    list = list.filter(l => 
+      (l.employeeId && l.employeeId.toLowerCase() === search) || 
+      (l.employeeCode && l.employeeCode.toLowerCase() === search)
+    );
   }
   if (yearMonth) {
-    list = list.filter(l => l.date && l.date.startsWith(yearMonth));
+    list = list.filter(l => extractYearMonth(l.date) === yearMonth || (l.date && l.date.startsWith(yearMonth)));
   }
   list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   return list;
@@ -704,7 +727,7 @@ function getMasterMonthlyReport(yearMonth) {
     const advData = getSalaryAdvances(emp.id, currentYM);
     const advanceTotal = advData.totalAmount || 0;
     const advanceCount = advData.totalCount || 0;
-    const netSalary = Math.max(0, empTotalSalary - advanceTotal);
+    const netSalary = empTotalSalary - advanceTotal;
 
     storeTotalHours += empTotalHours;
     storeTotalSalary += empTotalSalary;

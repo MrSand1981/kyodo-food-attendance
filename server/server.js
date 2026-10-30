@@ -308,8 +308,15 @@ app.get('/api/attendance/export-excel', (req, res) => {
       headerRow2.push(d.dayOfWeek);
     });
 
-    headerRow1.push('Tổng giờ làm', 'Lương mỗi giờ', 'Tổng tiền lương');
-    headerRow2.push('', '', '');
+    headerRow1.push(
+      'Tổng giờ làm',
+      'Mức lương/h',
+      'Lương ca làm (Gross)',
+      'Số lần tạm ứng',
+      'Tổng tạm ứng',
+      'Lương thực lĩnh (Net)'
+    );
+    headerRow2.push('', '', '', '', '', '');
 
     const excelRows = [
       titleRow,
@@ -334,13 +341,27 @@ app.get('/api/attendance/export-excel', (req, res) => {
         }
       });
 
-      row.push(r.totalHours, r.hourlyRate, r.totalSalary);
+      row.push(
+        r.totalHours,
+        r.hourlyRate,
+        r.totalSalary,
+        r.advanceCount || 0,
+        r.advanceTotal || 0,
+        r.netSalary ?? r.totalSalary
+      );
       excelRows.push(row);
     });
 
-    const totalRow = ['TỔNG CỘNG', '', ''];
+    const totalRow = ['TỔNG CỘNG TOÀN CỬA HÀNG', '', ''];
     report.days.forEach(() => totalRow.push(''));
-    totalRow.push(report.summary.storeTotalHours, '', report.summary.storeTotalSalary);
+    totalRow.push(
+      report.summary.storeTotalHours,
+      '',
+      report.summary.storeTotalSalary,
+      '',
+      report.summary.storeTotalAdvance,
+      report.summary.storeTotalNetSalary
+    );
     excelRows.push(totalRow);
 
     const ws = XLSX.utils.aoa_to_sheet(excelRows);
