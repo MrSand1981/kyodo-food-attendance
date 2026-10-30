@@ -288,8 +288,8 @@ export default function LoginKiosk({
 
         {/* Error Message */}
         {error && (
-          <div className="mb-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="mb-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>{error}</span>
           </div>
         )}

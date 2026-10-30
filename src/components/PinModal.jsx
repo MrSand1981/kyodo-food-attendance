@@ -155,8 +155,8 @@ export default function PinModal({
 
         {/* Error Message */}
         {error && (
-          <div className="flex items-center justify-center gap-1.5 text-xs text-red-600 font-semibold mb-4 bg-red-50 p-2.5 rounded-xl border border-red-200">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="flex items-center justify-center gap-1.5 text-xs text-amber-900 font-semibold mb-4 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>{error}</span>
           </div>
         )}
