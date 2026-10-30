@@ -7,6 +7,7 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 
 const db = require('./db');
+const updater = require('./updater');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -275,6 +276,29 @@ app.delete('/api/attendance/:id', (req, res) => {
   try {
     const ok = db.deleteAttendance(req.params.id);
     res.json({ success: ok });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 9. CẬP NHẬT PHẦN MỀM TỰ ĐỘNG TỪ GITHUB
+app.get('/api/system/check-update', async (req, res) => {
+  try {
+    const settings = db.getSettings();
+    const repo = req.query.repo || settings.githubRepo;
+    const result = await updater.checkUpdate(repo);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/apply-update', async (req, res) => {
+  try {
+    const settings = db.getSettings();
+    const repo = req.body?.repo || settings.githubRepo;
+    const result = await updater.applyUpdate(repo);
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

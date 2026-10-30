@@ -4,7 +4,7 @@ import {
   Users, Calendar, FileSpreadsheet, Settings, 
   Clock, Plus, Edit, Trash2, Download, Printer, 
   Upload, CheckCircle, ShieldCheck, DollarSign, 
-  MapPin, Key, UserPlus, Check
+  MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle
 } from 'lucide-react';
 import { api } from '../utils/api';
 
@@ -37,6 +37,12 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   // Logo file upload
   const [logoFile, setLogoFile] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  // GitHub Auto Update states
+  const [githubRepoUrl, setGithubRepoUrl] = useState(settings?.githubRepo || '');
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updatingApp, setUpdatingApp] = useState(false);
 
   // Tải dữ liệu báo cáo chấm công
   const loadReport = async () => {
@@ -120,6 +126,47 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       setError(err.message || 'Lỗi khi tải logo');
     } finally {
       setUploadingLogo(false);
+    }
+  };
+
+  // Kiểm tra cập nhật từ GitHub
+  const handleCheckUpdate = async () => {
+    try {
+      setCheckingUpdate(true);
+      setError('');
+      if (githubRepoUrl !== settings?.githubRepo) {
+        await api.updateSettings({ githubRepo: githubRepoUrl.trim() });
+        if (onSettingsChange) onSettingsChange();
+      }
+      const res = await api.checkUpdate();
+      setUpdateInfo(res);
+      if (res.hasUpdate) {
+        setMessage(`Đã phát hiện bản cập nhật mới (v${res.latestVersion}) trên GitHub!`);
+      } else {
+        setMessage(res.message || 'Phần mềm đang ở phiên bản mới nhất.');
+      }
+    } catch (err) {
+      setError(err.message || 'Không thể kiểm tra cập nhật từ GitHub');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  // Nâng cấp phần mềm từ GitHub
+  const handleApplyUpdate = async () => {
+    if (!window.confirm('Hệ thống sẽ tải bản cập nhật mới nhất từ GitHub và ghi đè mã nguồn. Dữ liệu chấm công hiện tại của cửa hàng sẽ được sao lưu và bảo toàn nguyên vẹn 100%. Bạn có muốn tiếp tục?')) {
+      return;
+    }
+    try {
+      setUpdatingApp(true);
+      setError('');
+      const res = await api.applyUpdate();
+      alert('🎉 ' + res.message);
+      window.location.reload();
+    } catch (err) {
+      setError(err.message || 'Lỗi khi cập nhật phần mềm');
+    } finally {
+      setUpdatingApp(false);
     }
   };
 
@@ -482,6 +529,82 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       {/* ================= TAB 3: CÀI ĐẶT CỬA HÀNG ================= */}
       {activeTab === 'settings' && (
         <div className="max-w-2xl mx-auto space-y-6">
+          
+          {/* GitHub Auto Update Card */}
+          <div className="bg-white rounded-3xl p-6 border-2 border-red-200 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <GitBranch className="w-5 h-5 text-red-600" />
+                <span>Cập Nhật Phần Mềm Tự Động Từ GitHub</span>
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold font-mono">
+                v1.0.0
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mb-5">
+              Khi bạn sửa hoặc cập nhật phần mềm mới lên GitHub ở Nghệ An, máy tính ở cửa hàng Đà Nẵng chỉ cần nhấn nút <strong>"Kiểm Tra Cập Nhật"</strong> để tự động tải bản mới nhất về mà không làm mất dữ liệu chấm công.
+            </p>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                  Đường link GitHub Repository của bạn:
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: https://github.com/ten-ban/kyodo-food-attendance"
+                    value={githubRepoUrl}
+                    onChange={(e) => setGithubRepoUrl(e.target.value)}
+                    className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-red-500 focus:outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCheckUpdate}
+                    disabled={checkingUpdate || updatingApp}
+                    className="px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold flex items-center justify-center gap-2 transition-all shadow-xs"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} />
+                    <span>{checkingUpdate ? 'Đang kiểm tra...' : 'Kiểm Tra Cập Nhật'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Nhập link GitHub repository của bạn để hệ thống tự động kiểm tra mỗi khi có mã nguồn mới.
+                </p>
+              </div>
+
+              {/* Status display if update detected */}
+              {updateInfo && (
+                <div className={`p-4 rounded-2xl border text-xs font-semibold ${
+                  updateInfo.hasUpdate 
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                    : (updateInfo.error ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-50 border-slate-200 text-slate-700')
+                }`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-sm mb-1">{updateInfo.message}</p>
+                      {updateInfo.hasUpdate && (
+                        <p className="text-[11px] text-emerald-700">
+                          Phiên bản hiện tại: <strong>v{updateInfo.currentVersion}</strong> ➔ Bản mới trên GitHub: <strong className="text-emerald-900">v{updateInfo.latestVersion}</strong>
+                        </p>
+                      )}
+                    </div>
+                    {updateInfo.hasUpdate && (
+                      <button
+                        type="button"
+                        onClick={handleApplyUpdate}
+                        disabled={updatingApp}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all shrink-0 cursor-pointer"
+                      >
+                        <ArrowUpCircle className="w-4 h-4" />
+                        <span>{updatingApp ? 'Đang nâng cấp...' : 'Nâng Cấp Ngay'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
               <Upload className="w-5 h-5 text-red-600" />
