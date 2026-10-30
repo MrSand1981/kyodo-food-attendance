@@ -21,7 +21,8 @@ export default function StaffAttendance({
 }) {
   const [activeShift, setActiveShift] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState("2026-11");
+  const todayYM = new Date().toISOString().substring(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(todayYM || "2026-10");
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -257,17 +258,53 @@ export default function StaffAttendance({
     }
   };
 
-  // Xử lý NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY
+  // Xử lý NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (HỖ TRỢ NHIỀU CA TRONG NGÀY & CHỐNG TRÙNG LẶP)
   const handleDailyEntrySubmit = async (e) => {
     e.preventDefault();
     if (!entryDate) {
       setErrorMsg("Vui lòng chọn ngày làm việc!");
       return;
     }
+    if (entryStart === entryEnd) {
+      setErrorMsg("Giờ vào ca và giờ ra ca không được trùng nhau! Vui lòng chọn thời gian hợp lệ.");
+      return;
+    }
     const h = Number(entryHours);
     if (isNaN(h) || h <= 0) {
       setErrorMsg("Vui lòng nhập số giờ làm việc hợp lệ!");
       return;
+    }
+
+    // Kiểm tra chống trùng lặp / giao thoa thời gian ngay tại client
+    const dayRecords = (summaryData?.records || []).filter(
+      r => r.date === entryDate && r.status === 'completed'
+    );
+
+    const [sh, sm] = entryStart.split(':').map(Number);
+    const [eh, em] = entryEnd.split(':').map(Number);
+    const newStartMins = sh * 60 + sm;
+    let newEndMins = eh * 60 + em;
+    if (newEndMins <= newStartMins) newEndMins += 24 * 60;
+
+    for (const rec of dayRecords) {
+      if (rec.checkIn && rec.checkOut) {
+        const dStart = new Date(rec.checkIn);
+        const dEnd = new Date(rec.checkOut);
+        const existStartMins = dStart.getHours() * 60 + dStart.getMinutes();
+        let existEndMins = dEnd.getHours() * 60 + dEnd.getMinutes();
+        if (existEndMins <= existStartMins) existEndMins += 24 * 60;
+
+        if (newStartMins < existEndMins && newEndMins > existStartMins) {
+          const existStartStr = `${String(dStart.getHours()).padStart(2, '0')}:${String(dStart.getMinutes()).padStart(2, '0')}`;
+          const existEndStr = `${String(dEnd.getHours()).padStart(2, '0')}:${String(dEnd.getMinutes()).padStart(2, '0')}`;
+          if (entryStart === existStartStr && entryEnd === existEndStr) {
+            setErrorMsg(`⚠️ Trùng lặp thời gian! Bạn đã chấm công ca ${existStartStr} - ${existEndStr} (${rec.totalHours}h) trong ngày hôm nay rồi. Không được khai báo lặp lại 2 lần!`);
+          } else {
+            setErrorMsg(`⚠️ Trùng thời gian làm việc! Khoảng giờ ${entryStart} - ${entryEnd} bị giao thoa/trùng với ca đã có (${existStartStr} - ${existEndStr}) trong ngày hôm nay. Vui lòng chọn khoảng giờ khác!`);
+          }
+          return;
+        }
+      }
     }
 
     try {
@@ -294,6 +331,21 @@ export default function StaffAttendance({
       await loadData();
     } catch (err) {
       setErrorMsg(err.message || "Lỗi khi lưu thời gian làm việc!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xóa bản ghi ca làm việc (nếu nhập nhầm)
+  const handleDeleteAttendance = async (id, timeLabel) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa bản ghi ca làm việc "${timeLabel}" này không?`)) return;
+    try {
+      setLoading(true);
+      await api.deleteAttendance(id);
+      setFeedbackMsg(`Đã xóa ca làm việc "${timeLabel}" thành công!`);
+      await loadData();
+    } catch (err) {
+      setErrorMsg(err.message || "Lỗi khi xóa ca làm việc");
     } finally {
       setLoading(false);
     }
@@ -594,7 +646,16 @@ export default function StaffAttendance({
                   type="date"
                   required
                   value={entryDate}
-                  onChange={(e) => setEntryDate(e.target.value)}
+                  onChange={(e) => {
+                    const d = e.target.value;
+                    setEntryDate(d);
+                    if (d && d.length >= 7) {
+                      const ym = d.substring(0, 7);
+                      if (ym !== selectedMonth) {
+                        setSelectedMonth(ym);
+                      }
+                    }
+                  }}
                   className="w-full pl-8 pr-2 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
@@ -612,6 +673,7 @@ export default function StaffAttendance({
               </div>
               <div className="flex items-center gap-1">
                 <select
+                  aria-label="Giờ vào"
                   value={entryStart.split(':')[0] || '08'}
                   onChange={(e) => {
                     const m = entryStart.split(':')[1] || '00';
@@ -625,6 +687,7 @@ export default function StaffAttendance({
                 </select>
                 <span className="font-bold text-slate-400">:</span>
                 <select
+                  aria-label="Phút vào"
                   value={entryStart.split(':')[1] || '00'}
                   onChange={(e) => {
                     const h = entryStart.split(':')[0] || '08';
@@ -651,6 +714,7 @@ export default function StaffAttendance({
               </div>
               <div className="flex items-center gap-1">
                 <select
+                  aria-label="Giờ ra"
                   value={entryEnd.split(':')[0] || '17'}
                   onChange={(e) => {
                     const m = entryEnd.split(':')[1] || '00';
@@ -664,6 +728,7 @@ export default function StaffAttendance({
                 </select>
                 <span className="font-bold text-slate-400">:</span>
                 <select
+                  aria-label="Phút ra"
                   value={entryEnd.split(':')[1] || '00'}
                   onChange={(e) => {
                     const h = entryEnd.split(':')[0] || '17';
@@ -725,6 +790,62 @@ export default function StaffAttendance({
 
           </div>
         </form>
+
+        {/* Danh sách các ca làm đã khai báo trong ngày đã chọn (Hỗ trợ làm nhiều lần/ngày & chống trùng) */}
+        {(() => {
+          const dayRecords = (summaryData?.records || []).filter(
+            r => r.date === entryDate && r.status === 'completed'
+          );
+          const dayTotalHours = dayRecords.reduce((sum, r) => sum + Number(r.totalHours || 0), 0);
+          if (dayRecords.length === 0) return null;
+
+          return (
+            <div className="mt-3.5 pt-3 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  Đã ghi nhận <strong>{dayRecords.length} ca làm việc</strong> trong ngày {formatDateVN(entryDate)}:
+                </span>
+                <span className="text-[11px] font-black text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-lg w-fit">
+                  Tổng thời gian ngày: {dayTotalHours} giờ
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {dayRecords.map((r, idx) => (
+                  <div key={r.id || idx} className="flex items-center justify-between bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/80 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 rounded-md bg-white border border-amber-200 font-mono font-bold text-[10px] text-amber-800">
+                        Ca {idx + 1}
+                      </span>
+                      <div>
+                        <span className="font-mono font-black text-slate-800 block">
+                          {formatShortTime(r.checkIn)} ➔ {formatShortTime(r.checkOut)}
+                        </span>
+                        <span className="text-[10px] text-slate-500 italic block">
+                          {r.note || r.shiftName || 'Làm việc'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-lg text-xs">
+                        {r.totalHours}h
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAttendance(r.id, `${formatShortTime(r.checkIn)} - ${formatShortTime(r.checkOut)}`)}
+                        className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"
+                        title="Xóa ca này nếu nhập nhầm"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ================= PHẦN 2 & 3: GRID 2 CỘT (ỨNG LƯƠNG & BÁO NGHỈ) ================= */}
@@ -1061,6 +1182,7 @@ export default function StaffAttendance({
                 <th className="py-2.5 px-3 text-center">Tổng Giờ</th>
                 <th className="py-2.5 px-3 text-center">Trạng Thái</th>
                 <th className="py-2.5 px-3">Ghi Chú</th>
+                <th className="py-2.5 px-3 text-center">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1099,12 +1221,22 @@ export default function StaffAttendance({
                       <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px]">
                         {rec.note || '-'}
                       </td>
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAttendance(rec.id, `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Xóa bản ghi ca làm này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-6 text-center text-slate-400">
+                  <td colSpan={9} className="py-6 text-center text-slate-400">
                     Chưa có lịch sử làm việc trong tháng {formatMonthVN(selectedMonth)}.
                   </td>
                 </tr>

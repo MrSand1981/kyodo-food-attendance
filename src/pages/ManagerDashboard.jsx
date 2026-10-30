@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
-import { formatDateVN, formatMonthVN } from '../utils/date';
+import { formatDateVN, formatMonthVN, formatShortTime } from '../utils/date';
 
 export default function ManagerDashboard({ settings, onSettingsChange, shifts }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
@@ -994,13 +994,18 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       {report?.days?.map(d => {
                         const cellData = row.dailyData[d.day];
                         const hasHours = cellData && cellData.hours > 0;
+                        const logsTooltip = cellData?.logs?.map((l, i) => `Ca ${i+1}: ${formatShortTime(l.checkIn)} - ${formatShortTime(l.checkOut)} (${l.totalHours}h)`).join('\n') || '';
                         return (
                           <td 
                             key={d.day} 
                             className={`py-2 px-1 text-center font-mono ${d.isWeekend ? 'bg-amber-50/40' : ''}`}
+                            title={logsTooltip}
                           >
                             {hasHours ? (
-                              <span className="inline-block px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px]">
+                              <span 
+                                className="inline-block px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px] cursor-help"
+                                title={logsTooltip}
+                              >
                                 {cellData.hours}
                               </span>
                             ) : (

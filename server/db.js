@@ -421,35 +421,91 @@ function checkOut({ employeeId, attendanceId, note }) {
   return record;
 }
 
-// NHÂN VIÊN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (KHAI BÁO CA LÀM)
+// NHÂN VIÊN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (KHAI BÁO CA LÀM - HỖ TRỢ NHIỀU CA TRONG NGÀY & CHỐNG TRÙNG LẶP)
 function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note }) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => e.id === employeeId);
-  if (!emp) throw new Error("Nhân viên không tồn tại");
+  const emp = db.employees.find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
 
-  if (!date) throw new Error("Vui lòng chọn ngày làm việc");
+  if (!date) throw new Error("Vui lòng chọn ngày làm việc!");
+  if (!startTime || !endTime) throw new Error("Vui lòng chọn đầy đủ giờ vào ca và giờ ra ca!");
 
+  if (startTime === endTime) {
+    throw new Error("Giờ vào ca và giờ ra ca không được giống nhau! Vui lòng chọn thời gian hợp lệ.");
+  }
+
+  // Parse checkIn và checkOut chính xác theo múi giờ
+  const checkInDate = new Date(`${date}T${startTime}:00+07:00`);
+  let checkOutDate = new Date(`${date}T${endTime}:00+07:00`);
+  if (checkOutDate <= checkInDate) {
+    // Trường hợp làm qua đêm (ví dụ: vào 21:00, ra 02:00 sáng hôm sau)
+    checkOutDate = new Date(checkOutDate.getTime() + 24 * 3600 * 1000);
+  }
+
+  const checkInISO = checkInDate.toISOString();
+  const checkOutISO = checkOutDate.toISOString();
+  const newStartMs = checkInDate.getTime();
+  const newEndMs = checkOutDate.getTime();
+
+  // Tính số giờ làm và làm tròn theo ngày (5h10p -> 5h, 4h50p -> 5h, không tính lẻ phút)
   let calculatedHours = Number(hours);
-  let checkInISO = null;
-  let checkOutISO = null;
+  const diffMinutes = Math.round((newEndMs - newStartMs) / 60000);
+  const roundedHours = Math.round(diffMinutes / 60);
+  if (isNaN(calculatedHours) || calculatedHours <= 0) {
+    calculatedHours = Math.max(1, roundedHours);
+  }
 
-  if (startTime && endTime) {
-    checkInISO = new Date(`${date}T${startTime}:00+07:00`).toISOString();
-    checkOutISO = new Date(`${date}T${endTime}:00+07:00`).toISOString();
-    if (isNaN(calculatedHours) || calculatedHours <= 0) {
-      const diffMs = new Date(checkOutISO) - new Date(checkInISO);
-      calculatedHours = Math.max(0.1, Number((diffMs / 3600000).toFixed(2)));
+  // ================= BẢO VỆ CHỐNG TRÙNG LẶP & GIAO THOA THỜI GIAN =================
+  // Lấy toàn bộ ca làm việc của nhân viên này để kiểm tra giao thoa
+  const existingRecords = (db.attendance || []).filter(a => 
+    a.employeeId === emp.id && 
+    a.status !== 'cancelled' &&
+    a.checkIn && a.checkOut
+  );
+
+  for (const rec of existingRecords) {
+    const existStartMs = new Date(rec.checkIn).getTime();
+    const existEndMs = new Date(rec.checkOut).getTime();
+
+    // Công thức giao thoa thời gian: newStart < existEnd && newEnd > existStart
+    if (newStartMs < existEndMs && newEndMs > existStartMs) {
+      const formatTimeStr = (isoStr) => {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      };
+      const existStartStr = formatTimeStr(rec.checkIn);
+      const existEndStr = formatTimeStr(rec.checkOut);
+      const recDate = rec.date || date;
+      const [y, m, d] = recDate.split('-');
+      const recDateVN = `${d}/${m}/${y}`;
+
+      if (startTime === existStartStr && endTime === existEndStr) {
+        throw new Error(
+          `Trùng lặp thời gian! Bạn đã chấm công ca ${existStartStr} - ${existEndStr} (${rec.totalHours} giờ) trong ngày ${recDateVN} rồi. Không được khai báo lặp lại 2 lần để gian lận giờ làm!`
+        );
+      } else {
+        throw new Error(
+          `Trùng thời gian làm việc! Khoảng giờ bạn nhập (${startTime} - ${endTime}) bị giao thoa/trùng đè với ca làm (${existStartStr} - ${existEndStr}) đã chấm ngày ${recDateVN}. Vui lòng nhập khoảng giờ khác!`
+        );
+      }
     }
-  } else if (calculatedHours > 0) {
-    checkInISO = new Date(`${date}T08:00:00+07:00`).toISOString();
-    const endMs = new Date(checkInISO).getTime() + calculatedHours * 3600000;
-    checkOutISO = new Date(endMs).toISOString();
-  } else {
-    throw new Error("Vui lòng nhập số giờ làm việc hoặc giờ vào và giờ ra!");
+  }
+
+  // Đặt tên ca làm việc thông minh
+  let autoShiftName = shiftName;
+  if (!autoShiftName || autoShiftName === "Khai báo ngày làm" || autoShiftName === "MANUAL") {
+    if (startTime === "08:00" && endTime === "17:00") {
+      autoShiftName = "Ca Sáng";
+    } else if (startTime === "17:00" && endTime === "22:00") {
+      autoShiftName = "Ca Chiều";
+    } else {
+      autoShiftName = `Ca ${startTime}-${endTime}`;
+    }
   }
 
   const newRecord = {
-    id: `att-manual-${Date.now()}`,
+    id: `att-manual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
     employeeName: emp.name,
@@ -459,7 +515,7 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
     checkOut: checkOutISO,
     totalHours: Number(calculatedHours.toFixed(2)),
     shiftCode: "MANUAL",
-    shiftName: shiftName || "Khai báo ngày làm",
+    shiftName: autoShiftName,
     status: "completed",
     note: note || "Nhân viên tự nhập giờ làm",
     photo: null
