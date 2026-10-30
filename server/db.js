@@ -37,7 +37,10 @@ function ensureDbFile() {
 
   try {
     const content = fs.readFileSync(DB_PATH, 'utf-8');
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
+    if (!parsed.leaveRequests) parsed.leaveRequests = [];
+    return parsed;
   } catch (err) {
     console.error("Lỗi đọc database.json, tạo lại dữ liệu mẫu:", err);
     const seed = generateSeedData();
@@ -71,10 +74,14 @@ function getEmployees(includeConfidential = false) {
     username: e.username,
     code: e.code,
     name: e.name,
-    gender: e.gender,
+    gender: e.gender || "Nam",
+    dob: e.dob || "",
+    phone: e.phone || "",
+    address: e.address || "",
+    cccd: e.cccd || "",
     branch: e.branch || "Trưng Nữ Vương",
     role: e.role || "Nhân viên",
-    avatar: e.avatar,
+    avatar: e.avatar || (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
     active: e.active,
     isDefaultPassword: e.password === '1234' && e.passwordChanged !== true
   }));
@@ -101,25 +108,40 @@ function addEmployee(employeeData) {
   }
 
   const newId = `emp-${Date.now()}`;
+  const gender = employeeData.gender === 'Nữ' ? 'Nữ' : 'Nam';
+  const defaultAvatar = gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
+
   const newEmp = {
     id: newId,
     username: rawUsername,
     code: rawUsername,
     name: employeeData.name.trim(),
-    gender: employeeData.gender || "Khác",
+    gender: gender,
+    dob: employeeData.dob || "",
+    cccd: employeeData.cccd || "",
+    phone: employeeData.phone || "",
+    address: employeeData.address || "",
     branch: "Trưng Nữ Vương",
     role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
     password: employeeData.password || "1234",
     passwordChanged: false,
-    phone: employeeData.phone || "",
-    avatar: employeeData.avatar || "",
+    avatar: employeeData.avatar || defaultAvatar,
     active: true
   };
 
   db.employees.push(newEmp);
   saveDatabase(db);
   return newEmp;
+}
+
+function updateEmployeeAvatar(employeeId, avatarUrl) {
+  const db = ensureDbFile();
+  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  emp.avatar = avatarUrl;
+  saveDatabase(db);
+  return { success: true, avatar: avatarUrl, message: "Cập nhật ảnh đại diện thành công!" };
 }
 
 function updateEmployee(id, updateData) {
@@ -186,16 +208,21 @@ function authenticateUser(username, password) {
 
   const activeShift = getActiveShift(emp.id);
 
-  // Che giấu tuyệt đối thông tin lương và mật khẩu cho nhân viên
+  // Thông tin cá nhân của nhân viên
+  const defaultAvatar = emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
   const sanitizedEmp = {
     id: emp.id,
     username: emp.username,
     code: emp.code,
     name: emp.name,
-    gender: emp.gender,
+    gender: emp.gender || "Nam",
+    dob: emp.dob || "",
+    cccd: emp.cccd || "",
+    phone: emp.phone || "",
+    address: emp.address || "",
     branch: emp.branch || "Trưng Nữ Vương",
     role: emp.role || "Nhân viên",
-    avatar: emp.avatar,
+    avatar: emp.avatar || defaultAvatar,
     active: emp.active
   };
 
@@ -406,6 +433,119 @@ function deleteAttendance(id) {
   return true;
 }
 
+// ---------------- ỨNG TIỀN LƯƠNG TRƯỚC (SALARY ADVANCES) ----------------
+function requestSalaryAdvance({ employeeId, date, amount, reason }) {
+  const db = ensureDbFile();
+  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+
+  const numAmount = Math.round(Number(amount));
+  if (isNaN(numAmount) || numAmount <= 0) {
+    throw new Error("Số tiền ứng lương phải lớn hơn 0 VNĐ!");
+  }
+
+  const advDate = date || new Date().toISOString().split('T')[0];
+  const newAdvance = {
+    id: `adv-${Date.now()}`,
+    employeeId: emp.id,
+    employeeCode: emp.username || emp.code,
+    employeeName: emp.name,
+    branch: "Trưng Nữ Vương",
+    date: advDate,
+    amount: numAmount,
+    reason: reason ? String(reason).trim() : "Ứng tiền lương",
+    status: "approved",
+    createdAt: new Date().toISOString()
+  };
+
+  if (!db.salaryAdvances) db.salaryAdvances = [];
+  db.salaryAdvances.push(newAdvance);
+  saveDatabase(db);
+  return newAdvance;
+}
+
+function getSalaryAdvances(employeeId = null, yearMonth = null) {
+  const db = ensureDbFile();
+  let list = db.salaryAdvances || [];
+  if (employeeId) {
+    list = list.filter(a => a.employeeId === employeeId || a.employeeCode === employeeId);
+  }
+  if (yearMonth) {
+    list = list.filter(a => a.date && a.date.startsWith(yearMonth));
+  }
+  list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const totalCount = list.length;
+  const totalAmount = list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  return {
+    records: list,
+    totalCount,
+    totalAmount
+  };
+}
+
+function deleteSalaryAdvance(id) {
+  const db = ensureDbFile();
+  if (!db.salaryAdvances) return false;
+  const idx = db.salaryAdvances.findIndex(a => a.id === id);
+  if (idx === -1) return false;
+  db.salaryAdvances.splice(idx, 1);
+  saveDatabase(db);
+  return true;
+}
+
+// ---------------- XIN NGÀY NGHỈ (LEAVE REQUESTS) ----------------
+function requestLeave({ employeeId, date, endDate, shift, reason }) {
+  const db = ensureDbFile();
+  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+
+  if (!date) throw new Error("Vui lòng chọn ngày xin nghỉ!");
+
+  const newLeave = {
+    id: `leave-${Date.now()}`,
+    employeeId: emp.id,
+    employeeCode: emp.username || emp.code,
+    employeeName: emp.name,
+    branch: "Trưng Nữ Vương",
+    date: date,
+    endDate: endDate || date,
+    shift: shift || "Cả ngày",
+    reason: reason ? String(reason).trim() : "Có việc gia đình",
+    status: "approved",
+    createdAt: new Date().toISOString()
+  };
+
+  if (!db.leaveRequests) db.leaveRequests = [];
+  db.leaveRequests.push(newLeave);
+  saveDatabase(db);
+  return newLeave;
+}
+
+function getLeaveRequests(employeeId = null, yearMonth = null) {
+  const db = ensureDbFile();
+  let list = db.leaveRequests || [];
+  if (employeeId) {
+    list = list.filter(l => l.employeeId === employeeId || l.employeeCode === employeeId);
+  }
+  if (yearMonth) {
+    list = list.filter(l => l.date && l.date.startsWith(yearMonth));
+  }
+  list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return list;
+}
+
+function deleteLeaveRequest(id) {
+  const db = ensureDbFile();
+  if (!db.leaveRequests) return false;
+  const idx = db.leaveRequests.findIndex(l => l.id === id);
+  if (idx === -1) return false;
+  db.leaveRequests.splice(idx, 1);
+  saveDatabase(db);
+  return true;
+}
+
 // ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN TỔNG GIỜ LÀM) ----------------
 function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false) {
   const db = ensureDbFile();
@@ -438,13 +578,21 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
   const estimatedSalary = Math.round(totalCompletedHours * hourlyRate);
 
+  const advData = getSalaryAdvances(emp.id, currentYM);
+  const leaveData = getLeaveRequests(emp.id, currentYM);
+
   const summary = {
     employee: {
       id: emp.id,
       username: emp.username,
       code: emp.code,
       name: emp.name,
-      gender: emp.gender,
+      gender: emp.gender || "Nam",
+      dob: emp.dob || "",
+      cccd: emp.cccd || "",
+      phone: emp.phone || "",
+      address: emp.address || "",
+      avatar: emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
       branch: "Trưng Nữ Vương",
       role: emp.role
     },
@@ -452,6 +600,10 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     totalHours: totalCompletedHours,
     totalDays: daysWorkedSet.size,
     totalShifts: shiftCount,
+    advanceCount: advData.totalCount,
+    advanceTotal: advData.totalAmount,
+    advances: advData.records,
+    leaveRequests: leaveData,
     salaryConfidential: !includeSalary,
     activeShift: activeShift,
     records: monthRecords
@@ -494,6 +646,7 @@ function getMasterMonthlyReport(yearMonth) {
 
   let storeTotalHours = 0;
   let storeTotalSalary = 0;
+  let storeTotalAdvance = 0;
 
   const rows = employees.map(emp => {
     const empRecords = allMonthAttendance.filter(a => a.employeeId === emp.id);
@@ -548,8 +701,14 @@ function getMasterMonthlyReport(yearMonth) {
     const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
     const empTotalSalary = Math.round(empTotalHours * hourlyRate);
 
+    const advData = getSalaryAdvances(emp.id, currentYM);
+    const advanceTotal = advData.totalAmount || 0;
+    const advanceCount = advData.totalCount || 0;
+    const netSalary = Math.max(0, empTotalSalary - advanceTotal);
+
     storeTotalHours += empTotalHours;
     storeTotalSalary += empTotalSalary;
+    storeTotalAdvance += advanceTotal;
 
     return {
       employee: emp,
@@ -560,7 +719,11 @@ function getMasterMonthlyReport(yearMonth) {
       eveningShifts: eveningShifts,
       totalShifts: morningShifts + eveningShifts + otherShifts,
       hourlyRate: hourlyRate,
-      totalSalary: empTotalSalary
+      totalSalary: empTotalSalary,
+      advanceCount: advanceCount,
+      advanceTotal: advanceTotal,
+      netSalary: netSalary,
+      advances: advData.records
     };
   });
 
@@ -575,7 +738,9 @@ function getMasterMonthlyReport(yearMonth) {
     summary: {
       totalEmployees: employees.length,
       storeTotalHours: Number(storeTotalHours.toFixed(2)),
-      storeTotalSalary: storeTotalSalary
+      storeTotalSalary: storeTotalSalary,
+      storeTotalAdvance: storeTotalAdvance,
+      storeTotalNetSalary: storeTotalSalary - storeTotalAdvance
     }
   };
 }
@@ -613,6 +778,13 @@ module.exports = {
   recordDailyWork,
   adjustAttendance,
   deleteAttendance,
+  updateEmployeeAvatar,
+  requestSalaryAdvance,
+  getSalaryAdvances,
+  deleteSalaryAdvance,
+  requestLeave,
+  getLeaveRequests,
+  deleteLeaveRequest,
   getEmployeeMonthlySummary,
   getMasterMonthlyReport,
   getSettings,

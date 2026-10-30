@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg-male" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="skin-m" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fed7aa" />
+      <stop offset="100%" stop-color="#fdba74" />
+    </linearGradient>
+    <linearGradient id="hair-m" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx="60" cy="60" r="58" fill="url(#bg-male)" stroke="#fff" stroke-width="4" />
+  
+  <!-- Neck -->
+  <rect x="52" y="70" width="16" height="18" rx="4" fill="url(#skin-m)" />
+  
+  <!-- Collar / Clothes -->
+  <path d="M28 114 C28 92 45 88 60 88 C75 88 92 92 92 114 Z" fill="#ffffff" />
+  <path d="M44 88 L60 105 L76 88" stroke="#2563eb" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  
+  <!-- Face -->
+  <ellipse cx="60" cy="56" rx="21" ry="24" fill="url(#skin-m)" />
+  
+  <!-- Short Male Hair -->
+  <path d="M38 52 C37 32 46 22 60 22 C74 22 83 32 82 52 C78 44 72 40 60 40 C48 40 42 44 38 52 Z" fill="url(#hair-m)" />
+  <!-- Sideburns -->
+  <path d="M38 48 L41 58 L43 56 Z" fill="url(#hair-m)" />
+  <path d="M82 48 L79 58 L77 56 Z" fill="url(#hair-m)" />
+  
+  <!-- Eyebrows -->
+  <path d="M48 48 Q53 46 58 48" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  <path d="M62 48 Q67 46 72 48" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  
+  <!-- Eyes -->
+  <ellipse cx="53" cy="55" rx="2.2" ry="2.8" fill="#0f172a" />
+  <ellipse cx="67" cy="55" rx="2.2" ry="2.8" fill="#0f172a" />
+  <circle cx="54" cy="54" r="0.8" fill="#fff" />
+  <circle cx="68" cy="54" r="0.8" fill="#fff" />
+  
+  <!-- Smile -->
+  <path d="M54 66 Q60 71 66 66" stroke="#c2410c" stroke-width="2" fill="none" stroke-linecap="round" />
+</svg>

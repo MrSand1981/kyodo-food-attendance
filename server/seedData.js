@@ -10,13 +10,17 @@ function generateSeedData() {
       code: "UTNVTNV",
       name: "Út",
       gender: "Nữ",
+      dob: "2002-08-15",
+      cccd: "048102001234",
+      phone: "0905111222",
+      address: "Hải Châu, Đà Nẵng",
       branch: "Trưng Nữ Vương",
       role: "Nhân viên",
       hourlyRate: 25000,
       password: "1234",
       passwordChanged: false,
       active: true,
-      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
+      avatar: "/avatar-female.svg"
     },
     {
       id: "emp-bao",
@@ -24,19 +28,23 @@ function generateSeedData() {
       code: "BAONVTNV",
       name: "Bảo",
       gender: "Nam",
+      dob: "2001-03-20",
+      cccd: "048201005678",
+      phone: "0905333444",
+      address: "Thanh Khê, Đà Nẵng",
       branch: "Trưng Nữ Vương",
       role: "Nhân viên",
       hourlyRate: 22000,
       password: "1234",
       passwordChanged: false,
       active: true,
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
+      avatar: "/avatar-male.svg"
     }
   ];
 
   const shifts = [
-    { code: "SANG", name: "Ca Sáng", duration: 9, defaultStart: "08:00", defaultEnd: "17:00", note: "08:00 - 17:00 (9 tiếng)" },
-    { code: "CHIEU", name: "Ca Chiều", duration: 5, defaultStart: "17:00", defaultEnd: "22:00", note: "17:00 - 22:00 (5 tiếng)" }
+    { code: "SANG", name: "Full Ca Sáng", duration: 9, defaultStart: "08:00", defaultEnd: "17:00", note: "08:00 - 17:00 (9 tiếng)" },
+    { code: "TOI", name: "Full Ca Tối", duration: 5, defaultStart: "17:00", defaultEnd: "22:00", note: "17:00 - 22:00 (5 tiếng)" }
   ];
 
   const settings = {
@@ -50,12 +58,16 @@ function generateSeedData() {
 
   // Dữ liệu chấm công trống 100% để bắt đầu tính từ ngày 01/11/2026
   const attendance = [];
+  const salaryAdvances = [];
+  const leaveRequests = [];
 
   return {
     employees,
     shifts,
     settings,
-    attendance
+    attendance,
+    salaryAdvances,
+    leaveRequests
   };
 }
 

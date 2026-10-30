@@ -114,6 +114,11 @@ export default function App() {
         {currentRole === 'employee' && currentUser && (
           <StaffAttendance
             employee={currentUser}
+            onUpdateEmployee={(updated) => {
+              setCurrentUser(prev => ({ ...prev, ...updated }));
+              // Cập nhật cả trong danh sách employees
+              setEmployees(prev => prev.map(e => e.id === updated.id ? { ...e, ...updated } : e));
+            }}
             onLogout={handleLogout}
             settings={settings}
             shifts={shifts}

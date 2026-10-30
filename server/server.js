@@ -109,6 +109,20 @@ app.post('/api/employees/change-password', (req, res) => {
   }
 });
 
+// Cập nhật Avatar cá nhân cho nhân viên
+app.post('/api/employees/avatar', (req, res) => {
+  try {
+    const { employeeId, avatar } = req.body;
+    if (!employeeId || !avatar) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin employeeId hoặc ảnh avatar!' });
+    }
+    const result = db.updateEmployeeAvatar(employeeId, avatar);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 app.post('/api/employees', (req, res) => {
   try {
     const newEmp = db.addEmployee(req.body);
@@ -185,6 +199,74 @@ app.post('/api/attendance/daily-entry', (req, res) => {
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 4b. ỨNG TIỀN LƯƠNG TRƯỚC (SALARY ADVANCES)
+app.get('/api/advances', (req, res) => {
+  try {
+    const { employeeId, month } = req.query;
+    const result = db.getSalaryAdvances(employeeId, month);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/advances', (req, res) => {
+  try {
+    const { employeeId, date, amount, reason } = req.body;
+    const record = db.requestSalaryAdvance({ employeeId, date, amount, reason });
+    res.json({
+      success: true,
+      record,
+      message: `Đã lưu bản ghi ứng lương ${Number(amount).toLocaleString('vi-VN')} đ thành công!`
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/advances/:id', (req, res) => {
+  try {
+    const ok = db.deleteSalaryAdvance(req.params.id);
+    res.json({ success: ok, message: 'Đã xóa bản ghi tạm ứng lương' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 4c. XIN NGÀY NGHỈ (LEAVE REQUESTS)
+app.get('/api/leaves', (req, res) => {
+  try {
+    const { employeeId, month } = req.query;
+    const result = db.getLeaveRequests(employeeId, month);
+    res.json({ success: true, records: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/leaves', (req, res) => {
+  try {
+    const { employeeId, date, endDate, shift, reason } = req.body;
+    const record = db.requestLeave({ employeeId, date, endDate, shift, reason });
+    res.json({
+      success: true,
+      record,
+      message: `Đã gửi đơn xin nghỉ phép ngày ${date} thành công!`
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/leaves/:id', (req, res) => {
+  try {
+    const ok = db.deleteLeaveRequest(req.params.id);
+    res.json({ success: ok, message: 'Đã xóa đơn xin nghỉ' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

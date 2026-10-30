@@ -57,6 +57,40 @@ export const api = {
   updateEmployee: (id, data) => request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/employees/${id}`, { method: 'DELETE' }),
 
+  // Cập nhật Avatar cá nhân
+  updateAvatar: ({ employeeId, avatar }) => request('/employees/avatar', {
+    method: 'POST',
+    body: JSON.stringify({ employeeId, avatar })
+  }),
+
+  // Ứng tiền lương trước (Salary Advances)
+  getSalaryAdvances: (employeeId = '', month = '') => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    if (month) params.append('month', month);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request(`/advances${qs}`);
+  },
+  requestSalaryAdvance: ({ employeeId, date, amount, reason }) => request('/advances', {
+    method: 'POST',
+    body: JSON.stringify({ employeeId, date, amount, reason })
+  }),
+  deleteSalaryAdvance: (id) => request(`/advances/${id}`, { method: 'DELETE' }),
+
+  // Xin ngày nghỉ (Leave Requests)
+  getLeaveRequests: (employeeId = '', month = '') => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    if (month) params.append('month', month);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request(`/leaves${qs}`);
+  },
+  requestLeave: ({ employeeId, date, endDate, shift, reason }) => request('/leaves', {
+    method: 'POST',
+    body: JSON.stringify({ employeeId, date, endDate, shift, reason })
+  }),
+  deleteLeaveRequest: (id) => request(`/leaves/${id}`, { method: 'DELETE' }),
+
   // Chấm công trực tiếp (Vào ca / Ra ca)
   getActiveShift: (employeeId) => request(`/attendance/active/${employeeId}`),
   checkIn: ({ employeeId, shiftCode, note }) => request('/attendance/check-in', {
