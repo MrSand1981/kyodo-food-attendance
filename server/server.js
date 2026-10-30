@@ -90,10 +90,21 @@ app.post('/api/auth/login', (req, res) => {
 // 3. EMPLOYEES CRUD (ADMIN TẠO TÀI KHOẢN CHO NHÂN VIÊN)
 app.get('/api/employees', (req, res) => {
   try {
-    const employees = db.getEmployees();
+    const isAdmin = req.query.role === 'admin' || req.headers['x-admin-key'] === '20162020';
+    const employees = db.getEmployees(isAdmin);
     res.json({ success: true, employees });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/employees/change-password', (req, res) => {
+  try {
+    const { employeeId, oldPassword, newPassword } = req.body;
+    const result = db.changeEmployeePassword(employeeId, oldPassword, newPassword);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
   }
 });
 
@@ -176,11 +187,12 @@ app.post('/api/attendance/daily-entry', (req, res) => {
   }
 });
 
-// 5. TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN KẾT QUẢ TỔNG GIỜ LÀM)
+// 5. TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN KẾT QUẢ TỔNG GIỜ LÀM - BẢO MẬT LƯƠNG)
 app.get('/api/attendance/my-summary/:employeeId', (req, res) => {
   try {
     const { month } = req.query; // YYYY-MM
-    const summary = db.getEmployeeMonthlySummary(req.params.employeeId, month);
+    const isAdmin = req.query.includeSalary === 'true' && req.headers['x-admin-key'] === '20162020';
+    const summary = db.getEmployeeMonthlySummary(req.params.employeeId, month, isAdmin);
     res.json({ success: true, data: summary });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -47,8 +47,12 @@ export const api = {
     body: JSON.stringify({ username, password })
   }),
 
-  // Nhân viên
-  getEmployees: () => request('/employees'),
+  // Nhân viên (mặc định che lương; Quản lý truyền isAdmin = true)
+  getEmployees: (isAdmin = false) => {
+    const query = isAdmin ? '?role=admin' : '';
+    const headers = isAdmin ? { 'x-admin-key': '20162020' } : {};
+    return request(`/employees${query}`, { headers });
+  },
   addEmployee: (data) => request('/employees', { method: 'POST', body: JSON.stringify(data) }),
   updateEmployee: (id, data) => request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/employees/${id}`, { method: 'DELETE' }),
@@ -85,6 +89,12 @@ export const api = {
   // Điều chỉnh bản ghi chấm công (Admin)
   adjustAttendance: (data) => request('/attendance/adjust', { method: 'POST', body: JSON.stringify(data) }),
   deleteAttendance: (id) => request(`/attendance/${id}`, { method: 'DELETE' }),
+
+  // Nhân viên tự đổi mật khẩu riêng biệt
+  changePassword: ({ employeeId, oldPassword, newPassword }) => request('/employees/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ employeeId, oldPassword, newPassword })
+  }),
 
   // Link xuất file Excel chuẩn
   getExportExcelUrl: (month) => {

@@ -8,7 +8,8 @@ export default function Header({
   onLogout, 
   onAdminClick, 
   onBackToLogin,
-  settings 
+  settings,
+  appMode = 'all' // 'all' | 'employee' | 'manager'
 }) {
   const [time, setTime] = useState(new Date());
 
@@ -103,8 +104,8 @@ export default function Header({
                   <div className="text-sm font-bold text-slate-900">
                     {currentUser.name} ({currentUser.username || currentUser.code})
                   </div>
-                  <div className="text-xs text-emerald-600 font-bold">
-                    Lương: {Number(currentUser.hourlyRate || 25000).toLocaleString()}đ/h
+                  <div className="text-xs text-slate-500 font-semibold">
+                    Nhân viên • Trưng Nữ Vương
                   </div>
                 </div>
                 {currentUser.avatar ? (
@@ -145,7 +146,7 @@ export default function Header({
               </div>
             )}
 
-            {!currentRole && (
+            {!currentRole && appMode !== 'employee' && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={onAdminClick}

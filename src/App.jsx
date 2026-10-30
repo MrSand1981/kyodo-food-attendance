@@ -6,7 +6,17 @@ import StaffAttendance from './pages/StaffAttendance';
 import ManagerDashboard from './pages/ManagerDashboard';
 import { api } from './utils/api';
 
+function getInitialAppMode() {
+  const path = window.location.pathname.toLowerCase();
+  const search = new URLSearchParams(window.location.search);
+  const m = search.get('mode');
+  if (m === 'employee' || path.includes('/employee')) return 'employee';
+  if (m === 'manager' || path.includes('/manager') || path.includes('/admin')) return 'manager';
+  return 'all';
+}
+
 export default function App() {
+  const [appMode, setAppMode] = useState(getInitialAppMode()); // 'all' | 'employee' | 'manager'
   const [currentRole, setCurrentRole] = useState(null); // null | 'employee' | 'admin'
   const [currentUser, setCurrentUser] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -20,7 +30,7 @@ export default function App() {
       setLoading(true);
       const [settingsRes, employeesRes] = await Promise.all([
         api.getSettings(),
-        api.getEmployees()
+        api.getEmployees(false) // Che giấu tuyệt đối lương khi khởi tạo
       ]);
       setSettings(settingsRes.settings);
       setShifts(settingsRes.shifts || []);
@@ -40,6 +50,10 @@ export default function App() {
   const handleLoginSubmit = async ({ username, password }) => {
     const res = await api.login({ username, password });
     if (res.success) {
+      // Nếu đang ở phiên bản nhân viên thì không cho phép đăng nhập admin
+      if (appMode === 'employee' && res.role === 'admin') {
+        throw new Error("Phiên bản Nhân Viên chỉ dành cho nhân viên chấm công!");
+      }
       setCurrentRole(res.role);
       setCurrentUser(res.user);
     }
@@ -72,26 +86,31 @@ export default function App() {
         currentRole={currentRole}
         onLogout={handleLogout}
         onAdminClick={() => {
-          // Thoát về trang đăng nhập và tự động chuyển tab Admin
           setCurrentRole(null);
           setCurrentUser(null);
+          if (appMode !== 'employee') {
+            setAppMode('manager');
+          }
         }}
         onBackToLogin={handleLogout}
         settings={settings}
+        appMode={appMode}
       />
 
       {/* Main Viewport */}
       <main className="flex-1 pb-16">
-        {/* 1. MÀN HÌNH ĐĂNG NHẬP (ÚT: UTNVTNV, BẢO: BAONVTNV, ADMIN: 20162020) */}
+        {/* 1. MÀN HÌNH ĐĂNG NHẬP */}
         {!currentRole && (
           <LoginKiosk
             employees={employees}
             onLoginSubmit={handleLoginSubmit}
             settings={settings}
+            appMode={appMode}
+            onSwitchMode={(mode) => setAppMode(mode)}
           />
         )}
 
-        {/* 2. MÀN HÌNH NHÂN VIÊN: NHẬP GIỜ LÀM TỪNG NGÀY & XEM TỔNG CÔNG CUỐI THÁNG */}
+        {/* 2. MÀN HÌNH NHÂN VIÊN: NHẬP GIỜ LÀM TỪNG NGÀY & XEM TỔNG CÔNG CUỐI THÁNG (BẢO MẬT LƯƠNG) */}
         {currentRole === 'employee' && currentUser && (
           <StaffAttendance
             employee={currentUser}
@@ -101,7 +120,7 @@ export default function App() {
           />
         )}
 
-        {/* 3. MÀN HÌNH QUẢN LÝ / CHỦ CỬA HÀNG: XEM BẢNG CÔNG, TẠO TÀI KHOẢN, XUẤT EXCEL */}
+        {/* 3. MÀN HÌNH QUẢN LÝ / CHỦ CỬA HÀNG: XEM BẢNG LƯƠNG, BẢNG CÔNG, TẠO TÀI KHOẢN, XUẤT EXCEL */}
         {currentRole === 'admin' && (
           <ManagerDashboard
             settings={settings}
