@@ -90,5 +90,9 @@ export const api = {
   getExportExcelUrl: (month) => {
     const query = month ? `?month=${month}` : '';
     return `${BASE_URL}/attendance/export-excel${query}`;
-  }
+  },
+
+  // Cập nhật phần mềm từ GitHub
+  checkUpdate: () => request('/system/check-update'),
+  applyUpdate: () => request('/system/apply-update', { method: 'POST' })
 };
