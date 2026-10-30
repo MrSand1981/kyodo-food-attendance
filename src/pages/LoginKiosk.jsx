@@ -139,7 +139,7 @@ export default function LoginKiosk({
       
       {/* Hero Store Greeting */}
       <div className="text-center mb-2 sm:mb-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-1.5 border border-red-200">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold mb-1.5 border border-amber-200">
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
         </div>
@@ -147,7 +147,7 @@ export default function LoginKiosk({
         {activeTab === 'employee' || isEmployeeOnly ? (
           <>
             <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Trang Quản Lý <span className="text-red-600">Chấm Công</span>
+              Trang Quản Lý <span className="text-amber-600">Chấm Công</span>
             </h2>
             <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Mỗi nhân viên tự đăng nhập tài khoản riêng biệt để chấm công và theo dõi số giờ làm việc.
@@ -165,7 +165,7 @@ export default function LoginKiosk({
         ) : (
           <>
             <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Trang Quản Lý <span className="text-red-600">Chấm Công</span>
+              Trang Quản Lý <span className="text-amber-600">Chấm Công</span>
             </h2>
             <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm">
               Đăng nhập tài khoản nhân viên để chấm công hoặc tài khoản Quản lý để xem bảng lương.
@@ -176,7 +176,7 @@ export default function LoginKiosk({
 
       {/* THÔNG BÁO CẬP NHẬT PHIÊN BẢN MỚI (DÀNH CHO NHÂN VIÊN CHỦ ĐỘNG CẬP NHẬT) */}
       {updateStatus?.hasUpdate && (
-        <div className="w-full max-w-md mx-auto mb-2.5 sm:mb-3.5 p-3.5 sm:p-4 rounded-3xl bg-linear-to-r from-red-600 via-amber-600 to-red-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
+        <div className="w-full max-w-md mx-auto mb-2.5 sm:mb-3.5 p-3.5 sm:p-4 rounded-3xl bg-linear-to-r from-amber-500 via-amber-600 to-yellow-500 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
               <Sparkles className="w-5 h-5 text-amber-200" />
@@ -184,9 +184,9 @@ export default function LoginKiosk({
             <div>
               <div className="font-black text-sm flex items-center gap-2">
                 <span>Phần mềm đã có phiên bản mới (v{updateStatus.latestVersion})!</span>
-                <span className="px-2 py-0.5 rounded-full bg-white text-red-700 text-[10px] font-black uppercase tracking-wider">Mới</span>
+                <span className="px-2 py-0.5 rounded-full bg-white text-amber-800 text-[10px] font-black uppercase tracking-wider">Mới</span>
               </div>
-              <p className="text-xs text-red-100 mt-0.5">
+              <p className="text-xs text-amber-100 mt-0.5">
                 Phần mềm đã có phiên bản mới hãy nhấn cập nhật ngay để cập nhật các tính năng mới.
               </p>
             </div>
@@ -195,10 +195,10 @@ export default function LoginKiosk({
             type="button"
             onClick={handleApplyUpdate}
             disabled={updatingApp}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-white hover:bg-amber-50 active:scale-95 text-red-700 font-black text-xs shadow-md transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-white hover:bg-amber-50 active:scale-95 text-amber-800 font-black text-xs shadow-md transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-2"
           >
             {updatingApp ? (
-              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <ArrowDownCircle className="w-4 h-4" />
@@ -226,7 +226,7 @@ export default function LoginKiosk({
                   onClick={() => quickSelectEmployee(emp)}
                   className={`w-40 sm:w-50 p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-2.5 text-left ${
                     isSelected 
-                      ? 'border-red-500 bg-red-50/80 shadow-sm scale-102 ring-2 ring-red-500/20' 
+                      ? 'border-amber-500 bg-amber-50/80 shadow-sm scale-102 ring-2 ring-amber-500/20' 
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
@@ -237,12 +237,12 @@ export default function LoginKiosk({
                         {displayName}
                       </h3>
                       {isSelected && (
-                        <span className="w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0">
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-red-600 font-bold font-mono truncate">
+                    <div className="text-[11px] text-amber-700 font-bold font-mono truncate">
                       TK: {emp.username || emp.code}
                     </div>
                   </div>
@@ -264,7 +264,7 @@ export default function LoginKiosk({
               onClick={() => { setActiveTab('employee'); setError(''); }}
               className={`flex-1 py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
                 activeTab === 'employee' 
-                  ? 'bg-white text-red-600 shadow-xs' 
+                  ? 'bg-white text-amber-700 shadow-xs' 
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -309,7 +309,7 @@ export default function LoginKiosk({
                   placeholder="Chọn tài khoản ở trên hoặc nhập mã TK..."
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toUpperCase())}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold font-mono text-sm uppercase text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold font-mono text-sm uppercase text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
                 />
               </div>
             </div>
@@ -326,7 +326,7 @@ export default function LoginKiosk({
                   placeholder="nhập mật khẩu để đăng nhập"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all font-mono tracking-widest"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono tracking-widest"
                 />
                 <button
                   type="button"
@@ -341,7 +341,7 @@ export default function LoginKiosk({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-2xl bg-red-600 hover:bg-red-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-red-600/20 transition-all cursor-pointer mt-2"
+              className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-600/25 transition-all cursor-pointer mt-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -411,10 +411,10 @@ export default function LoginKiosk({
           type="button"
           onClick={checkAppUpdate}
           disabled={checkingUpdate}
-          className="text-slate-600 hover:text-red-600 flex items-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-slate-50 border border-slate-200/80 shadow-2xs cursor-pointer bg-white"
+          className="text-slate-600 hover:text-amber-700 flex items-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-200 shadow-2xs cursor-pointer bg-white"
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${checkingUpdate ? 'animate-spin text-red-600' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
           <span>{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Kiểm Tra Bản Cập Nhật Mới')}</span>
         </button>
 
@@ -423,7 +423,7 @@ export default function LoginKiosk({
             type="button"
             onClick={handleApplyUpdate}
             disabled={updatingApp}
-            className="text-xs font-black py-2 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-md transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+            className="text-xs font-black py-2 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-md transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
           >
             <ArrowDownCircle className="w-3.5 h-3.5" />
             <span>Cập Nhật Bản Mới Ngay (v{updateStatus.latestVersion})</span>
