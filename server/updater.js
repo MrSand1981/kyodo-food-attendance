@@ -48,44 +48,37 @@ async function checkUpdate(githubRepoInput) {
   try {
     // 1. Kiểm tra qua raw package.json trên branch main
     const rawUrl = `https://raw.githubusercontent.com/${repoSlug}/main/package.json?t=${Date.now()}`;
-    const res = await fetch(rawUrl, {
+    let res = await fetch(rawUrl, {
       headers: { 'User-Agent': 'KyodoFood-App-Updater' }
     });
+    let branch = 'main';
 
     if (!res.ok) {
       // Thử branch master nếu branch main không có
       const masterUrl = `https://raw.githubusercontent.com/${repoSlug}/master/package.json?t=${Date.now()}`;
-      const resMaster = await fetch(masterUrl, {
+      res = await fetch(masterUrl, {
         headers: { 'User-Agent': 'KyodoFood-App-Updater' }
       });
-      if (!resMaster.ok) {
+      branch = 'master';
+      if (!res.ok) {
         throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
       }
-      const remotePkg = await resMaster.json();
-      const remoteVer = remotePkg.version || 'mới';
-      const hasUpdate = remotePkg.version ? remotePkg.version !== currentVersion : true;
-      return {
-        configured: true,
-        repo: repoSlug,
-        branch: 'master',
-        hasUpdate,
-        currentVersion,
-        latestVersion: remoteVer,
-        message: hasUpdate ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` : 'Phần mềm đang ở phiên bản mới nhất.'
-      };
     }
 
-    const remoteVer = remotePkg.version || 'mới';
-    const hasUpdate = remotePkg.version ? remotePkg.version !== currentVersion : true;
+    const remotePkg = await res.json();
+    const remoteVer = remotePkg.version || '1.0.0';
+    const hasUpdate = remotePkg.version ? remotePkg.version !== currentVersion : false;
 
     return {
       configured: true,
       repo: repoSlug,
-      branch: 'main',
+      branch: branch,
       hasUpdate,
       currentVersion,
       latestVersion: remoteVer,
-      message: hasUpdate ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` : 'Phần mềm đang ở phiên bản mới nhất.'
+      message: hasUpdate 
+        ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` 
+        : 'Phần mềm đang ở phiên bản mới nhất.'
     };
   } catch (err) {
     return {
