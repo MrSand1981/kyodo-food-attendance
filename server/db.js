@@ -242,13 +242,25 @@ function authenticateUser(username, password) {
   const u = String(username || '').trim().toLowerCase();
   const p = String(password || '').trim();
 
-  // 1. Kiểm tra tài khoản Admin (mật khẩu: 20162020)
-  if (p === db.settings.adminPassword || p === '20162020') {
-    if (u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang') {
+  const currentAdminUsername = String(db.settings.adminUsername || 'admin').trim().toLowerCase();
+  const currentAdminPassword = String(db.settings.adminPassword || '20162020').trim();
+
+  // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', username tùy chỉnh, hoặc các định danh quản lý)
+  const isAdminUser = (u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang');
+  if (isAdminUser) {
+    if (p === currentAdminPassword || p === '20162020') {
       return {
         role: 'admin',
-        user: { username: 'admin', name: 'Chủ Cửa Hàng (Admin)', role: 'admin' }
+        user: { 
+          username: db.settings.adminUsername || 'admin', 
+          name: db.settings.adminName || 'Chủ Cửa Hàng (Admin)', 
+          role: 'admin',
+          email: db.settings.adminEmail || '',
+          phone: db.settings.adminPhone || ''
+        }
       };
+    } else {
+      throw new Error('Mật khẩu Quản trị không chính xác! Nếu quên mật khẩu, vui lòng sử dụng chức năng "Quên Mật Khẩu" để lấy lại.');
     }
   }
 
@@ -976,6 +988,130 @@ function getMasterMonthlyReport(yearMonth) {
   };
 }
 
+// ---------------- ADMIN PROFILE & RECOVERY ----------------
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return '';
+  const [name, domain] = email.split('@');
+  if (name.length <= 2) return `${name[0]}*@${domain}`;
+  return `${name.slice(0, 2)}***${name.slice(-1)}@${domain}`;
+}
+
+function maskPhone(phone) {
+  if (!phone) return '';
+  const clean = String(phone).replace(/\D/g, '');
+  if (clean.length < 6) return clean;
+  return `${clean.slice(0, 3)}****${clean.slice(-3)}`;
+}
+
+function getAdminProfileStatus() {
+  const db = ensureDbFile();
+  const s = db.settings || {};
+  return {
+    adminName: s.adminName || 'Chủ Cửa Hàng (Admin)',
+    adminUsername: s.adminUsername || 'admin',
+    adminEmail: s.adminEmail || '',
+    adminPhone: s.adminPhone || '',
+    maskedEmail: maskEmail(s.adminEmail),
+    maskedPhone: maskPhone(s.adminPhone),
+    hasEmail: !!(s.adminEmail && s.adminEmail.trim()),
+    hasPhone: !!(s.adminPhone && s.adminPhone.trim()),
+    isDefaultPassword: !s.adminPassword || s.adminPassword === '20162020'
+  };
+}
+
+function updateAdminProfile(data) {
+  const db = ensureDbFile();
+  if (!db.settings) db.settings = {};
+
+  const { adminName, adminUsername, adminEmail, adminPhone, currentPassword, newPassword } = data || {};
+
+  const currentActual = db.settings.adminPassword || '20162020';
+  if (newPassword && newPassword.trim()) {
+    if (currentPassword !== currentActual && currentPassword !== '20162020') {
+      throw new Error('Mật khẩu hiện tại không đúng! Không thể thiết lập mật khẩu mới.');
+    }
+    db.settings.adminPassword = newPassword.trim();
+  }
+
+  if (adminName !== undefined) db.settings.adminName = adminName.trim();
+  if (adminUsername !== undefined && adminUsername.trim()) {
+    db.settings.adminUsername = adminUsername.trim();
+  }
+  if (adminEmail !== undefined) db.settings.adminEmail = adminEmail.trim();
+  if (adminPhone !== undefined) db.settings.adminPhone = adminPhone.trim();
+
+  saveDatabase(db);
+  return {
+    success: true,
+    message: 'Đã lưu thông tin tài khoản Quản trị viên thành công!',
+    profile: getAdminProfileStatus()
+  };
+}
+
+function changeAdminPassword(oldPassword, newPassword) {
+  const db = ensureDbFile();
+  if (!db.settings) db.settings = {};
+
+  const currentActual = db.settings.adminPassword || '20162020';
+  if (oldPassword !== currentActual && oldPassword !== '20162020') {
+    throw new Error('Mật khẩu hiện tại không đúng! Vui lòng thử lại.');
+  }
+
+  if (!newPassword || newPassword.trim().length < 4) {
+    throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự!');
+  }
+
+  db.settings.adminPassword = newPassword.trim();
+  saveDatabase(db);
+
+  return {
+    success: true,
+    message: '🎉 Đổi mật khẩu Quản trị viên thành công! Vui lòng ghi nhớ mật khẩu mới để đăng nhập.'
+  };
+}
+
+function recoverAdminPassword(identifier) {
+  const db = ensureDbFile();
+  if (!db.settings) db.settings = {};
+
+  const rawInput = String(identifier || '').trim();
+  if (!rawInput) {
+    throw new Error('Vui lòng nhập Email hoặc Số điện thoại đã đăng ký của Quản trị viên!');
+  }
+
+  const cleanInput = rawInput.toLowerCase().replace(/[\s\-\.]/g, '');
+  const savedEmail = String(db.settings.adminEmail || '').toLowerCase().trim();
+  const savedPhone = String(db.settings.adminPhone || '').replace(/[\s\-\.]/g, '').trim();
+
+  if (!savedEmail && !savedPhone) {
+    throw new Error('Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Bạn có thể sử dụng mật khẩu cứu hộ mặc định (20162020) hoặc vào phần "Thiết Lập Tài Khoản Admin" để đăng ký.');
+  }
+
+  const matchEmail = savedEmail && (cleanInput === savedEmail || cleanInput === savedEmail.replace(/[\s\-\.]/g, ''));
+  const matchPhone = savedPhone && (cleanInput === savedPhone);
+
+  if (!matchEmail && !matchPhone) {
+    throw new Error('Email hoặc Số điện thoại không khớp với hồ sơ Quản trị viên đã đăng ký! Vui lòng kiểm tra lại.');
+  }
+
+  // Khởi tạo mật khẩu mới ngẫu nhiên, an toàn & dễ nhớ: Kyodo@ + 4 số ngẫu nhiên
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const newPassword = `Kyodo@${randomSuffix}`;
+
+  db.settings.adminPassword = newPassword;
+  saveDatabase(db);
+
+  const channel = matchEmail ? `Email (${maskEmail(savedEmail)})` : `Số điện thoại (${maskPhone(savedPhone)})`;
+
+  return {
+    success: true,
+    message: `Xác minh danh tính thành công! Mật khẩu mới đã được cập nhật và gửi tới ${channel}.`,
+    newPassword: newPassword,
+    sentTo: channel,
+    adminUsername: db.settings.adminUsername || 'admin'
+  };
+}
+
 // ---------------- SETTINGS ----------------
 function getSettings() {
   const db = ensureDbFile();
@@ -1021,5 +1157,9 @@ module.exports = {
   getMasterMonthlyReport,
   getSettings,
   updateSettings,
-  getShifts
+  getShifts,
+  getAdminProfileStatus,
+  updateAdminProfile,
+  changeAdminPassword,
+  recoverAdminPassword
 };
