@@ -1,0 +1,60 @@
+{
+  "employees": [
+    {
+      "id": "emp-ut",
+      "username": "UTNVTNV",
+      "code": "UTNVTNV",
+      "name": "Út",
+      "gender": "Nữ",
+      "branch": "Trưng Nữ Vương",
+      "role": "Nhân viên",
+      "hourlyRate": 25000,
+      "password": "1234",
+      "passwordChanged": false,
+      "active": true,
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "emp-bao",
+      "username": "BAONVTNV",
+      "code": "BAONVTNV",
+      "name": "Bảo",
+      "gender": "Nam",
+      "branch": "Trưng Nữ Vương",
+      "role": "Nhân viên",
+      "hourlyRate": 22000,
+      "password": "1234",
+      "passwordChanged": false,
+      "active": true,
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
+    }
+  ],
+  "shifts": [
+    {
+      "code": "SANG",
+      "name": "Full Ca Sáng",
+      "duration": 9,
+      "defaultStart": "08:00",
+      "defaultEnd": "17:00",
+      "note": "08:00 - 17:00 (9 tiếng)"
+    },
+    {
+      "code": "TOI",
+      "name": "Full Ca Tối",
+      "duration": 5,
+      "defaultStart": "17:00",
+      "defaultEnd": "22:00",
+      "note": "17:00 - 22:00 (5 tiếng)"
+    }
+  ],
+  "settings": {
+    "storeName": "Kyodo Food",
+    "branchName": "Trưng Nữ Vương",
+    "tagline": "Cửa hàng Kyodo Food - Trưng Nữ Vương, Đà Nẵng",
+    "logoUrl": "/logo-kyodo.png",
+    "adminUsername": "admin",
+    "adminPassword": "20162020",
+    "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance"
+  },
+  "attendance": []
+}
