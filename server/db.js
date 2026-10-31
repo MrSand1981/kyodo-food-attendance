@@ -73,6 +73,7 @@ function saveVault(employees) {
     employees.forEach(e => {
       const key = e.id || e.code || e.username;
       if (!key) return;
+      if (e.isTest || e.username === 'LINHNVTNV' || String(key).startsWith('test-')) return;
       const existing = vaultMap.get(key) || {};
 
       // Hợp nhất thông tin: Luôn bảo toàn các trường dữ liệu thực tế đã có
@@ -108,12 +109,31 @@ function saveVault(employees) {
 
 // Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Render/Railway)
 if (process.env.MONGODB_URI) {
-  MongoClient.connect(process.env.MONGODB_URI)
-    .then(client => {
+  MongoClient.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 })
+    .then(async client => {
       mongoClient = client;
       mongoDb = client.db('kyodo_food');
       isMongo = true;
       console.log('✅ Đã kết nối Cơ sở dữ liệu Cloud MongoDB Atlas thành công!');
+
+      try {
+        const record = await mongoDb.collection('app_state').findOne({ _id: 'master_db' });
+        if (record && record.data) {
+          console.log('📥 Đã nạp dữ liệu đám mây từ MongoDB Atlas (Lần cuối cập nhật:', record.updatedAt || 'Không rõ', ')');
+          saveDatabase(record.data, false);
+          console.log('🛡️ Phục hồi dữ liệu từ Cloud MongoDB thành công! Bảo toàn 100% không bị rollback.');
+        } else {
+          const currentData = ensureDbFile();
+          await mongoDb.collection('app_state').updateOne(
+            { _id: 'master_db' },
+            { $set: { data: currentData, updatedAt: new Date().toISOString() } },
+            { upsert: true }
+          );
+          console.log('🚀 Đã khởi tạo dữ liệu ban đầu lên MongoDB Atlas!');
+        }
+      } catch (pullErr) {
+        console.error('⚠️ Lỗi nạp dữ liệu từ MongoDB Atlas:', pullErr.message);
+      }
     })
     .catch(err => {
       console.warn('⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:', err.message);
@@ -205,7 +225,7 @@ function ensureDbFile() {
   return parsed;
 }
 
-function saveDatabase(data) {
+function saveDatabase(data, syncToCloud = true) {
   const tmpPath = `${DB_PATH}.tmp`;
   try {
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
@@ -220,7 +240,7 @@ function saveDatabase(data) {
   }
 
   // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud
-  if (isMongo && mongoDb) {
+  if (syncToCloud && isMongo && mongoDb) {
     mongoDb.collection('app_state').updateOne(
       { _id: 'master_db' },
       { $set: { data: data, updatedAt: new Date() } },
@@ -1541,6 +1561,7 @@ function deleteHoliday(id) {
 
 
 module.exports = {
+  isMongoConnected: () => isMongo,
   getHolidays,
   getHolidayByDate,
   addHoliday,

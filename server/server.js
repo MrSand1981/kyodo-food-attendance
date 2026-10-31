@@ -671,4 +671,33 @@ if (require.main === module) {
   });
 }
 
+
+// 12. EXPORT & RESTORE DATABASE (CHỐNG MẤT DỮ LIỆU)
+app.get('/api/system/export-db', (req, res) => {
+  try {
+    const data = db.ensureDbFile();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="kyodo_backup_${new Date().toISOString().slice(0,10)}.json"`);
+    res.send(JSON.stringify(data, null, 2));
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/restore-db', (req, res) => {
+  try {
+    const { backupData, adminPassword } = req.body || {};
+    if (adminPassword !== '20162020') {
+      return res.status(403).json({ success: false, message: 'Mật khẩu quản trị (Admin) không chính xác!' });
+    }
+    if (!backupData || !backupData.employees) {
+      return res.status(400).json({ success: false, message: 'Dữ liệu sao lưu không hợp lệ!' });
+    }
+    db.saveDatabase(backupData, true);
+    res.json({ success: true, message: 'Khôi phục cơ sở dữ liệu thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = app;

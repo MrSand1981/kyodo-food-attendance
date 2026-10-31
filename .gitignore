@@ -52,9 +52,8 @@ cloudflared.exe
 # Installer outputs
 installer_output/
 
-# Data files (keep database.json but not backups/vault in git)
+# Data files (keep database.json and kyodo_employee_vault.json in git)
 data/backups/
-data/kyodo_employee_vault.json
 
 # Docker
 .docker/
