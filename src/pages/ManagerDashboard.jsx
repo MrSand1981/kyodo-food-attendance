@@ -18,12 +18,14 @@ import {
   formatShortTime, 
   getSalaryMonthForAdvance, 
   getAdvanceCycleRange, 
-  getAdvanceCycleExplanation 
+  getAdvanceCycleExplanation,
+  getVietnamTodayYMD,
+  getVietnamCurrentYM
 } from '../utils/date';
 
 export default function ManagerDashboard({ settings, onSettingsChange, shifts }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
-  const [selectedMonth, setSelectedMonth] = useState('2026-11');
+  const [selectedMonth, setSelectedMonth] = useState(getVietnamCurrentYM());
   
   // Data states
   const [report, setReport] = useState(null);
@@ -359,7 +361,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   // Mở modal tạm ứng lương cho nhân viên
   const openManagerAdvanceModal = (emp) => {
     setMgrAdvTargetEmp(emp);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getVietnamTodayYMD();
     const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
     setMgrAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
     setMgrAdvAmount('');
@@ -658,7 +660,7 @@ useEffect(() => {
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v1.5.2
+              Bản v1.5.4
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">

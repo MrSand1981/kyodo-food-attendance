@@ -1,6 +1,31 @@
 // src/utils/date.js
 // Các hàm tiện ích chuẩn hóa định dạng ngày tháng sang DD/MM/YYYY theo chuẩn Việt Nam
 
+/**
+ * Lấy ngày hôm nay theo múi giờ Việt Nam (Asia/Ho_Chi_Minh, GMT+7) định dạng YYYY-MM-DD
+ * Tuyệt đối không dùng toISOString() vì toISOString() trả về giờ UTC (GMT+0) khiến từ 00:00 đến 07:00 sáng tại VN bị lùi về ngày hôm trước!
+ */
+export function getVietnamTodayYMD() {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+  } catch (e) {
+    const d = new Date(Date.now() + 7 * 3600 * 1000);
+    return d.toISOString().split('T')[0];
+  }
+}
+
+/**
+ * Lấy tháng hiện tại theo múi giờ Việt Nam định dạng YYYY-MM
+ */
+export function getVietnamCurrentYM() {
+  return getVietnamTodayYMD().substring(0, 7);
+}
+
 export function formatDateVN(dateInput) {
   if (!dateInput) return '';
   if (dateInput instanceof Date) {
