@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Kyodo Food Attendance - Production Service
+  # =============================================================================
+  kyodo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: kyodo-food-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      # Database (JSON file-based, no external DB needed)
+      # Optional: MongoDB Atlas for cloud sync
+      - MONGODB_URI=${MONGODB_URI:-}
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=7d
+      - JWT_REFRESH_EXPIRES_IN=30d
+      # Admin
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-20162020}
+      - DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME:-admin}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PHONE=${ADMIN_PHONE:-}
+      # GitHub Auto-update
+      - GITHUB_REPO=${GITHUB_REPO:-https://github.com/MrSand1981/kyodo-food-attendance}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    volumes:
+      # Persistent data storage
+      - ./data:/app/data
+      # Public assets (logo, avatars)
+      - ./public:/app/public
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # Optional: MongoDB for cloud sync (if MONGODB_URI is set)
+  # =============================================================================
+  # mongodb:
+  #   image: mongo:7-alpine
+  #   container_name: kyodo-mongodb
+  #   restart: unless-stopped
+  #   environment:
+  #     MONGO_INITDB_DATABASE: kyodo_food
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   ports:
+  #     - "27017:27017"
+  #   healthcheck:
+  #     test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+
+  # =============================================================================
+  # Optional: Nginx Reverse Proxy (for SSL termination)
+  # =============================================================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: kyodo-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - kyodo-app
+
+volumes:
+  # Named volume for MongoDB (if enabled)
+  # mongodb_data:
+  
+  # Named volume for application data (alternative to bind mount)
+  # app_data:
+
+networks:
+  default:
+    name: kyodo-network

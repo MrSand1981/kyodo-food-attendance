@@ -47,6 +47,30 @@
       "passwordChanged": false,
       "active": true,
       "avatar": "/avatar-male.svg"
+    },
+    {
+      "id": "emp-1793417938505",
+      "username": "LINHNVTNV",
+      "code": "LINHNVTNV",
+      "fullName": "Linh",
+      "shortName": "Linh",
+      "name": "Linh",
+      "gender": "Nam",
+      "dob": "",
+      "cccd": "",
+      "phone": "",
+      "address": "",
+      "bankCode": "",
+      "bankName": "",
+      "bankAccount": "",
+      "accountName": "LINH",
+      "branch": "Trưng Nữ Vương",
+      "role": "Phục vụ",
+      "hourlyRate": 23000,
+      "password": "14753",
+      "passwordChanged": true,
+      "avatar": "/avatar-male.svg",
+      "active": false
     }
   ],
   "shifts": [
