@@ -571,15 +571,58 @@ app.post('/api/system/cloud-config', (req, res) => {
   }
 });
 
-// Cho các route React SPA khi build production
+// Cho các route React SPA khi build production (ngăn chặn triệt để lỗi "Cannot GET /")
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();
   if (req.url.startsWith('/api')) return next();
-  const indexHtml = path.join(distDir, 'index.html');
-  if (fs.existsSync(indexHtml)) {
-    return res.sendFile(indexHtml);
+
+  // 1. Kiểm tra các vị trí chứa index.html
+  const candidates = [
+    path.join(distDir, 'index.html'),
+    path.join(publicDir, 'index.html'),
+    path.join(__dirname, '..', 'index.html'),
+    path.resolve('dist', 'index.html'),
+    path.resolve('public', 'index.html')
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return res.sendFile(candidate);
+    }
   }
-  next();
+
+  // 2. Dự phòng an toàn: nếu chưa có file index.html tĩnh thì trả về trang báo trạng thái rõ ràng, tuyệt đối không quăng Cannot GET /
+  res.status(200).send(`<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kyodo Food App - Máy Chủ Sẵn Sàng</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { background: #1e293b; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 520px; width: 100%; text-align: center; border: 1px solid #334155; }
+    h1 { color: #f59e0b; margin-top: 0; font-size: 22px; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 12px 0; }
+    .badge { display: inline-block; background: #059669; color: #fff; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 9999px; margin-bottom: 12px; }
+    .btn { display: inline-block; background: #f59e0b; color: #000; padding: 10px 24px; border-radius: 8px; font-weight: bold; text-decoration: none; margin-top: 16px; cursor: pointer; border: none; font-size: 14px; }
+    .btn:hover { background: #d97706; }
+    .links { margin-top: 20px; font-size: 12px; color: #64748b; }
+    .links a { color: #38bdf8; text-decoration: none; margin: 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">ONLINE - SẴN SÀNG KẾT NỐI</div>
+    <h1>🍗 KYODO FOOD - MÁY CHỦ ĐANG HOẠT ĐỘNG</h1>
+    <p>Máy chủ Node.js & Database đã sẵn sàng trên cổng ${PORT}. Đang nạp giao diện ứng dụng...</p>
+    <button class="btn" onclick="location.reload()">Tải Lại Giao Diện</button>
+    <div class="links">
+      <a href="/api/settings" target="_blank">Kiểm tra API Cài đặt</a> |
+      <a href="/api/employees" target="_blank">Kiểm tra API Nhân viên</a>
+    </div>
+  </div>
+</body>
+</html>`);
 });
 
 if (require.main === module) {

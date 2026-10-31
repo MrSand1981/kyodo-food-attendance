@@ -28,11 +28,11 @@ If fso.FileExists(focusExe) Then
 End If
 
 ' ==============================================================================
-' 2. XAC DINH CHE DO KET NOI: CLOUD ONLINE HAY LOCALHOST (CO TU DONG FALLBACK)
+' 2. XAC DINH CHE DO KET NOI: CLOUD ONLINE HAY LOCALHOST (CO HUONG DAN VA HOI THONG MINH)
 ' ==============================================================================
-Function ReadCloudUrl(cfgPath)
+Function ReadConfigField(cfgPath, fieldName)
     On Error Resume Next
-    ReadCloudUrl = ""
+    ReadConfigField = ""
     If fso.FileExists(cfgPath) Then
         Dim ts, content, re, matches
         Set ts = fso.OpenTextFile(cfgPath, 1)
@@ -40,28 +40,23 @@ Function ReadCloudUrl(cfgPath)
         ts.Close
         
         Set re = New RegExp
-        re.Pattern = """cloudUrl""\s*:\s*""([^""]+)"""
+        re.Pattern = """" & fieldName & """\s*:\s*""([^""]+)"""
         re.IgnoreCase = True
         Set matches = re.Execute(content)
         If matches.Count > 0 Then
-            Dim cUrl
-            cUrl = Trim(matches(0).SubMatches(0))
-            If InStr(cUrl, "http://") = 1 Or InStr(cUrl, "https://") = 1 Then
-                If Right(cUrl, 1) = "/" Then cUrl = Left(cUrl, Len(cUrl) - 1)
-                ReadCloudUrl = cUrl
-            End If
+            ReadConfigField = Trim(matches(0).SubMatches(0))
         End If
     End If
     Err.Clear
 End Function
 
-Function CheckServer(url)
+Function CheckServer(url, timeoutMs)
     On Error Resume Next
     Dim http
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     If http Is Nothing Then Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
     http.open "GET", url, False
-    http.setTimeouts 1200, 1200, 1200, 1200
+    http.setTimeouts timeoutMs, timeoutMs, timeoutMs, timeoutMs
     http.send ""
     If Err.Number = 0 Then
         If http.status = 200 Then
@@ -74,30 +69,50 @@ Function CheckServer(url)
 End Function
 
 cfgFile = strDir & "\cloud_config.json"
-cloudUrl = ReadCloudUrl(cfgFile)
+cloudUrl = ReadConfigField(cfgFile, "cloudUrl")
+If Right(cloudUrl, 1) = "/" Then cloudUrl = Left(cloudUrl, Len(cloudUrl) - 1)
+activeMode = LCase(ReadConfigField(cfgFile, "activeMode"))
 
 Dim appUrl
 Dim useCloud
 useCloud = False
 
-' Neu co cau hinh link Cloud, kiem tra xem link Cloud co song thuc su khong
-If Len(cloudUrl) > 5 Then
+' Neu duoc cau hinh che do Cloud
+If activeMode = "cloud" And Len(cloudUrl) > 7 Then
     cloudHealthUrl = cloudUrl & "/api/settings"
-    If CheckServer(cloudHealthUrl) Then
+    ' Kiem tra nhanh trong 3 giay xem Cloud co dang san sang khong
+    If CheckServer(cloudHealthUrl, 3000) Then
         useCloud = True
         appUrl = cloudUrl
     Else
-        ' Neu Cloud bi Not Found hoac mat ket noi -> Tu dong fallback ve Localhost noi bo
-        useCloud = False
+        ' Neu Cloud chua phan hoi (co the Render dang ngu hoac mang cham), hoi nguoi dung
+        Dim choice
+        choice = MsgBox("May chu Cloud chua phan hoi ngay tai:" & vbCrLf & cloudUrl & vbCrLf & vbCrLf & _
+                        "- Neu may chu Render/Cloud dang o che do nghi (Sleep), se can khoang 30-40 giay de thuc day." & vbCrLf & _
+                        "- Bam [YES] de tiep tuc mo Cloud (trinh duyet se cho may chu Cloud tai trang)." & vbCrLf & _
+                        "- Bam [NO] de chuyen sang chay May Chu Cuc Bo (Localhost) tren may nay.", _
+                        36, "Ket Noi He Thong Kyodo Food - Da Nang & Nghe An")
+        If choice = 6 Then ' vbYes
+            useCloud = True
+            appUrl = cloudUrl
+        Else
+            useCloud = False
+        End If
+    End If
+ElseIf Len(cloudUrl) > 7 Then
+    cloudHealthUrl = cloudUrl & "/api/settings"
+    If CheckServer(cloudHealthUrl, 2500) Then
+        useCloud = True
+        appUrl = cloudUrl
     End If
 End If
 
-' Neu khong dung Cloud (hoac Cloud chua hoat dong), khoi dong may chu Localhost noi bo
+' Neu khong dung Cloud (hoac nguoi dung chon chay Localhost tren may nay)
 If Not useCloud Then
     localCheckUrl = "http://localhost:5000/api/settings"
     appUrl = "http://localhost:5000"
     
-    If Not CheckServer(localCheckUrl) Then
+    If Not CheckServer(localCheckUrl, 1000) Then
         nodeExe = strDir & "\bin\node.exe"
         serverJs = strDir & "\server\server.js"
         
@@ -110,7 +125,7 @@ If Not useCloud Then
             isReady = False
             For retryCount = 1 To 60
                 WScript.Sleep 300
-                If CheckServer(localCheckUrl) Then
+                If CheckServer(localCheckUrl, 1000) Then
                     isReady = True
                     Exit For
                 End If
