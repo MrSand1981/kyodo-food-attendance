@@ -103,8 +103,17 @@ export function formatDateVN(dateInput: string | Date | undefined | null): strin
     return `${d}/${m}/${y}`;
   }
 
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateOnly)) {
-    return dateOnly;
+  // Đã ở dạng DD/MM/YYYY hoặc MM/DD/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateOnly)) {
+    const parts = dateOnly.split('/');
+    const p1 = parseInt(parts[0], 10);
+    const p2 = parseInt(parts[1], 10);
+    const y = parts[2];
+    if (p1 <= 12 && p2 > 12) {
+      // Nhận diện định dạng Mỹ MM/DD/YYYY và chuyển sang chuẩn Việt Nam DD/MM/YYYY
+      return `${String(p2).padStart(2, '0')}/${String(p1).padStart(2, '0')}/${y}`;
+    }
+    return `${String(p1).padStart(2, '0')}/${String(p2).padStart(2, '0')}/${y}`;
   }
 
   if (/^\d{4}-\d{2}$/.test(dateOnly)) {

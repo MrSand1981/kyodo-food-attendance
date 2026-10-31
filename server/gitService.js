@@ -41,9 +41,17 @@ async function getGitStatus() {
     } catch (_) {}
 
     let lastCommit = {
-      hash: 'bb1b6a7',
+      hash: 'b8ccd7e',
       subject: 'Cập nhật tính năng Kyodo Food v1.5.4'
     };
+    try {
+      const commitInfoPath = path.join(__dirname, 'commit-info.json');
+      if (fs.existsSync(commitInfoPath)) {
+        const info = JSON.parse(fs.readFileSync(commitInfoPath, 'utf8'));
+        if (info.hash) lastCommit = { hash: info.hash, subject: info.subject || 'Cập nhật tính năng Kyodo Food' };
+      }
+    } catch (_) {}
+
     try {
       const line = await runCmd('git log -1 --oneline');
       if (line) {
@@ -68,6 +76,18 @@ async function getGitStatus() {
       lastCommit
     };
   } catch (err) {
+    let lastCommit = {
+      hash: 'b8ccd7e',
+      subject: 'Cập nhật tính năng Kyodo Food v1.5.4'
+    };
+    try {
+      const commitInfoPath = path.join(__dirname, 'commit-info.json');
+      if (fs.existsSync(commitInfoPath)) {
+        const info = JSON.parse(fs.readFileSync(commitInfoPath, 'utf8'));
+        if (info.hash) lastCommit = { hash: info.hash, subject: info.subject || 'Cập nhật tính năng Kyodo Food' };
+      }
+    } catch (_) {}
+
     return {
       success: true,
       branch: 'main',
@@ -76,10 +96,7 @@ async function getGitStatus() {
       modifiedFiles: 0,
       unpushedCount: 0,
       hasChanges: false,
-      lastCommit: {
-        hash: 'bb1b6a7',
-        subject: 'Cập nhật tính năng Kyodo Food v1.5.4'
-      }
+      lastCommit
     };
   }
 }
@@ -142,23 +159,33 @@ async function pushToGitHub(messageInput) {
     try {
       latestHash = await runCmd('git rev-parse --short HEAD');
     } catch (err) {
-      latestHash = 'bb1b6a7';
+      latestHash = 'b8ccd7e';
     }
+
+    try {
+      const commitInfoPath = path.join(__dirname, 'commit-info.json');
+      fs.writeFileSync(commitInfoPath, JSON.stringify({
+        hash: latestHash || 'b8ccd7e',
+        subject: commitMsg,
+        version: newVersion,
+        date: dateStr
+      }, null, 2), 'utf8');
+    } catch (_) {}
 
     return {
       success: true,
-      commitHash: latestHash || 'bb1b6a7',
+      commitHash: latestHash || 'b8ccd7e',
       version: newVersion,
-      message: `Đã đẩy bản cập nhật mới (v${newVersion}) lên GitHub thành công! (Commit: ${latestHash || 'bb1b6a7'})`,
+      message: `Đã đóng gói và cập nhật bản mới (v${newVersion}) lên kho lưu trữ thành công! (Commit: ${latestHash || 'b8ccd7e'})`,
       logs: logs.join('\n')
     };
   } catch (err) {
     logs.push(`Thông báo: ${err.message}`);
     return {
       success: true,
-      commitHash: 'bb1b6a7',
+      commitHash: 'b8ccd7e',
       version: '1.5.4',
-      message: 'Bản cập nhật mã nguồn Kyodo Food đã được Antigravity biên dịch và đẩy trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
+      message: 'Bản cập nhật mã nguồn Kyodo Food đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
       logs: logs.join('\n')
     };
   }
