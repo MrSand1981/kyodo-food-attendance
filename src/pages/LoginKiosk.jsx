@@ -21,7 +21,7 @@ export default function LoginKiosk({
   const [showPassword, setShowPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [adminCustomUsername, setAdminCustomUsername] = useState('admin');
+  const [adminCustomUsername, setAdminCustomUsername] = useState('Admin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,7 +88,7 @@ export default function LoginKiosk({
       if (res.hasUpdate) {
         setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
       } else {
-        setUpdateMsg('Phần mềm đang ở bản mới nhất.');
+        setUpdateMsg(`Bản v${res.currentVersion || '1.4.4'} (Mới nhất)`);
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra cập nhật:', err.message);
@@ -314,6 +314,8 @@ export default function LoginKiosk({
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold mb-1.5 border border-amber-200">
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+          <span className="font-black text-amber-950">Bản v1.4.4</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -531,57 +533,9 @@ export default function LoginKiosk({
           </form>
         )}
 
-        {/* Form 2: Admin Login (Hỗ trợ đổi mật khẩu & lấy lại mật khẩu 1 chạm) */}
+        {/* Form 2: Admin Login */}
         {activeTab === 'admin' && (
           <form onSubmit={handleAdminLogin} className="space-y-3.5 text-xs">
-            {/* Banner Thông Tin Chủ Cửa Hàng & Nút Cài Đặt Hồ Sơ Khôi Phục */}
-            <div className="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 text-amber-900 text-xs">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="font-extrabold flex items-center gap-1.5 text-amber-950">
-                  <ShieldCheck className="w-4 h-4 text-amber-700" />
-                  <span>Dành cho Chủ Cửa Hàng:</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={openRegisterModal}
-                  className="text-[11px] font-black text-amber-800 hover:text-amber-950 underline cursor-pointer flex items-center gap-1"
-                  title="Cập nhật Email, Số điện thoại và Tên đăng nhập Admin"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Hồ Sơ & Khôi Phục</span>
-                </button>
-              </div>
-              <p className="text-[11px] text-amber-800 leading-relaxed">
-                Xem bảng lương chi tiết từng nhân viên, sửa mức lương, cấp tài khoản và xuất file Excel.
-              </p>
-              {adminStatus?.hasEmail || adminStatus?.hasPhone ? (
-                <div className="mt-1.5 pt-1.5 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-emerald-800 font-bold">
-                  <span className="flex items-center gap-1 truncate">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Khôi phục: {adminStatus.maskedEmail || adminStatus.maskedPhone}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={openRegisterModal}
-                    className="text-[10px] text-slate-500 hover:text-amber-800 underline cursor-pointer shrink-0"
-                  >
-                    Thay đổi
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-1.5 pt-1.5 border-t border-amber-200/60 flex items-center justify-between text-[10px] text-amber-700 font-bold">
-                  <span>⚠️ Chưa liên kết Email/SĐT để lấy lại mật khẩu</span>
-                  <button
-                    type="button"
-                    onClick={openRegisterModal}
-                    className="underline text-amber-900 cursor-pointer"
-                  >
-                    Đăng ký ngay
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Ô Tên Tài Khoản Admin */}
             <div>
               <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider whitespace-nowrap">
@@ -592,7 +546,7 @@ export default function LoginKiosk({
                 <input
                   type="text"
                   required
-                  placeholder="admin hoặc tên đăng nhập bất kỳ..."
+                  placeholder="Admin"
                   value={adminCustomUsername}
                   onChange={(e) => setAdminCustomUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono"
@@ -644,7 +598,7 @@ export default function LoginKiosk({
                 <input
                   type={showAdminPassword ? "text" : "password"}
                   required
-                  placeholder="Nhập mật khẩu quản trị..."
+                  placeholder="20162020"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono tracking-widest text-center"
@@ -1088,7 +1042,7 @@ export default function LoginKiosk({
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Kiểm Tra Bản Cập Nhật Mới')}</span>
+          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.4.4 • Kiểm Tra Cập Nhật')}</span>
         </button>
 
         {updateStatus?.hasUpdate && (

@@ -163,11 +163,11 @@ export default function Header({
                 type="button"
                 onClick={() => checkHeaderUpdate(false)}
                 disabled={isCheckingUpdate}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 hover:text-amber-600 transition-all cursor-pointer shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-xs font-extrabold text-amber-900 transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
                 title="Bấm để kiểm tra xem có bản cập nhật mới hay chưa"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isCheckingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-                <span className="whitespace-nowrap">Bản v{updateInfo?.currentVersion || '1.0.0'}</span>
+                <RefreshCw className={`w-3.5 h-3.5 text-amber-700 ${isCheckingUpdate ? 'animate-spin text-amber-800' : ''}`} />
+                <span className="whitespace-nowrap">Bản v{updateInfo?.currentVersion || '1.4.4'}</span>
               </button>
             )}
           </div>
