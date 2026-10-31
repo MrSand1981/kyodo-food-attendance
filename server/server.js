@@ -47,13 +47,18 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Chặn tấn công dò mật khẩu (Brute-force): Giới hạn 20 lần thử sai trong 15 phút
+// Chặn tấn công dò mật khẩu: Nhập sai quá 15 lần trong 15 phút sẽ tạm khóa 15 phút
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 15,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Bạn đã thử đăng nhập quá nhiều lần! Vui lòng thử lại sau 15 phút.' }
+  statusCode: 429,
+  message: {
+    success: false,
+    message: 'Bạn đã nhập sai mật khẩu quá 15 lần! Vui lòng chờ 15 phút để thử lại hoặc liên hệ Quản lý.'
+  }
 });
 
 // Giới hạn tần suất chung cho API
