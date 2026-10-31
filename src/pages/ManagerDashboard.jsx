@@ -315,7 +315,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
 
   // Xóa đơn xin nghỉ từ màn hình quản lý
   const handleDeleteLeaveByManager = async (id, name, date) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa đơn xin nghỉ ngày ${date} của nhân viên ${name}?`)) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa đơn xin nghỉ ngày ${formatDateVN(date)} của nhân viên ${name}?`)) return;
     try {
       await api.deleteLeaveRequest(id);
       setMessage(`Đã xóa đơn xin nghỉ của ${name}`);
@@ -686,7 +686,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
                     Bảng Tổng Hợp Ca & Thông Báo Lương
                   </span>
                   <span className="text-xs font-bold text-slate-700">
-                    Áp dụng: <strong>{selectedMonth}</strong> • Cơ sở Trưng Nữ Vương
+                    Áp dụng: <strong>{formatMonthVN(selectedMonth)}</strong> • Cơ sở Trưng Nữ Vương
                   </span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-1">
@@ -1081,7 +1081,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                             ? 'w-7 min-w-[24px] max-w-[28px]' 
                             : 'min-w-10 px-1'
                         } ${d.isWeekend ? 'bg-amber-100/90 text-amber-950 font-black' : 'text-slate-700'}`}
-                        title={`Ngày ${d.day} (${d.dayOfWeek}) • Tháng ${selectedMonth}`}
+                        title={`${d.dateVN || formatDateVN(d.date)} (${d.dayOfWeek})`}
                       >
                         <div className="font-black text-[11px] leading-tight">{d.day}</div>
                         <div className={`text-[8px] font-bold leading-tight ${d.isWeekend ? 'text-amber-800' : 'text-slate-400'}`}>
@@ -1133,7 +1133,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                             className={`py-1 px-0.5 text-center font-mono ${
                               tableDensity === 'compact' ? 'w-7 min-w-[24px] max-w-[28px]' : 'min-w-10'
                             } ${d.isWeekend ? 'bg-amber-50/50' : ''}`}
-                            title={logsTooltip || `Ngày ${d.day} (${d.dayOfWeek}): Chưa có giờ làm`}
+                            title={logsTooltip || `${d.dateVN || formatDateVN(d.date)} (${d.dayOfWeek}): Chưa có giờ làm`}
                           >
                             {hasHours ? (
                               <span 
@@ -1171,7 +1171,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 <tfoot>
                   <tr className="bg-slate-900 text-white font-extrabold text-xs">
                     <td colSpan={2} className="py-2.5 px-3 uppercase tracking-wider sticky left-0 bg-slate-900 z-10 text-[11px]">
-                      TỔNG CỘNG ({selectedMonth})
+                      TỔNG CỘNG ({formatMonthVN(selectedMonth)})
                     </td>
                     <td colSpan={report?.days?.length || 31} className="py-2 px-1 text-center text-slate-400 text-[10px] truncate">
                       - Đầy đủ {report?.days?.length || 31} ngày ({formatMonthVN(selectedMonth)}) -
@@ -1463,7 +1463,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   <thead>
                     <tr className="bg-amber-50/70 border-b border-amber-200 text-amber-900 font-bold uppercase text-[10px] tracking-wider">
                       <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Ngày Ứng</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày Ứng (DD/MM/YYYY)</th>
                       <th className="py-3 px-4 text-right whitespace-nowrap">Số Tiền Tạm Ứng</th>
                       <th className="py-3 px-4 whitespace-nowrap">Lý Do</th>
                       <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
@@ -1511,7 +1511,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               </div>
             ) : (
               <p className="text-xs text-slate-400 italic py-4">
-                Không có bản ghi tạm ứng lương nào trong tháng {selectedMonth}.
+                Không có bản ghi tạm ứng lương nào trong {formatMonthVN(selectedMonth)}.
               </p>
             )}
           </div>
@@ -1529,7 +1529,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   <thead>
                     <tr className="bg-blue-50/70 border-b border-blue-200 text-blue-900 font-bold uppercase text-[10px] tracking-wider">
                       <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Ngày Đăng Ký Nghỉ</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày Đăng Ký Nghỉ (DD/MM/YYYY)</th>
                       <th className="py-3 px-4 whitespace-nowrap">Ca Nghỉ</th>
                       <th className="py-3 px-4 whitespace-nowrap">Lý Do / Ghi Chú</th>
                       <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
@@ -1570,7 +1570,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               </div>
             ) : (
               <p className="text-xs text-slate-400 italic py-4">
-                Không có thông báo nghỉ nào trong tháng {selectedMonth}.
+                Không có thông báo nghỉ nào trong {formatMonthVN(selectedMonth)}.
               </p>
             )}
           </div>
@@ -2018,7 +2018,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Ngày Tháng Năm Sinh:</label>
+                  <label className="block font-bold text-slate-700 mb-1">Ngày Sinh (DD/MM/YYYY): {empForm.dob && <span className="text-amber-800 font-mono">({formatDateVN(empForm.dob)})</span>}</label>
                   <input
                     type="date"
                     value={empForm.dob}
@@ -2261,7 +2261,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  2. Ngày Ghi Nhận Tạm Ứng:
+                  2. Ngày Ghi Nhận Tạm Ứng: <span className="text-amber-800 font-mono">({formatDateVN(mgrAdvDate)})</span>
                 </label>
                 <input
                   type="date"
@@ -2381,7 +2381,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             <form onSubmit={handleSaveEditAdvance} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  1. Ngày Tạm Ứng:
+                  1. Ngày Tạm Ứng: <span className="text-amber-800 font-mono">({formatDateVN(editAdvDate)})</span>
                 </label>
                 <input
                   type="date"

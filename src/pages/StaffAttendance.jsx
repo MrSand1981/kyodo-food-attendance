@@ -765,7 +765,7 @@ export default function StaffAttendance({
             {/* 1. Ngày Làm Việc */}
             <div className="col-span-2 sm:col-span-1">
               <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                1. Ngày Làm Việc:
+                1. Ngày Làm Việc: <span className="text-amber-800 font-mono">({formatDateVN(entryDate)})</span>
               </label>
               <div className="relative">
                 <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -1295,7 +1295,7 @@ export default function StaffAttendance({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3 whitespace-nowrap">Ngày Làm</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Ngày Làm (DD/MM/YYYY)</th>
                 <th className="py-2.5 px-3 whitespace-nowrap">Thứ</th>
                 <th className="py-2.5 px-3 whitespace-nowrap">Ca Làm Việc</th>
                 <th className="py-2.5 px-3 whitespace-nowrap">Giờ Vào</th>
@@ -1358,7 +1358,7 @@ export default function StaffAttendance({
               ) : (
                 <tr>
                   <td colSpan={9} className="py-6 text-center text-slate-400">
-                    Chưa có lịch sử làm việc trong tháng {formatMonthVN(selectedMonth)}.
+                    Chưa có lịch sử làm việc trong {formatMonthVN(selectedMonth)}.
                   </td>
                 </tr>
               )}
@@ -1506,7 +1506,7 @@ export default function StaffAttendance({
             <form onSubmit={handleSalaryAdvanceSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  1. Chọn Ngày Ứng Lương:
+                  1. Chọn Ngày Ứng Lương: <span className="text-amber-800 font-mono">({formatDateVN(advDate)})</span>
                 </label>
                 <input
                   type="date"
@@ -1622,7 +1622,7 @@ export default function StaffAttendance({
             <form onSubmit={handleLeaveSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  1. Chọn Ngày Nghỉ:
+                  1. Chọn Ngày Nghỉ: <span className="text-blue-800 font-mono">({formatDateVN(leaveDate)})</span>
                 </label>
                 <input
                   type="date"
@@ -1921,7 +1921,7 @@ export default function StaffAttendance({
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Ngày tháng năm sinh:
+                    Ngày sinh (DD/MM/YYYY): {profileForm.dob && <span className="text-amber-800 font-mono">({formatDateVN(profileForm.dob)})</span>}
                   </label>
                   <input
                     type="date"
