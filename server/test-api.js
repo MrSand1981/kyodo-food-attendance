@@ -21,11 +21,11 @@ try {
   console.log('✅ Test 1 Passed: Út (UTNVTNV - 25k) and Bảo (BAONVTNV - 22k) verified');
 
   // Test 2: Authentication
-  const authUt = db.authenticateUser('utnvtnv', '1234');
+  const authUt = db.authenticateUser('utnvtnv', ut.password || '1234');
   assert.strictEqual(authUt.role, 'employee');
   assert.strictEqual(authUt.user.name, 'Út');
 
-  const authBao = db.authenticateUser('BAONVTNV', '1234');
+  const authBao = db.authenticateUser('BAONVTNV', bao.password || '1234');
   assert.strictEqual(authBao.role, 'employee');
   assert.strictEqual(authBao.user.name, 'Bảo');
 

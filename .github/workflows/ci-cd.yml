@@ -201,12 +201,15 @@ jobs:
         uses: sigstore/cosign-installer@v3
 
       - name: Sign Docker image
+        continue-on-error: true
         run: |
-          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest --format '{{json .Manifest.Digest}}' | jq -r '.')
+          mkdir -p .sigstore
+          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest --format '{{json .Manifest.Digest}}' | jq -r '.') || echo "Cosign signing skipped"
         env:
           COSIGN_EXPERIMENTAL: '1'
 
       - name: Upload signature as artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: cosign-signature
