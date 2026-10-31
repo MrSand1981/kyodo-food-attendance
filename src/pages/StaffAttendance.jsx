@@ -630,9 +630,21 @@ export default function StaffAttendance({
             </div>
           </div>
 
-          {/* Nút tác vụ tài khoản: Sửa thông tin cá nhân, Xem VietQR, Đổi MK, Đăng xuất */}
+          {/* Nút tác vụ tài khoản: Sửa thông tin cá nhân, Xem VietQR, Hướng Dẫn PDF, Đổi MK, Đăng xuất */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
             
+            {/* Nút xem File Hướng Dẫn Sử Dụng PDF */}
+            <a
+              href="/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              title="Xem và tải file PDF hướng dẫn sử dụng phần mềm dành cho nhân viên"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span className="whitespace-nowrap">Hướng Dẫn (PDF)</span>
+            </a>
+
             {/* Nút tự kiểm tra & chỉnh sửa thông tin cá nhân */}
             <button
               type="button"

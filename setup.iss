@@ -61,6 +61,7 @@ Name: "{group}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-Qu
 Name: "{group}\Day Ban Cap Nhat Len GitHub"; Filename: "{app}\Day-Len-GitHub.bat"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
 
 ; Tien ich chung
+Name: "{group}\Huong Dan Su Dung (PDF)"; Filename: "{app}\public\Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf"
 Name: "{group}\Cap Nhat Phan Mem Tu GitHub"; Filename: "{app}\Cap-Nhat-Phan-Mem.bat"; IconFilename: "{app}\kyodo-icon.ico"
 Name: "{group}\Go cai dat Kyodo Food"; Filename: "{uninstallexe}"
 

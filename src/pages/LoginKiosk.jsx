@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Lock, Sparkles, LogIn, Shield, Check, 
   AlertCircle, ArrowRight, MapPin, Eye, EyeOff, ShieldCheck,
-  RefreshCw, ArrowDownCircle, CheckCircle2,
+  RefreshCw, ArrowDownCircle, CheckCircle2, FileText,
   Mail, Phone, KeyRound, Settings, X, Copy, Send, HelpCircle
 } from 'lucide-react';
 import { api } from '../utils/api';
@@ -1032,8 +1032,19 @@ export default function LoginKiosk({
         </div>
       )}
 
-      {/* Nút kiểm tra cập nhật chủ động dành cho Nhân Viên */}
-      <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs no-print w-full max-w-md mx-auto">
+      {/* Nút kiểm tra cập nhật chủ động & Xem hướng dẫn sử dụng PDF */}
+      <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs no-print w-full max-w-lg mx-auto">
+        <a
+          href="/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full sm:w-auto text-amber-800 hover:text-amber-950 flex items-center justify-center gap-1.5 font-bold transition-all py-2.5 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200 shadow-2xs cursor-pointer whitespace-nowrap"
+          title="Mở hoặc tải file PDF hướng dẫn sử dụng phần mềm Kyodo Food dành cho nhân viên"
+        >
+          <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+          <span>Hướng Dẫn Nhân Viên (PDF)</span>
+        </a>
+
         <button
           type="button"
           onClick={checkAppUpdate}
