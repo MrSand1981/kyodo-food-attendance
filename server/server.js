@@ -541,6 +541,36 @@ app.post('/api/system/git-push', async (req, res) => {
   }
 });
 
+// 11. CẤU HÌNH ĐỒNG BỘ CLOUD (ĐÀ NẴNG - NGHỆ AN)
+const CLOUD_CONFIG_PATH = path.join(__dirname, '..', 'cloud_config.json');
+
+app.get('/api/system/cloud-config', (req, res) => {
+  try {
+    let config = { cloudUrl: '', activeMode: 'local' };
+    if (fs.existsSync(CLOUD_CONFIG_PATH)) {
+      config = JSON.parse(fs.readFileSync(CLOUD_CONFIG_PATH, 'utf-8'));
+    }
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/cloud-config', (req, res) => {
+  try {
+    const { cloudUrl, activeMode } = req.body || {};
+    const config = {
+      cloudUrl: cloudUrl ? cloudUrl.trim().replace(/\/+$/, '') : '',
+      activeMode: activeMode || 'cloud',
+      updatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(CLOUD_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+    res.json({ success: true, config, message: 'Đã lưu cấu hình kết nối Cloud thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Cho các route React SPA khi build production
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();

@@ -178,5 +178,12 @@ export const api = {
   pushToGitHub: (message) => request('/system/git-push', {
     method: 'POST',
     body: JSON.stringify({ message })
+  }),
+
+  // Cấu hình đồng bộ Cloud (Đà Nẵng - Nghệ An)
+  getCloudConfig: () => request('/system/cloud-config'),
+  updateCloudConfig: (data) => request('/system/cloud-config', {
+    method: 'POST',
+    body: JSON.stringify(data)
   })
 };
