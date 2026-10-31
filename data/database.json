@@ -42,7 +42,7 @@
       "bankCode": "",
       "bankName": "",
       "bankAccount": "",
-      "accountName": "BẢO",
+      "accountName": "",
       "password": "1234",
       "passwordChanged": false,
       "active": true,
@@ -76,61 +76,7 @@
     "adminPassword": "20162020",
     "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance"
   },
-  "attendance": [
-    {
-      "id": "att-1793348553088",
-      "employeeId": "emp-ut",
-      "employeeCode": "UTNVTNV",
-      "employeeName": "Út",
-      "branch": "Trưng Nữ Vương",
-      "date": "2026-10-30",
-      "checkIn": "2026-10-30T08:22:33.088Z",
-      "checkOut": null,
-      "totalHours": 0,
-      "shiftCode": "CA1",
-      "shiftName": "Ca Sáng",
-      "status": "working",
-      "note": "Vào ca trực tiếp",
-      "photo": null
-    }
-  ],
-  "salaryAdvances": [
-    {
-      "id": "adv-1793348021073",
-      "employeeId": "emp-ut",
-      "employeeCode": "UTNVTNV",
-      "employeeName": "Út",
-      "branch": "Trưng Nữ Vương",
-      "date": "2026-10-23",
-      "amount": 1000000,
-      "reason": "Ứng tiền lương chi tiêu",
-      "status": "approved",
-      "createdAt": "2026-10-30T08:13:41.073Z"
-    },
-    {
-      "id": "adv-1793348035205",
-      "employeeId": "emp-ut",
-      "employeeCode": "UTNVTNV",
-      "employeeName": "Út",
-      "branch": "Trưng Nữ Vương",
-      "date": "2026-10-31",
-      "amount": 500000,
-      "reason": "Ứng tiền lương chi tiêu",
-      "status": "approved",
-      "createdAt": "2026-10-30T08:13:55.205Z"
-    },
-    {
-      "id": "adv-1793348102598",
-      "employeeId": "emp-ut",
-      "employeeCode": "UTNVTNV",
-      "employeeName": "Út",
-      "branch": "Trưng Nữ Vương",
-      "date": "2026-11-01",
-      "amount": 500000,
-      "reason": "Ứng tiền lương chi tiêu",
-      "status": "approved",
-      "createdAt": "2026-10-30T08:15:02.598Z"
-    }
-  ],
+  "attendance": [],
+  "salaryAdvances": [],
   "leaveRequests": []
 }
