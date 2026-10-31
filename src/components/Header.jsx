@@ -167,7 +167,7 @@ export default function Header({
                 title="Bấm để kiểm tra xem có bản cập nhật mới hay chưa"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-amber-700 ${isCheckingUpdate ? 'animate-spin text-amber-800' : ''}`} />
-                <span className="whitespace-nowrap">Bản v{updateInfo?.currentVersion || '1.4.7'}</span>
+                <span className="whitespace-nowrap">Bản v{updateInfo?.currentVersion || '1.4.8'}</span>
               </button>
             )}
           </div>
