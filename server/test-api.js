@@ -76,9 +76,42 @@ try {
   assert(master.rows.length >= 2);
   console.log(`✅ Test 6 Passed: Master report Trưng Nữ Vương total hours = ${master.summary.storeTotalHours}h`);
 
-  // Clean up test staff
+  // Test 7: Holiday feature & salary multiplier x2
+  const holidays = db.getHolidays();
+  assert(holidays.length >= 22);
+  const hol30Apr = db.getHolidayByDate('2026-04-30');
+  assert(hol30Apr !== null);
+  assert.strictEqual(hol30Apr.multiplier, 2);
+
+  // Record 5h worked on 2026-04-30 (Holiday x2) for Út (25k/h)
+  const holidayWorkLog = db.recordDailyWork({
+    employeeId: ut.id,
+    date: '2026-04-30',
+    startTime: '08:00',
+    endTime: '13:00',
+    hours: 5,
+    shiftName: 'Ca Sáng Lễ 30/4',
+    note: 'Làm việc ngày lễ 30/4'
+  });
+  assert(holidayWorkLog.isHoliday === true);
+  assert.strictEqual(holidayWorkLog.holidayMultiplier, 2);
+
+  const utHolidaySummary = db.getEmployeeMonthlySummary(ut.id, '2026-04', true);
+  assert.strictEqual(utHolidaySummary.holidayHours, 5);
+  assert.strictEqual(utHolidaySummary.estimatedSalary, 250000); // 5h * 25k * 2 = 250k
+  assert.strictEqual(utHolidaySummary.holidayBonus, 125000); // bonus = 125k
+
+  const aprMaster = db.getMasterMonthlyReport('2026-04');
+  const utRow = aprMaster.rows.find(r => r.employee.id === ut.id);
+  assert.strictEqual(utRow.holidayHours, 5);
+  assert.strictEqual(utRow.totalSalary, 250000);
+  assert.strictEqual(utRow.holidayBonus, 125000);
+  console.log(`✅ Test 7 Passed: Ngày lễ 30/4 lương nhân 2 (5h x 25k x 2 = ${utHolidaySummary.estimatedSalary.toLocaleString()} đ) chính xác tuyệt đối!`);
+
+  // Clean up test staff & logs
   db.deleteEmployee(newStaff.id, true);
   db.deleteAttendance(manualLog.id);
+  db.deleteAttendance(holidayWorkLog.id);
 
   console.log('\n🎉 ALL TESTS PASSED! System perfectly configured for Kyodo Food Trưng Nữ Vương 🚀');
 } catch (err) {
