@@ -614,7 +614,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v1.4.6
+                  Bản v1.4.7
                 </span>
               </div>
               
@@ -1068,7 +1068,7 @@ export default function StaffAttendance({
                 </table>
               ) : (
                 <div className="py-4 text-center text-slate-400 text-xs italic whitespace-nowrap">
-                  Chưa có đợt tạm ứng lương nào trong tháng {formatMonthVN(selectedMonth)}.
+                  Chưa có đợt tạm ứng lương nào trong tháng.
                 </div>
               )}
             </div>
@@ -1163,7 +1163,7 @@ export default function StaffAttendance({
                 </table>
               ) : (
                 <p className="text-xs text-slate-400 italic py-4 text-center whitespace-nowrap">
-                  Chưa có thông báo nghỉ nào trong tháng {formatMonthVN(selectedMonth)}.
+                  Chưa có thông báo nghỉ nào trong tháng.
                 </p>
               )}
             </div>
