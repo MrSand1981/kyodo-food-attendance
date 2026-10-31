@@ -4,8 +4,11 @@ services:
     env: node
     plan: free
     region: singapore
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --legacy-peer-deps --ignore-scripts && npm run build
     startCommand: npm start
+    healthCheckPath: /api/ping
     envVars:
       - key: NODE_VERSION
-        value: 20.10.0
+        value: 22.11.0
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
