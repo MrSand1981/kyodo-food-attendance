@@ -307,7 +307,7 @@ export default function LoginKiosk({
   const isDefaultPassword = selectedEmp ? selectedEmp.isDefaultPassword : true;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-1.5 sm:py-3 my-auto flex flex-col items-center justify-center">
+    <div className="w-full max-w-4xl mx-auto px-4 pt-1 sm:pt-2 pb-6 flex flex-col items-center">
       
       {/* Hero Store Greeting */}
       <div className="text-center mb-2 sm:mb-3">
@@ -315,7 +315,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v1.5.0</span>
+          <span className="font-black text-amber-950">Bản v1.5.1</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -1053,7 +1053,7 @@ export default function LoginKiosk({
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.0 • Kiểm Tra Cập Nhật')}</span>
+          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.1 • Kiểm Tra Cập Nhật')}</span>
         </button>
 
         {updateStatus?.hasUpdate && (
