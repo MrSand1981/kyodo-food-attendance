@@ -624,6 +624,24 @@ useEffect(() => {
     setShowAddEmployeeModal(true);
   };
 
+  // Đặt lại mật khẩu nhân viên về 1234 khi nhân viên quên
+  const handleResetPassword = async (emp) => {
+    const isConfirm = window.confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu cho nhân viên "${emp.fullName || emp.name}" (${emp.username}) về mặc định "1234" không?`);
+    if (!isConfirm) return;
+    try {
+      setLoading(true);
+      await api.resetEmployeePassword(emp.id, '1234');
+      setMessage(`Đã đặt lại mật khẩu của nhân viên "${emp.shortName || emp.name}" về 1234 thành công!`);
+      await loadEmployees();
+      setTimeout(() => setMessage(''), 4000);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi đặt lại mật khẩu');
+      setTimeout(() => setError(''), 4000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       
@@ -1489,6 +1507,15 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                           }`}>
                             {emp.passwordChanged ? 'Đã đổi MK' : 'Mặc định'}
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => handleResetPassword(emp)}
+                            className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 border border-slate-200 transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
+                            title="Đặt lại mật khẩu về mặc định 1234 nếu nhân viên quên"
+                          >
+                            <Key className="w-3 h-3 text-amber-600" />
+                            <span>Đặt lại 1234</span>
+                          </button>
                         </div>
                       </div>
 

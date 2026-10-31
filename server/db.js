@@ -298,7 +298,7 @@ function getEmployees(includeConfidential = true) {
     active: e.active !== false,
     passwordChanged: e.passwordChanged === true,
     isDefaultPassword: (comparePasswords('1234', e.password) || !e.password) && e.passwordChanged !== true,
-    password: isBcryptHash(e.password) ? (e.passwordChanged ? '••••••••' : '1234') : (e.password || '1234')
+    password: e.password || '1234'
   }));
 }
 
@@ -347,8 +347,8 @@ function addEmployee(employeeData) {
     branch: "Trưng Nữ Vương",
     role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
-    password: hashPassword(employeeData.password || "1234"),
-    passwordChanged: false,
+    password: String(employeeData.password || "1234").trim(),
+    passwordChanged: !!(employeeData.password && String(employeeData.password).trim() !== "1234"),
     avatar: employeeData.avatar || defaultAvatar,
     active: true
   };
@@ -384,13 +384,13 @@ function updateEmployee(id, updateData) {
     ? (Number(updateData.hourlyRate) || 0) 
     : (current.hourlyRate !== undefined ? Number(current.hourlyRate) : 25000);
 
-  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập (băm bảo mật bcrypt)
-  let newPassword = current.password || hashPassword('1234');
+  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập (Lưu dạng văn bản rõ cho Admin quản lý)
+  let newPassword = current.password || '1234';
   let passwordChanged = current.passwordChanged === true;
   if (updateData.password !== undefined) {
     const pTrim = String(updateData.password).trim();
-    if (pTrim) {
-      newPassword = hashPassword(pTrim);
+    if (pTrim && pTrim !== '••••••••') {
+      newPassword = pTrim;
       passwordChanged = (pTrim !== '1234');
     }
   }
@@ -518,12 +518,6 @@ function authenticateUser(username, password) {
     throw new Error('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
   }
 
-  // Tự động nâng cấp mật khẩu nhân viên sang bcrypt nếu chưa băm
-  if (!isBcryptHash(activePassword)) {
-    emp.password = hashPassword(p);
-    saveDatabase(db);
-  }
-
   const activeShift = getActiveShift(emp.id);
 
   // Thông tin cá nhân của nhân viên
@@ -575,10 +569,27 @@ function changeEmployeePassword(employeeId, oldPassword, newPassword) {
     throw new Error("Mật khẩu mới phải có ít nhất 4 ký tự!");
   }
 
-  emp.password = hashPassword(newPass);
-  emp.passwordChanged = true;
+  emp.password = newPass;
+  emp.passwordChanged = (newPass !== '1234');
   saveDatabase(db);
   return { success: true, message: "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn." };
+}
+
+// Đặt lại mật khẩu nhân viên về 1234 (Dành cho Quản trị viên khi nhân viên quên mật khẩu)
+function resetEmployeePassword(employeeId, newPassword = '1234') {
+  const db = ensureDbFile();
+  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+
+  const p = String(newPassword || '1234').trim();
+  emp.password = p;
+  emp.passwordChanged = (p !== '1234');
+  saveDatabase(db);
+  return { 
+    success: true, 
+    message: `Đã đặt lại mật khẩu cho nhân viên "${emp.shortName || emp.name}" về "${p}" thành công!`,
+    password: p
+  };
 }
 
 // ---------------- ATTENDANCE / CHẤM CÔNG ----------------
@@ -1601,6 +1612,7 @@ module.exports = {
   deleteEmployee,
   authenticateUser,
   changeEmployeePassword,
+  resetEmployeePassword,
   getAttendance,
   getActiveShift,
   checkIn,
