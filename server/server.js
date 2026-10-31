@@ -5,17 +5,68 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const XLSX = require('xlsx');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const db = require('./db');
 const updater = require('./updater');
 const gitService = require('./gitService');
+const { generateToken, extractUserMiddleware, requireAuth, requireAdmin } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Bảo vệ Header bằng Helmet (chống clickjacking, XSS, MIME sniffing)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// Giới hạn CORS an toàn
+const allowedOrigins = [
+  'https://kyodo-food-attendance-2.onrender.com',
+  'https://kyodo-food-attendance.onrender.com',
+  'http://localhost:5000',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'capacitor://localhost',
+  'ionic://localhost'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.onrender.com') || origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Chặn tấn công dò mật khẩu (Brute-force): Giới hạn 20 lần thử sai trong 15 phút
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Bạn đã thử đăng nhập quá nhiều lần! Vui lòng thử lại sau 15 phút.' }
+});
+
+// Giới hạn tần suất chung cho API
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api', apiLimiter);
+
+// Middleware tự động giải mã JWT Token phiên làm việc
+app.use(extractUserMiddleware);
 
 const publicDir = path.join(__dirname, '..', 'public');
 const distDir = path.join(__dirname, '..', 'dist');
@@ -25,7 +76,7 @@ if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
 }
 
-// Multer lưu logo
+// Multer lưu logo an toàn (chỉ chấp nhận ảnh, giới hạn 5MB)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, publicDir);
@@ -35,7 +86,18 @@ const storage = multer.diskStorage({
     cb(null, `custom-logo${ext}`);
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Chỉ chấp nhận tệp hình ảnh hợp lệ (PNG, JPEG, WEBP, SVG)!'));
+    }
+  }
+});
 
 // ================= API ROUTES =================
 
@@ -69,7 +131,7 @@ app.get('/api/settings', (req, res) => {
   }
 });
 
-app.put('/api/settings', (req, res) => {
+app.put('/api/settings', requireAdmin, (req, res) => {
   try {
     const updated = db.updateSettings(req.body);
     res.json({ success: true, settings: updated });
@@ -78,7 +140,7 @@ app.put('/api/settings', (req, res) => {
   }
 });
 
-app.post('/api/settings/upload-logo', upload.single('logo'), (req, res) => {
+app.post('/api/settings/upload-logo', requireAdmin, upload.single('logo'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Chưa chọn file logo!' });
@@ -91,15 +153,17 @@ app.post('/api/settings/upload-logo', upload.single('logo'), (req, res) => {
   }
 });
 
-// 2. AUTHENTICATION & LOGIN (NHÂN VIÊN Út / Bảo & ADMIN MẬT KHẨU 20162020)
-app.post('/api/auth/login', (req, res) => {
+// 2. AUTHENTICATION & LOGIN (CẤP JWT TOKEN AN TOÀN)
+app.post('/api/auth/login', loginLimiter, (req, res) => {
   try {
     const { username, password } = req.body;
     const auth = db.authenticateUser(username, password);
+    const token = generateToken(auth.user, auth.role);
     res.json({
       success: true,
       role: auth.role,
       user: auth.user,
+      token,
       activeShift: auth.activeShift || null
     });
   } catch (err) {
@@ -117,7 +181,7 @@ app.get('/api/admin/profile-status', (req, res) => {
   }
 });
 
-app.post('/api/admin/profile', (req, res) => {
+app.post('/api/admin/profile', requireAdmin, (req, res) => {
   try {
     const result = db.updateAdminProfile(req.body);
     res.json(result);
@@ -126,7 +190,7 @@ app.post('/api/admin/profile', (req, res) => {
   }
 });
 
-app.post('/api/admin/change-password', (req, res) => {
+app.post('/api/admin/change-password', requireAdmin, (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
     const result = db.changeAdminPassword(oldPassword, newPassword);
@@ -136,7 +200,7 @@ app.post('/api/admin/change-password', (req, res) => {
   }
 });
 
-app.post('/api/admin/forgot-password', (req, res) => {
+app.post('/api/admin/forgot-password', loginLimiter, (req, res) => {
   try {
     const { identifier } = req.body;
     const result = db.recoverAdminPassword(identifier);
@@ -146,10 +210,11 @@ app.post('/api/admin/forgot-password', (req, res) => {
   }
 });
 
-// 3. EMPLOYEES CRUD (ADMIN TẠO TÀI KHOẢN CHO NHÂN VIÊN)
+// 3. EMPLOYEES CRUD (XÁC THỰC PHÂN QUYỀN RBAC)
 app.get('/api/employees', (req, res) => {
   try {
-    const isAdmin = req.query.role === 'admin' || req.headers['x-admin-key'] === '20162020';
+    // Chỉ Quản trị viên đã đăng nhập mới có quyền xem thông tin chi tiết bảo mật
+    const isAdmin = req.user && req.user.role === 'admin';
     const employees = db.getEmployees(isAdmin);
     res.json({ success: true, employees });
   } catch (err) {
@@ -157,9 +222,13 @@ app.get('/api/employees', (req, res) => {
   }
 });
 
-app.post('/api/employees/change-password', (req, res) => {
+app.post('/api/employees/change-password', requireAuth, (req, res) => {
   try {
     const { employeeId, oldPassword, newPassword } = req.body;
+    // Đảm bảo nhân viên chỉ đổi được mật khẩu của chính mình (hoặc Admin đổi cho nhân viên)
+    if (req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền đổi mật khẩu của tài khoản khác!' });
+    }
     const result = db.changeEmployeePassword(employeeId, oldPassword, newPassword);
     res.json(result);
   } catch (err) {
@@ -168,11 +237,14 @@ app.post('/api/employees/change-password', (req, res) => {
 });
 
 // Cập nhật Avatar cá nhân cho nhân viên
-app.post('/api/employees/avatar', (req, res) => {
+app.post('/api/employees/avatar', requireAuth, (req, res) => {
   try {
     const { employeeId, avatar } = req.body;
     if (!employeeId || !avatar) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin employeeId hoặc ảnh avatar!' });
+    }
+    if (req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa ảnh của tài khoản khác!' });
     }
     const result = db.updateEmployeeAvatar(employeeId, avatar);
     res.json(result);
@@ -181,7 +253,7 @@ app.post('/api/employees/avatar', (req, res) => {
   }
 });
 
-app.post('/api/employees', (req, res) => {
+app.post('/api/employees', requireAdmin, (req, res) => {
   try {
     const newEmp = db.addEmployee(req.body);
     res.json({ success: true, employee: newEmp, message: `Đã tạo tài khoản "${newEmp.username}" thành công!` });
@@ -190,7 +262,7 @@ app.post('/api/employees', (req, res) => {
   }
 });
 
-app.put('/api/employees/:id', (req, res) => {
+app.put('/api/employees/:id', requireAdmin, (req, res) => {
   try {
     const updated = db.updateEmployee(req.params.id, req.body);
     if (!updated) return res.status(404).json({ success: false, message: 'Không tìm thấy nhân viên' });
@@ -200,7 +272,7 @@ app.put('/api/employees/:id', (req, res) => {
   }
 });
 
-app.delete('/api/employees/:id', (req, res) => {
+app.delete('/api/employees/:id', requireAdmin, (req, res) => {
   try {
     const ok = db.deleteEmployee(req.params.id);
     res.json({ success: ok });
@@ -349,7 +421,7 @@ app.get('/api/holidays', (req, res) => {
   }
 });
 
-app.post('/api/holidays', (req, res) => {
+app.post('/api/holidays', requireAdmin, (req, res) => {
   try {
     const newHol = db.addHoliday(req.body);
     res.json({ success: true, holiday: newHol, message: "Đã thêm ngày lễ thành công!" });
@@ -358,7 +430,7 @@ app.post('/api/holidays', (req, res) => {
   }
 });
 
-app.put('/api/holidays/:id', (req, res) => {
+app.put('/api/holidays/:id', requireAdmin, (req, res) => {
   try {
     const updated = db.updateHoliday(req.params.id, req.body);
     res.json({ success: true, holiday: updated, message: "Đã cập nhật ngày lễ thành công!" });
@@ -367,7 +439,7 @@ app.put('/api/holidays/:id', (req, res) => {
   }
 });
 
-app.delete('/api/holidays/:id', (req, res) => {
+app.delete('/api/holidays/:id', requireAdmin, (req, res) => {
   try {
     const result = db.deleteHoliday(req.params.id);
     res.json(result);
@@ -380,7 +452,7 @@ app.delete('/api/holidays/:id', (req, res) => {
 app.get('/api/attendance/my-summary/:employeeId', (req, res) => {
   try {
     const { month } = req.query; // YYYY-MM
-    const isAdmin = req.query.includeSalary === 'true' && req.headers['x-admin-key'] === '20162020';
+    const isAdmin = req.user && req.user.role === 'admin';
     const summary = db.getEmployeeMonthlySummary(req.params.employeeId, month, isAdmin);
     res.json({ success: true, data: summary });
   } catch (err) {
@@ -388,8 +460,8 @@ app.get('/api/attendance/my-summary/:employeeId', (req, res) => {
   }
 });
 
-// 6. MASTER REPORT FOR ADMIN (BẢNG CÔNG TỔNG HỢP TRƯNG NỮ VƯƠNG)
-app.get('/api/attendance/master-report', (req, res) => {
+// 6. MASTER REPORT FOR ADMIN (BẢNG CÔNG TỔNG HỢP TRƯNG NỮ VƯƠNG - YÊU CẦU QUYỀN ADMIN)
+app.get('/api/attendance/master-report', requireAdmin, (req, res) => {
   try {
     const { month } = req.query;
     const report = db.getMasterMonthlyReport(month);
@@ -399,8 +471,8 @@ app.get('/api/attendance/master-report', (req, res) => {
   }
 });
 
-// 7. EXPORT TO EXCEL
-app.get('/api/attendance/export-excel', (req, res) => {
+// 7. EXPORT TO EXCEL (YÊU CẦU QUYỀN ADMIN)
+app.get('/api/attendance/export-excel', requireAdmin, (req, res) => {
   try {
     const { month } = req.query;
     const report = db.getMasterMonthlyReport(month);
@@ -497,8 +569,8 @@ app.get('/api/attendance/export-excel', (req, res) => {
   }
 });
 
-// 8. MANAGER ADJUSTMENT & DELETE
-app.post('/api/attendance/adjust', (req, res) => {
+// 8. MANAGER ADJUSTMENT & DELETE (YÊU CẦU QUYỀN ADMIN)
+app.post('/api/attendance/adjust', requireAdmin, (req, res) => {
   try {
     const { id, ...data } = req.body;
     const record = db.adjustAttendance(id, data);
@@ -508,7 +580,7 @@ app.post('/api/attendance/adjust', (req, res) => {
   }
 });
 
-app.delete('/api/attendance/:id', (req, res) => {
+app.delete('/api/attendance/:id', requireAdmin, (req, res) => {
   try {
     const ok = db.deleteAttendance(req.params.id);
     res.json({ success: ok });
@@ -529,7 +601,7 @@ app.get('/api/system/check-update', async (req, res) => {
   }
 });
 
-app.post('/api/system/apply-update', async (req, res) => {
+app.post('/api/system/apply-update', requireAdmin, async (req, res) => {
   try {
     const settings = db.getSettings();
     const repo = req.body?.repo || settings.githubRepo;
@@ -541,7 +613,7 @@ app.post('/api/system/apply-update', async (req, res) => {
 });
 
 // 10. ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB (DÀNH CHO CHỦ CỬA HÀNG)
-app.get('/api/system/git-status', async (req, res) => {
+app.get('/api/system/git-status', requireAdmin, async (req, res) => {
   try {
     const status = await gitService.getGitStatus();
     res.json(status);
@@ -550,7 +622,7 @@ app.get('/api/system/git-status', async (req, res) => {
   }
 });
 
-app.post('/api/system/git-push', async (req, res) => {
+app.post('/api/system/git-push', requireAdmin, async (req, res) => {
   try {
     const { message } = req.body || {};
     const result = await gitService.pushToGitHub(message);
@@ -575,7 +647,7 @@ app.get('/api/system/cloud-config', (req, res) => {
   }
 });
 
-app.post('/api/system/cloud-config', (req, res) => {
+app.post('/api/system/cloud-config', requireAdmin, (req, res) => {
   try {
     const { cloudUrl, activeMode } = req.body || {};
     const config = {
@@ -672,8 +744,8 @@ if (require.main === module) {
 }
 
 
-// 12. EXPORT & RESTORE DATABASE (CHỐNG MẤT DỮ LIỆU)
-app.get('/api/system/export-db', (req, res) => {
+// 12. EXPORT & RESTORE DATABASE (CHỐNG MẤT DỮ LIỆU - YÊU CẦU QUYỀN ADMIN)
+app.get('/api/system/export-db', requireAdmin, (req, res) => {
   try {
     const data = db.ensureDbFile();
     res.setHeader('Content-Type', 'application/json');
@@ -684,12 +756,9 @@ app.get('/api/system/export-db', (req, res) => {
   }
 });
 
-app.post('/api/system/restore-db', (req, res) => {
+app.post('/api/system/restore-db', requireAdmin, (req, res) => {
   try {
-    const { backupData, adminPassword } = req.body || {};
-    if (adminPassword !== '20162020') {
-      return res.status(403).json({ success: false, message: 'Mật khẩu quản trị (Admin) không chính xác!' });
-    }
+    const { backupData } = req.body || {};
     if (!backupData || !backupData.employees) {
       return res.status(400).json({ success: false, message: 'Dữ liệu sao lưu không hợp lệ!' });
     }

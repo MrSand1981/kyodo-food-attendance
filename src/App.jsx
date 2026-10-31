@@ -87,6 +87,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    api.logout();
     setCurrentRole(null);
     setCurrentUser(null);
     loadInitialData();

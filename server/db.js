@@ -1,8 +1,30 @@
 // server/db.js
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const { MongoClient } = require('mongodb');
 const { generateSeedData } = require('./seedData');
+
+// --- HÀM BẢO MẬT & BĂM MẬT KHẨU BCRYPT ---
+function isBcryptHash(str) {
+  return typeof str === 'string' && /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(str);
+}
+
+function hashPassword(plainText) {
+  if (!plainText) return '';
+  const trimmed = String(plainText).trim();
+  if (isBcryptHash(trimmed)) return trimmed;
+  return bcrypt.hashSync(trimmed, 10);
+}
+
+function comparePasswords(provided, storedOrHash) {
+  if (!storedOrHash) return false;
+  const p = String(provided || '').trim();
+  if (isBcryptHash(storedOrHash)) {
+    return bcrypt.compareSync(p, storedOrHash);
+  }
+  return p === String(storedOrHash).trim();
+}
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
 const VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
@@ -259,9 +281,8 @@ function getEmployees(includeConfidential = false) {
       fullName: e.fullName || e.name || '',
       shortName: e.shortName || e.name || '',
       name: e.shortName || e.name || '',
-      password: e.password || '1234',
       passwordChanged: e.passwordChanged === true,
-      isDefaultPassword: (e.password === '1234' || !e.password) && e.passwordChanged !== true,
+      isDefaultPassword: (comparePasswords('1234', e.password) || !e.password) && e.passwordChanged !== true,
       bankCode: e.bankCode || '',
       bankName: e.bankName || '',
       bankAccount: e.bankAccount || '',
@@ -276,20 +297,12 @@ function getEmployees(includeConfidential = false) {
     shortName: e.shortName || e.name || '',
     name: e.shortName || e.name || '',
     gender: e.gender || "Nam",
-    dob: e.dob || "",
-    phone: e.phone || "",
-    address: e.address || "",
-    cccd: e.cccd || "",
     branch: e.branch || "Trưng Nữ Vương",
     role: e.role || "Nhân viên",
-    bankCode: e.bankCode || "",
-    bankName: e.bankName || "",
-    bankAccount: e.bankAccount || "",
-    accountName: e.accountName || (e.fullName || e.name || '').toUpperCase(),
     avatar: e.avatar || (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
     active: e.active,
     passwordChanged: e.passwordChanged === true,
-    isDefaultPassword: (e.password === '1234' || !e.password) && e.passwordChanged !== true
+    isDefaultPassword: (comparePasswords('1234', e.password) || !e.password) && e.passwordChanged !== true
   }));
 }
 
@@ -338,7 +351,7 @@ function addEmployee(employeeData) {
     branch: "Trưng Nữ Vương",
     role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
-    password: employeeData.password || "1234",
+    password: hashPassword(employeeData.password || "1234"),
     passwordChanged: false,
     avatar: employeeData.avatar || defaultAvatar,
     active: true
@@ -375,13 +388,13 @@ function updateEmployee(id, updateData) {
     ? (Number(updateData.hourlyRate) || 0) 
     : (current.hourlyRate !== undefined ? Number(current.hourlyRate) : 25000);
 
-  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập
-  let newPassword = current.password || '1234';
+  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập (băm bảo mật bcrypt)
+  let newPassword = current.password || hashPassword('1234');
   let passwordChanged = current.passwordChanged === true;
   if (updateData.password !== undefined) {
     const pTrim = String(updateData.password).trim();
     if (pTrim) {
-      newPassword = pTrim;
+      newPassword = hashPassword(pTrim);
       passwordChanged = (pTrim !== '1234');
     }
   }
@@ -461,7 +474,13 @@ function authenticateUser(username, password) {
   // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', 'Admin', username tùy chỉnh, hoặc các định danh quản lý)
   const isAdminUser = (u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang');
   if (isAdminUser) {
-    if (p === currentAdminPassword || p === '20162020') {
+    const isMatch = comparePasswords(p, currentAdminPassword);
+    if (isMatch) {
+      // Tự động băm bảo mật bcrypt nếu đang lưu dạng văn bản thường
+      if (!isBcryptHash(currentAdminPassword)) {
+        db.settings.adminPassword = hashPassword(p);
+        saveDatabase(db);
+      }
       return {
         role: 'admin',
         user: { 
@@ -473,7 +492,7 @@ function authenticateUser(username, password) {
         }
       };
     } else {
-      throw new Error('Mật khẩu Quản trị không chính xác! (Mật khẩu mặc định: 20162020).');
+      throw new Error('Mật khẩu Quản trị không chính xác!');
     }
   }
 
@@ -490,13 +509,20 @@ function authenticateUser(username, password) {
     throw new Error(`Tài khoản "${username}" không tồn tại trên hệ thống!`);
   }
 
-  // Mỗi nhân viên chỉ có DUY NHẤT 1 mật khẩu đăng nhập mới nhất
+  // Mỗi nhân viên chỉ có DUY NHẤT 1 mật khẩu đăng nhập mới nhất (so khớp an toàn bcrypt)
   const activePassword = String(emp.password || '1234').trim();
-  if (p !== activePassword) {
-    if (p === '1234' && activePassword !== '1234') {
+  const isEmpMatch = comparePasswords(p, activePassword);
+  if (!isEmpMatch) {
+    if (p === '1234' && emp.passwordChanged) {
       throw new Error(`Tài khoản "${emp.shortName || emp.name}" đã đổi mật khẩu riêng! Mật khẩu khởi tạo 1234 đã hết hiệu lực. Vui lòng nhập đúng mật khẩu mới nhất.`);
     }
     throw new Error('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
+  }
+
+  // Tự động nâng cấp mật khẩu nhân viên sang bcrypt nếu chưa băm
+  if (!isBcryptHash(activePassword)) {
+    emp.password = hashPassword(p);
+    saveDatabase(db);
   }
 
   const activeShift = getActiveShift(emp.id);
@@ -523,7 +549,7 @@ function authenticateUser(username, password) {
     accountName: emp.accountName || (emp.fullName || emp.name || '').toUpperCase(),
     avatar: emp.avatar || defaultAvatar,
     passwordChanged: emp.passwordChanged === true,
-    isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
+    isDefaultPassword: (!emp.passwordChanged && (comparePasswords('1234', emp.password) || !emp.password)),
     active: emp.active
   };
 
@@ -541,7 +567,7 @@ function changeEmployeePassword(employeeId, oldPassword, newPassword) {
   if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
 
   const curPass = String(oldPassword || '').trim();
-  if (emp.password && emp.password !== curPass) {
+  if (emp.password && !comparePasswords(curPass, emp.password)) {
     throw new Error("Mật khẩu hiện tại không chính xác!");
   }
 
@@ -550,7 +576,7 @@ function changeEmployeePassword(employeeId, oldPassword, newPassword) {
     throw new Error("Mật khẩu mới phải có ít nhất 4 ký tự!");
   }
 
-  emp.password = newPass;
+  emp.password = hashPassword(newPass);
   emp.passwordChanged = true;
   saveDatabase(db);
   return { success: true, message: "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn." };
@@ -1368,7 +1394,7 @@ function getAdminProfileStatus() {
     maskedPhone: maskPhone(s.adminPhone),
     hasEmail: !!(s.adminEmail && s.adminEmail.trim()),
     hasPhone: !!(s.adminPhone && s.adminPhone.trim()),
-    isDefaultPassword: !s.adminPassword || s.adminPassword === '20162020'
+    isDefaultPassword: !s.adminPassword || comparePasswords('20162020', s.adminPassword)
   };
 }
 
@@ -1380,10 +1406,10 @@ function updateAdminProfile(data) {
 
   const currentActual = db.settings.adminPassword || '20162020';
   if (newPassword && newPassword.trim()) {
-    if (currentPassword !== currentActual && currentPassword !== '20162020') {
+    if (!comparePasswords(currentPassword, currentActual)) {
       throw new Error('Mật khẩu hiện tại không đúng! Không thể thiết lập mật khẩu mới.');
     }
-    db.settings.adminPassword = newPassword.trim();
+    db.settings.adminPassword = hashPassword(newPassword.trim());
   }
 
   if (adminName !== undefined) db.settings.adminName = adminName.trim();
@@ -1406,7 +1432,7 @@ function changeAdminPassword(oldPassword, newPassword) {
   if (!db.settings) db.settings = {};
 
   const currentActual = db.settings.adminPassword || '20162020';
-  if (oldPassword !== currentActual && oldPassword !== '20162020') {
+  if (!comparePasswords(oldPassword, currentActual)) {
     throw new Error('Mật khẩu hiện tại không đúng! Vui lòng thử lại.');
   }
 
@@ -1414,7 +1440,7 @@ function changeAdminPassword(oldPassword, newPassword) {
     throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự!');
   }
 
-  db.settings.adminPassword = newPassword.trim();
+  db.settings.adminPassword = hashPassword(newPassword.trim());
   saveDatabase(db);
 
   return {
@@ -1437,7 +1463,7 @@ function recoverAdminPassword(identifier) {
   const savedPhone = String(db.settings.adminPhone || '').replace(/[\s\-\.]/g, '').trim();
 
   if (!savedEmail && !savedPhone) {
-    throw new Error('Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Bạn có thể sử dụng mật khẩu cứu hộ mặc định (20162020) hoặc vào phần "Thiết Lập Tài Khoản Admin" để đăng ký.');
+    throw new Error('Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Vui lòng liên hệ hỗ trợ kỹ thuật hoặc dùng mật khẩu khởi tạo.');
   }
 
   const matchEmail = savedEmail && (cleanInput === savedEmail || cleanInput === savedEmail.replace(/[\s\-\.]/g, ''));
@@ -1447,19 +1473,18 @@ function recoverAdminPassword(identifier) {
     throw new Error('Email hoặc Số điện thoại không khớp với hồ sơ Quản trị viên đã đăng ký! Vui lòng kiểm tra lại.');
   }
 
-  // Khởi tạo mật khẩu mới ngẫu nhiên, an toàn & dễ nhớ: Kyodo@ + 4 số ngẫu nhiên
+  // Khởi tạo mật khẩu mới an toàn: Kyodo@ + 4 số ngẫu nhiên
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const newPassword = `Kyodo@${randomSuffix}`;
 
-  db.settings.adminPassword = newPassword;
+  db.settings.adminPassword = hashPassword(newPassword);
   saveDatabase(db);
 
   const channel = matchEmail ? `Email (${maskEmail(savedEmail)})` : `Số điện thoại (${maskPhone(savedPhone)})`;
 
   return {
     success: true,
-    message: `Xác minh danh tính thành công! Mật khẩu mới đã được cập nhật và gửi tới ${channel}.`,
-    newPassword: newPassword,
+    message: `Xác minh danh tính thành công! Mật khẩu mới tạm thời là: ${newPassword}. Vui lòng đăng nhập và đổi lại mật khẩu ngay!`,
     sentTo: channel,
     adminUsername: db.settings.adminUsername || 'admin'
   };
@@ -1468,7 +1493,9 @@ function recoverAdminPassword(identifier) {
 // ---------------- SETTINGS ----------------
 function getSettings() {
   const db = ensureDbFile();
-  return db.settings || {};
+  const s = { ...(db.settings || {}) };
+  delete s.adminPassword; // BẢO VỆ TUYỆT ĐỐI: KHÔNG BAO GIỜ TRẢ MẬT KHẨU ADMIN RA NGOÀI API CÔNG KHAI
+  return s;
 }
 
 function updateSettings(newSettings) {
@@ -1599,5 +1626,8 @@ module.exports = {
   getAdminProfileStatus,
   updateAdminProfile,
   changeAdminPassword,
-  recoverAdminPassword
+  recoverAdminPassword,
+  hashPassword,
+  comparePasswords,
+  isBcryptHash
 };
