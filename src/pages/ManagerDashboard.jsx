@@ -45,6 +45,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
 
   // Quản lý hiển thị mật khẩu nhân viên
   const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [showFormPassword, setShowFormPassword] = useState(false);
 
   // Quản lý nhập/sửa trực tiếp mức lương theo giờ của từng nhân viên
   const [editingRates, setEditingRates] = useState({});
@@ -2149,14 +2150,33 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Mật Khẩu Khởi Tạo (mặc định 1234):</label>
-                  <input
-                    type="text"
-                    required
-                    value={empForm.password}
-                    onChange={(e) => setEmpForm({ ...empForm, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold font-mono text-center text-amber-700"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-slate-700">Mật Khẩu Đăng Nhập:</label>
+                    <span className="text-[10px] text-amber-800 font-bold bg-amber-100/80 px-2 py-0.5 rounded-md border border-amber-200">
+                      1 MK duy nhất
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showFormPassword ? "text" : "password"}
+                      required
+                      placeholder="Nhập mật khẩu đăng nhập..."
+                      value={empForm.password}
+                      onChange={(e) => setEmpForm({ ...empForm, password: e.target.value })}
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold font-mono text-center text-amber-700 text-sm focus:ring-2 focus:ring-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowFormPassword(!showFormPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      title={showFormPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    >
+                      {showFormPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Mật khẩu đăng nhập mới nhất của nhân viên (mặc định hoặc đã đổi riêng). Quản lý có thể chủ động nhập mật khẩu mới tại đây để cấp lại cho nhân viên khi quên.
+                  </p>
                 </div>
               </div>
 

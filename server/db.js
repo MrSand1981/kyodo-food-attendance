@@ -205,6 +205,17 @@ function updateEmployee(id, updateData) {
     ? (Number(updateData.hourlyRate) || 0) 
     : (current.hourlyRate !== undefined ? Number(current.hourlyRate) : 25000);
 
+  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập
+  let newPassword = current.password || '1234';
+  let passwordChanged = current.passwordChanged === true;
+  if (updateData.password !== undefined) {
+    const pTrim = String(updateData.password).trim();
+    if (pTrim) {
+      newPassword = pTrim;
+      passwordChanged = (pTrim !== '1234');
+    }
+  }
+
   db.employees[idx] = {
     ...current,
     ...updateData,
@@ -214,6 +225,8 @@ function updateEmployee(id, updateData) {
     gender: gender,
     avatar: avatar,
     hourlyRate: hourlyRate,
+    password: newPassword,
+    passwordChanged: passwordChanged,
     branch: "Trưng Nữ Vương", // Cố định cơ sở Trưng Nữ Vương
     id
   };
@@ -248,7 +261,8 @@ function authenticateUser(username, password) {
   // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', username tùy chỉnh, hoặc các định danh quản lý)
   const isAdminUser = (u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang');
   if (isAdminUser) {
-    if (p === currentAdminPassword || p === '20162020') {
+    // Mỗi tài khoản chỉ có duy nhất 1 mật khẩu đăng nhập: nếu đã đổi MK thì mật khẩu mặc định 20162020 không còn hiệu lực
+    if (p === currentAdminPassword) {
       return {
         role: 'admin',
         user: { 
@@ -260,6 +274,9 @@ function authenticateUser(username, password) {
         }
       };
     } else {
+      if (p === '20162020' && currentAdminPassword !== '20162020') {
+        throw new Error('Mật khẩu mặc định 20162020 đã hết hiệu lực do tài khoản Quản trị đã đổi mật khẩu mới! Vui lòng nhập đúng mật khẩu mới nhất hoặc dùng "Quên Mật Khẩu".');
+      }
       throw new Error('Mật khẩu Quản trị không chính xác! Nếu quên mật khẩu, vui lòng sử dụng chức năng "Quên Mật Khẩu" để lấy lại.');
     }
   }
@@ -277,9 +294,11 @@ function authenticateUser(username, password) {
     throw new Error(`Tài khoản "${username}" không tồn tại trên hệ thống!`);
   }
 
-  if (emp.password && emp.password !== p) {
-    if (p === '1234' && emp.password !== '1234') {
-      throw new Error(`Tài khoản "${emp.name}" đã đổi mật khẩu riêng! Mật khẩu mặc định 1234 không còn hiệu lực. Vui lòng nhập đúng mật khẩu mới.`);
+  // Mỗi nhân viên chỉ có DUY NHẤT 1 mật khẩu đăng nhập mới nhất
+  const activePassword = String(emp.password || '1234').trim();
+  if (p !== activePassword) {
+    if (p === '1234' && activePassword !== '1234') {
+      throw new Error(`Tài khoản "${emp.shortName || emp.name}" đã đổi mật khẩu riêng! Mật khẩu khởi tạo 1234 đã hết hiệu lực. Vui lòng nhập đúng mật khẩu mới nhất.`);
     }
     throw new Error('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
   }
