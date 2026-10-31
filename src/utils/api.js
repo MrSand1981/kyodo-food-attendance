@@ -4,9 +4,11 @@ const BASE_URL = '/api';
 
 async function request(endpoint, options = {}, retries = 2) {
   const url = `${BASE_URL}${endpoint}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : null;
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers
     },
     ...options
@@ -17,6 +19,10 @@ async function request(endpoint, options = {}, retries = 2) {
       const response = await fetch(url, config);
       const data = await response.json();
       if (!response.ok) {
+        // Nếu token hết hạn hoặc không hợp lệ, xóa token để người dùng đăng nhập lại
+        if (response.status === 401 && typeof window !== 'undefined') {
+          localStorage.removeItem('kyodo_token');
+        }
         throw new Error(data.message || 'Lỗi xử lý yêu cầu từ máy chủ');
       }
       return data;
@@ -38,8 +44,12 @@ export const api = {
   uploadLogo: async (file) => {
     const formData = new FormData();
     formData.append('logo', file);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : null;
     const res = await fetch(`${BASE_URL}/settings/upload-logo`, {
       method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: formData
     });
     const data = await res.json();
@@ -47,11 +57,22 @@ export const api = {
     return data;
   },
 
-  // Đăng nhập (Nhân viên: UTNVTNV, BAONVTNV | Admin mật khẩu: 20162020)
-  login: ({ username, password }) => request('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password })
-  }),
+  // Đăng nhập (Nhân viên: UTNVTNV, BAONVTNV | Admin: Mật khẩu quản trị)
+  login: async ({ username, password }) => {
+    const res = await request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+    if (res.success && res.token && typeof window !== 'undefined') {
+      localStorage.setItem('kyodo_token', res.token);
+    }
+    return res;
+  },
+  logout: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('kyodo_token');
+    }
+  },
 
   // Quản lý tài khoản Admin & Khôi phục mật khẩu
   getAdminProfileStatus: () => request('/admin/profile-status'),
@@ -68,12 +89,8 @@ export const api = {
     body: JSON.stringify({ identifier })
   }),
 
-  // Nhân viên (mặc định che lương; Quản lý truyền isAdmin = true)
-  getEmployees: (isAdmin = false) => {
-    const query = isAdmin ? '?role=admin' : '';
-    const headers = isAdmin ? { 'x-admin-key': '20162020' } : {};
-    return request(`/employees${query}`, { headers });
-  },
+  // Nhân viên (Server tự động phân quyền theo Token)
+  getEmployees: () => request('/employees'),
   addEmployee: (data) => request('/employees', { method: 'POST', body: JSON.stringify(data) }),
   updateEmployee: (id, data) => request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/employees/${id}`, { method: 'DELETE' }),
@@ -158,7 +175,9 @@ export const api = {
   // Link xuất file Excel chuẩn
   getExportExcelUrl: (month) => {
     const query = month ? `?month=${month}` : '';
-    return `${BASE_URL}/attendance/export-excel${query}`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : '';
+    const tokenParam = token ? `${query ? '&' : '?'}token=${encodeURIComponent(token)}` : '';
+    return `${BASE_URL}/attendance/export-excel${query}${tokenParam}`;
   },
 
   // Quản lý Ngày Lễ (Lương x2)

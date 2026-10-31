@@ -6,6 +6,10 @@ console.log('🧪 Starting Kyodo Food (Trưng Nữ Vương) Unit Tests...');
 
 try {
   // Test 1: Employees initialization (includeConfidential = true for admin/manager check)
+  // Clean up any temporary test users from previous runs
+  const existingTestEmp = db.getEmployees(true).find(e => e.username === 'LINHNVTNV');
+  if (existingTestEmp) db.deleteEmployee(existingTestEmp.id, true);
+
   const employees = db.getEmployees(true);
   assert.strictEqual(employees.length, 2, 'Should have exactly 2 initial employees: Út and Bảo');
   
@@ -21,11 +25,11 @@ try {
   console.log('✅ Test 1 Passed: Út (UTNVTNV - 25k) and Bảo (BAONVTNV - 22k) verified');
 
   // Test 2: Authentication
-  const authUt = db.authenticateUser('utnvtnv', ut.password || '1234');
+  const authUt = db.authenticateUser('utnvtnv', '1234');
   assert.strictEqual(authUt.role, 'employee');
   assert.strictEqual(authUt.user.name, 'Út');
 
-  const authBao = db.authenticateUser('BAONVTNV', bao.password || '1234');
+  const authBao = db.authenticateUser('BAONVTNV', 'nhatbaodeptrai03');
   assert.strictEqual(authBao.role, 'employee');
   assert.strictEqual(authBao.user.name, 'Bảo');
 
@@ -33,7 +37,21 @@ try {
   assert.strictEqual(authAdmin.role, 'admin');
   console.log('✅ Test 2 Passed: Authentication for UTNVTNV, BAONVTNV, and Admin (20162020)');
 
+  // Test 2b: JWT Token Generation & Verification
+  const { generateToken, verifyToken } = require('./auth');
+  const token = generateToken(authAdmin.user, authAdmin.role);
+  const decoded = verifyToken(token);
+  assert.strictEqual(decoded.role, 'admin');
+  assert.strictEqual(decoded.username, 'Admin');
+  console.log('✅ Test 2b Passed: JWT Token generated and verified with cryptographic signature');
+
   // Test 3: Nhập thời gian làm việc từng ngày
+  // Clean up any test attendance records from previous test runs
+  const existingRecords = db.getAttendance({ employeeId: ut.id, date: '2026-10-31' });
+  existingRecords.forEach(r => db.deleteAttendance(r.id));
+  const existingHolRecords = db.getAttendance({ employeeId: ut.id, date: '2026-04-30' });
+  existingHolRecords.forEach(r => db.deleteAttendance(r.id));
+
   const manualLog = db.recordDailyWork({
     employeeId: ut.id,
     date: '2026-10-31',

@@ -235,7 +235,12 @@ async function applyUpdate(githubRepoInput) {
         return;
       }
 
-      const targetPath = path.join(APP_DIR, relPath);
+      const targetPath = path.resolve(APP_DIR, relPath);
+      // Chống lỗ hổng Zip Slip: Đảm bảo đường dẫn file giải nén phải nằm trong APP_DIR
+      if (!targetPath.startsWith(path.resolve(APP_DIR) + path.sep)) {
+        console.warn(`[Updater] Bỏ qua đường dẫn không an toàn trong file nén: ${relPath}`);
+        return;
+      }
       const targetDir = path.dirname(targetPath);
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
