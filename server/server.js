@@ -349,12 +349,14 @@ app.get('/api/attendance/export-excel', (req, res) => {
     const { month } = req.query;
     const report = db.getMasterMonthlyReport(month);
 
-    const titleRow = [`BẢNG CHẤM CÔNG THEO GIỜ KYODO FOODS - CƠ SỞ TRƯNG NỮ VƯƠNG (${report.yearMonth})`];
+    const [y, m] = (report.yearMonth || '').split('-');
+    const formattedMonth = (y && m) ? `${m}/${y}` : report.yearMonth;
+    const titleRow = [`BẢNG CHẤM CÔNG THEO GIỜ KYODO FOODS - CƠ SỞ TRƯNG NỮ VƯƠNG (THÁNG ${formattedMonth})`];
     const headerRow1 = ['Tài khoản', 'Tên nhân viên', 'Cơ sở'];
     const headerRow2 = ['', '', ''];
 
     report.days.forEach(d => {
-      headerRow1.push(`${d.day}`);
+      headerRow1.push(d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`);
       headerRow2.push(d.dayOfWeek);
     });
 

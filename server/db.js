@@ -1061,11 +1061,13 @@ function getMasterMonthlyReport(yearMonth) {
   const days = [];
   const vietnameseDays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   for (let d = 1; d <= daysInMonth; d++) {
-    const dStr = d < 10 ? `0${d}` : `${d}`;
-    const dateObj = new Date(`${year}-${String(month).padStart(2, '0')}-${dStr}`);
+    const dStr = d < 10 ? '0' + d : '' + d;
+    const mStr = String(month).padStart(2, '0');
+    const dateObj = new Date(year + '-' + mStr + '-' + dStr);
     days.push({
       day: d,
-      date: `${year}-${String(month).padStart(2, '0')}-${dStr}`,
+      date: year + '-' + mStr + '-' + dStr,
+      dateVN: dStr + '/' + mStr + '/' + year,
       dayOfWeek: vietnameseDays[dateObj.getDay()],
       isWeekend: dateObj.getDay() === 0
     });

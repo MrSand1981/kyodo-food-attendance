@@ -1,4 +1,4 @@
-﻿// src/shared/business-rules.ts
+// src/shared/business-rules.ts
 // SHARED business logic between client and server
 // Single source of truth for salary advance cycles, overlap detection, etc.
 
@@ -51,36 +51,64 @@ export function getSalaryMonthForAdvance(dateStr: string): string {
   return `\${year}-\${String(month).padStart(2, '\''0'\'')}`;
 }
 
-export function formatDateVN(dateStr: string): string {
-  if (!dateStr) return '\'\'';
-  const s = String(dateStr).trim();
-  
-  const dateOnly = s.includes('\''T'\'') ? s.split('\''T'\'')[0] : s;
+export function formatDateVN(dateInput: string | Date | undefined | null): string {
+  if (!dateInput) return '';
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return '';
+    const d = String(dateInput.getDate()).padStart(2, '0');
+    const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const y = dateInput.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  const s = String(dateInput).trim();
+  const dateOnly = s.includes('T') ? s.split('T')[0] : s;
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
-    const [y, m, d] = dateOnly.split('\''-'\'');
-    return `\${d}/\${m}/\${y}`;
+    const [y, m, d] = dateOnly.split('-');
+    return `${d}/${m}/${y}`;
   }
 
   if (/^\d{4}\/\d{2}\/\d{2}$/.test(dateOnly)) {
-    const [y, m, d] = dateOnly.split('\''/'\''');
-    return `\${d}/\${m}/\${y}`;
+    const [y, m, d] = dateOnly.split('/');
+    return `${d}/${m}/${y}`;
+  }
+
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateOnly)) {
+    const [d, m, y] = dateOnly.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateOnly)) {
+    return dateOnly;
   }
 
   if (/^\d{4}-\d{2}$/.test(dateOnly)) {
-    const [y, m] = dateOnly.split('\''-'\'');
-    return `\${m}/\${y}`;
+    const [y, m] = dateOnly.split('-');
+    return `${m}/${y}`;
   }
 
   return dateOnly;
 }
 
 export function formatMonthVN(monthStr: string): string {
-  if (!monthStr) return '\'\'';
+  if (!monthStr) return '';
   const s = String(monthStr).trim();
   if (/^\d{4}-\d{2}$/.test(s)) {
-    const [y, m] = s.split('\''-'\'');
-    return `Tháng \${m}/\${y}`;
+    const [y, m] = s.split('-');
+    return `Tháng ${m}/${y}`;
+  }
+  if (/^\d{2}\/\d{4}$/.test(s)) {
+    return `Tháng ${s}`;
+  }
+  return s;
+}
+
+export function formatMonthShort(monthStr: string): string {
+  if (!monthStr) return '';
+  const s = String(monthStr).trim();
+  if (/^\d{4}-\d{2}$/.test(s)) {
+    const [y, m] = s.split('-');
+    return `${m}/${y}`;
   }
   return s;
 }
