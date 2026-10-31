@@ -109,6 +109,20 @@ async function checkUpdate(githubRepoInput) {
       throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
     }
 
+    // Trên máy chủ Cloud (Render / Docker), mã nguồn được cập nhật tự động khi có commit trên GitHub
+    const isCloudHost = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || process.platform === 'linux';
+    if (isCloudHost) {
+      return {
+        configured: true,
+        repo: repoSlug,
+        branch: branch,
+        hasUpdate: false,
+        currentVersion,
+        latestVersion: currentVersion,
+        message: `Hệ thống Cloud đang chạy phiên bản mới nhất (v${currentVersion}).`
+      };
+    }
+
     const hasUpdate = isNewerVersion(remoteVer, currentVersion);
     const displayLatest = hasUpdate ? remoteVer : currentVersion;
 
@@ -136,6 +150,16 @@ async function checkUpdate(githubRepoInput) {
 }
 
 async function applyUpdate(githubRepoInput) {
+  // Nếu máy chủ đang chạy trên Cloud (Render, Docker, Linux container)
+  const isCloudHost = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || process.platform === 'linux';
+  if (isCloudHost) {
+    return {
+      success: true,
+      isCloud: true,
+      message: 'Máy chủ Cloud đã được tự động triển khai từ GitHub. Vui lòng làm mới trang (F5) để nạp giao diện mới nhất!'
+    };
+  }
+
   const repoSlug = parseGithubRepo(githubRepoInput);
   if (!repoSlug) {
     throw new Error('Chưa cấu hình GitHub repository!');

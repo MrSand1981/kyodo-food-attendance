@@ -46,6 +46,12 @@ export default function Header({
   };
 
   const applyHeaderUpdate = async () => {
+    const isCloud = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    if (isCloud) {
+      alert('Máy chủ Cloud tự động cập nhật bản mới nhất từ GitHub. Đang làm mới giao diện...');
+      window.location.reload();
+      return;
+    }
     try {
       setIsUpdating(true);
       const res = await api.applyUpdate();

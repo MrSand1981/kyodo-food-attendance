@@ -109,6 +109,13 @@ export default function LoginKiosk({
   }, []);
 
   const handleApplyUpdate = async () => {
+    const isCloud = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    if (isCloud) {
+      alert('Máy chủ Cloud tự động cập nhật bản mới nhất từ GitHub. Đang làm mới giao diện...');
+      window.location.reload();
+      return;
+    }
+
     if (!window.confirm('Ứng dụng sẽ tự động tải bản cập nhật mới từ GitHub mà không làm mất dữ liệu chấm công. Bạn có muốn tiếp tục?')) return;
     try {
       setUpdatingApp(true);
