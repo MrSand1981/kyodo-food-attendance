@@ -155,6 +155,20 @@ export const api = {
     return `${BASE_URL}/attendance/export-excel${query}`;
   },
 
+  // Quản lý Ngày Lễ (Lương x2)
+  getHolidays: (year) => request(year ? `/holidays?year=${year}` : '/holidays'),
+  addHoliday: (data) => request('/holidays', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  updateHoliday: (id, data) => request(`/holidays/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  deleteHoliday: (id) => request(`/holidays/${id}`, {
+    method: 'DELETE'
+  }),
+
   // Cập nhật phần mềm từ GitHub
   checkUpdate: () => request('/system/check-update'),
   applyUpdate: () => request('/system/apply-update', { method: 'POST' }),

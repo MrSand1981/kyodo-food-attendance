@@ -320,6 +320,43 @@ app.delete('/api/leaves/:id', (req, res) => {
   }
 });
 
+// 4.1 QUẢN LÝ NGÀY LỄ TRONG NĂM (HỆ SỐ LƯƠNG X2)
+app.get('/api/holidays', (req, res) => {
+  try {
+    const list = db.getHolidays(req.query.year);
+    res.json({ success: true, holidays: list });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/holidays', (req, res) => {
+  try {
+    const newHol = db.addHoliday(req.body);
+    res.json({ success: true, holiday: newHol, message: "Đã thêm ngày lễ thành công!" });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.put('/api/holidays/:id', (req, res) => {
+  try {
+    const updated = db.updateHoliday(req.params.id, req.body);
+    res.json({ success: true, holiday: updated, message: "Đã cập nhật ngày lễ thành công!" });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/holidays/:id', (req, res) => {
+  try {
+    const result = db.deleteHoliday(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 // 5. TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN KẾT QUẢ TỔNG GIỜ LÀM - BẢO MẬT LƯƠNG)
 app.get('/api/attendance/my-summary/:employeeId', (req, res) => {
   try {
@@ -356,19 +393,24 @@ app.get('/api/attendance/export-excel', (req, res) => {
     const headerRow2 = ['', '', ''];
 
     report.days.forEach(d => {
-      headerRow1.push(d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`);
-      headerRow2.push(d.dayOfWeek);
+      const headerTitle = d.isHoliday ? `${d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`} (LỄ)` : (d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`);
+      const daySub = d.isHoliday ? `${d.dayOfWeek} (x${d.holidayMultiplier || 2})` : d.dayOfWeek;
+      headerRow1.push(headerTitle);
+      headerRow2.push(daySub);
     });
 
     headerRow1.push(
       'Tổng giờ làm',
+      'Giờ thường (h)',
+      'Giờ lễ (x2)',
       'Mức lương/h',
-      'Lương ca làm (Gross)',
+      'Thưởng lễ',
+      'Tổng lương (Gross)',
       'Số lần tạm ứng',
       'Tổng tạm ứng',
       'Lương thực lĩnh (Net)'
     );
-    headerRow2.push('', '', '', '', '', '');
+    headerRow2.push('', '', '', '', '', '', '', '', '');
 
     const excelRows = [
       titleRow,
@@ -387,7 +429,8 @@ app.get('/api/attendance/export-excel', (req, res) => {
       report.days.forEach(d => {
         const dData = r.dailyData[d.day];
         if (dData && dData.hours > 0) {
-          row.push(`${dData.hours}h`);
+          const suffix = dData.isHoliday ? ` (x${dData.holidayMultiplier || 2})` : '';
+          row.push(`${dData.hours}h${suffix}`);
         } else {
           row.push('');
         }
@@ -395,7 +438,10 @@ app.get('/api/attendance/export-excel', (req, res) => {
 
       row.push(
         r.totalHours,
+        r.regularHours || r.totalHours,
+        r.holidayHours || 0,
         r.hourlyRate,
+        r.holidayBonus || 0,
         r.totalSalary,
         r.advanceCount || 0,
         r.advanceTotal || 0,
@@ -408,6 +454,9 @@ app.get('/api/attendance/export-excel', (req, res) => {
     report.days.forEach(() => totalRow.push(''));
     totalRow.push(
       report.summary.storeTotalHours,
+      report.summary.storeRegularHours || report.summary.storeTotalHours,
+      report.summary.storeHolidayHours || 0,
+      '',
       '',
       report.summary.storeTotalSalary,
       '',

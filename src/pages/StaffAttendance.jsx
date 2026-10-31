@@ -6,7 +6,7 @@ import {
   AlertCircle, Printer, RefreshCw, PlusCircle, 
   FileText, ChevronDown, Check, LogOut, Send, MapPin,
   Lock, KeyRound, ShieldCheck, X, Camera, DollarSign,
-  CalendarDays, Trash2, HeartHandshake, QrCode, UserCheck, Edit3
+  CalendarDays, Trash2, Sparkles, HeartHandshake, QrCode, UserCheck, Edit3
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
@@ -93,6 +93,19 @@ export default function StaffAttendance({
   const [entryHours, setEntryHours] = useState("9.0");
   const [entryShiftName, setEntryShiftName] = useState("Ca Sáng");
   const [entryNote, setEntryNote] = useState("");
+
+  // Quản lý Ngày Lễ (Lương x2)
+  const [holidaysList, setHolidaysList] = useState([]);
+
+  useEffect(() => {
+    api.getHolidays().then(res => {
+      if (res && res.success) {
+        setHolidaysList(res.holidays || []);
+      }
+    }).catch(err => console.warn("Lỗi tải ngày lễ:", err.message));
+  }, []);
+
+  const activeHolidaySelected = holidaysList.find(h => h.date === entryDate && h.active !== false);
 
   // Mảng 24 giờ (00 -> 23) và phút (00 -> 55) theo chuẩn 24H (KHÔNG AM/PM)
   const HOURS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -614,7 +627,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v1.5.1
+                  Bản v1.5.2
                 </span>
               </div>
               
@@ -759,6 +772,22 @@ export default function StaffAttendance({
         </div>
 
         {/* Daily Entry Form */}
+        {activeHolidaySelected && (
+          <div className="mb-3 p-3 rounded-2xl bg-linear-to-r from-amber-500 via-amber-600 to-yellow-500 text-white shadow-sm flex items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">🎉</span>
+              <div>
+                <div className="font-black text-xs sm:text-sm flex items-center gap-2">
+                  <span>Hôm nay là Ngày Lễ: {activeHolidaySelected.name}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-white text-amber-900 text-[10px] font-black uppercase tracking-wider">Lương ×{activeHolidaySelected.multiplier || 2}</span>
+                </div>
+                <p className="text-[11px] text-amber-100 mt-0.5">
+                  Ca làm việc trong ngày này được tự động nhân {activeHolidaySelected.multiplier || 2} lần tiền lương theo quy định của Kyodo Food!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleDailyEntrySubmit} className="text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 items-end">
             
@@ -1321,9 +1350,16 @@ export default function StaffAttendance({
                         {getDayOfWeekName(rec.date)}
                       </td>
                       <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold whitespace-nowrap">
-                          {rec.shiftName || rec.shiftCode}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold whitespace-nowrap">
+                            {rec.shiftName || rec.shiftCode}
+                          </span>
+                          {(rec.isHoliday || holidaysList.some(h => h.date === rec.date && h.active !== false)) && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-black whitespace-nowrap">
+                              🎉 Lễ (×{rec.holidayMultiplier || 2})
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2 px-3 font-mono font-bold text-emerald-700 whitespace-nowrap">
                         {formatShortTime(rec.checkIn)}

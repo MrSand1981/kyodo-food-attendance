@@ -8,6 +8,35 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
 const VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
 const BACKUP_DIR = path.join(__dirname, '..', 'data', 'backups');
 
+
+const DEFAULT_HOLIDAYS = [
+  // Năm 2026
+  { id: 'hol-2026-01-01', name: 'Tết Dương Lịch 2026', date: '2026-01-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)' },
+  { id: 'hol-2026-02-16', name: '29 Tết Bính Ngọ', date: '2026-02-16', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2026-02-17', name: 'Mùng 1 Tết Bính Ngọ', date: '2026-02-17', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2026-02-18', name: 'Mùng 2 Tết Bính Ngọ', date: '2026-02-18', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2026-02-19', name: 'Mùng 3 Tết Bính Ngọ', date: '2026-02-19', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2026-02-20', name: 'Mùng 4 Tết Bính Ngọ', date: '2026-02-20', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2026-04-26', name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)', date: '2026-04-26', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)' },
+  { id: 'hol-2026-04-30', name: 'Ngày Chiến Thắng 30/4', date: '2026-04-30', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)' },
+  { id: 'hol-2026-05-01', name: 'Ngày Quốc Tế Lao Động 1/5', date: '2026-05-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)' },
+  { id: 'hol-2026-09-02', name: 'Quốc Khánh 2/9', date: '2026-09-02', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)' },
+  { id: 'hol-2026-09-03', name: 'Nghỉ liền kề Quốc Khánh', date: '2026-09-03', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)' },
+
+  // Năm 2027
+  { id: 'hol-2027-01-01', name: 'Tết Dương Lịch 2027', date: '2027-01-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)' },
+  { id: 'hol-2027-02-05', name: '29 Tết Đinh Mùi', date: '2027-02-05', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2027-02-06', name: 'Mùng 1 Tết Đinh Mùi', date: '2027-02-06', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2027-02-07', name: 'Mùng 2 Tết Đinh Mùi', date: '2027-02-07', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2027-02-08', name: 'Mùng 3 Tết Đinh Mùi', date: '2027-02-08', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2027-02-09', name: 'Mùng 4 Tết Đinh Mùi', date: '2027-02-09', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
+  { id: 'hol-2027-04-16', name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)', date: '2027-04-16', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)' },
+  { id: 'hol-2027-04-30', name: 'Ngày Chiến Thắng 30/4', date: '2027-04-30', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)' },
+  { id: 'hol-2027-05-01', name: 'Ngày Quốc Tế Lao Động 1/5', date: '2027-05-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)' },
+  { id: 'hol-2027-09-02', name: 'Quốc Khánh 2/9', date: '2027-09-02', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)' },
+  { id: 'hol-2027-09-03', name: 'Nghỉ liền kề Quốc Khánh', date: '2027-09-03', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)' }
+];
+
 let mongoClient = null;
 let mongoDb = null;
 let isMongo = false;
@@ -113,6 +142,10 @@ function ensureDbFile() {
   if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
   if (!parsed.leaveRequests) parsed.leaveRequests = [];
   if (!parsed.employees) parsed.employees = [];
+  if (!parsed.holidays || !Array.isArray(parsed.holidays) || parsed.holidays.length === 0) {
+    parsed.holidays = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
+    dbNeedSave = true;
+  }
 
   // --- BẢO VỆ VÀ PHỤC HỒI DỮ LIỆU NHÂN SỰ BẤT BIẾN TỪ KHO VAULT ---
   const vaultEmployees = loadVault();
@@ -677,6 +710,9 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
     }
   }
 
+  const hol = getHolidayByDate(date);
+  const isHol = !!(hol && hol.active !== false);
+
   const newRecord = {
     id: `att-manual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     employeeId: emp.id,
@@ -691,7 +727,10 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
     shiftName: autoShiftName,
     status: "completed",
     note: note || "Nhân viên tự nhập giờ làm",
-    photo: null
+    photo: null,
+    isHoliday: isHol,
+    holidayMultiplier: isHol ? (Number(hol.multiplier) || 2) : 1,
+    holidayName: isHol ? hol.name : null
   };
 
   db.attendance.push(newRecord);
@@ -979,13 +1018,31 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   ).sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
 
   let totalCompletedHours = 0;
+  let regularHours = 0;
+  let holidayHours = 0;
   let activeShift = null;
   const daysWorkedSet = new Set();
   let shiftCount = 0;
 
   monthRecords.forEach(rec => {
+    const hol = getHolidayByDate(rec.date);
+    const isHol = !!(hol && hol.active !== false);
+    const multiplier = isHol ? (Number(hol.multiplier) || 2) : 1;
+
+    if (isHol && !rec.isHoliday) {
+      rec.isHoliday = true;
+      rec.holidayName = hol.name;
+      rec.holidayMultiplier = multiplier;
+    }
+
     if (rec.status === 'completed') {
-      totalCompletedHours += Number(rec.totalHours || 0);
+      const h = Number(rec.totalHours || 0);
+      totalCompletedHours += h;
+      if (isHol) {
+        holidayHours += h;
+      } else {
+        regularHours += h;
+      }
       daysWorkedSet.add(rec.date);
       shiftCount++;
     } else if (rec.status === 'working') {
@@ -995,10 +1052,26 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   });
 
   totalCompletedHours = Number(totalCompletedHours.toFixed(2));
+  regularHours = Number(regularHours.toFixed(2));
+  holidayHours = Number(holidayHours.toFixed(2));
+
   const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
     ? Number(emp.hourlyRate)
     : (emp.name === 'Út' ? 25000 : 22000);
-  const estimatedSalary = Math.round(totalCompletedHours * hourlyRate);
+
+  const regularSalary = Math.round(regularHours * hourlyRate);
+  let holidaySalary = 0;
+  monthRecords.forEach(rec => {
+    if (rec.status === 'completed') {
+      const hol = getHolidayByDate(rec.date);
+      if (hol && hol.active !== false) {
+        const mult = Number(hol.multiplier) || 2;
+        holidaySalary += Math.round(Number(rec.totalHours || 0) * hourlyRate * mult);
+      }
+    }
+  });
+  const estimatedSalary = regularSalary + holidaySalary;
+  const holidayBonus = Math.max(0, holidaySalary - Math.round(holidayHours * hourlyRate));
 
   const advData = getSalaryAdvances(emp.id, currentYM);
   const leaveData = getLeaveRequests(emp.id, currentYM);
@@ -1027,6 +1100,8 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     },
     yearMonth: currentYM,
     totalHours: totalCompletedHours,
+    regularHours: regularHours,
+    holidayHours: holidayHours,
     totalDays: daysWorkedSet.size,
     totalShifts: shiftCount,
     totalLeaveDays: totalLeaveDays,
@@ -1042,6 +1117,9 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   if (includeSalary) {
     summary.employee.hourlyRate = hourlyRate;
     summary.hourlyRate = hourlyRate;
+    summary.regularSalary = regularSalary;
+    summary.holidaySalary = holidaySalary;
+    summary.holidayBonus = holidayBonus;
     summary.estimatedSalary = estimatedSalary;
   }
 
@@ -1063,13 +1141,19 @@ function getMasterMonthlyReport(yearMonth) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dStr = d < 10 ? '0' + d : '' + d;
     const mStr = String(month).padStart(2, '0');
-    const dateObj = new Date(year + '-' + mStr + '-' + dStr);
+    const dateFormatted = year + '-' + mStr + '-' + dStr;
+    const dateObj = new Date(dateFormatted);
+    const hol = getHolidayByDate(dateFormatted);
+    const isHoliday = !!(hol && hol.active !== false);
     days.push({
       day: d,
-      date: year + '-' + mStr + '-' + dStr,
+      date: dateFormatted,
       dateVN: dStr + '/' + mStr + '/' + year,
       dayOfWeek: vietnameseDays[dateObj.getDay()],
-      isWeekend: dateObj.getDay() === 0
+      isWeekend: dateObj.getDay() === 0,
+      isHoliday: isHoliday,
+      holidayName: isHoliday ? hol.name : null,
+      holidayMultiplier: isHoliday ? (Number(hol.multiplier) || 2) : 1
     });
   }
 
@@ -1077,6 +1161,8 @@ function getMasterMonthlyReport(yearMonth) {
   const allMonthAttendance = (db.attendance || []).filter(a => a.date.startsWith(currentYM));
 
   let storeTotalHours = 0;
+  let storeRegularHours = 0;
+  let storeHolidayHours = 0;
   let storeTotalSalary = 0;
   let storeTotalAdvance = 0;
 
@@ -1084,6 +1170,10 @@ function getMasterMonthlyReport(yearMonth) {
     const empRecords = allMonthAttendance.filter(a => a.employeeId === emp.id);
     const dailyData = {};
     let empTotalHours = 0;
+    let empRegularHours = 0;
+    let empHolidayHours = 0;
+    let empRegularSalary = 0;
+    let empHolidaySalary = 0;
     let daysWorked = 0;
     let morningShifts = 0;
     let eveningShifts = 0;
@@ -1103,6 +1193,10 @@ function getMasterMonthlyReport(yearMonth) {
       }
     });
 
+    const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
+      ? Number(emp.hourlyRate)
+      : (emp.name === 'Út' ? 25000 : 22000);
+
     days.forEach(dayInfo => {
       const dayLogs = empRecords.filter(a => a.date === dayInfo.date);
       if (dayLogs.length > 0) {
@@ -1117,23 +1211,38 @@ function getMasterMonthlyReport(yearMonth) {
         empTotalHours += dayHours;
         if (dayHours > 0 || dayLogs.length > 0) daysWorked++;
 
+        if (dayInfo.isHoliday) {
+          empHolidayHours += dayHours;
+          empHolidaySalary += Math.round(dayHours * hourlyRate * dayInfo.holidayMultiplier);
+        } else {
+          empRegularHours += dayHours;
+          empRegularSalary += Math.round(dayHours * hourlyRate);
+        }
+
         dailyData[dayInfo.day] = {
           hours: dayHours,
-          logs: dayLogs
+          logs: dayLogs,
+          isHoliday: dayInfo.isHoliday,
+          holidayName: dayInfo.holidayName,
+          holidayMultiplier: dayInfo.holidayMultiplier
         };
       } else {
         dailyData[dayInfo.day] = {
           hours: 0,
-          logs: []
+          logs: [],
+          isHoliday: dayInfo.isHoliday,
+          holidayName: dayInfo.holidayName,
+          holidayMultiplier: dayInfo.holidayMultiplier
         };
       }
     });
 
     empTotalHours = Number(empTotalHours.toFixed(2));
-    const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
-      ? Number(emp.hourlyRate)
-      : (emp.name === 'Út' ? 25000 : 22000);
-    const empTotalSalary = Math.round(empTotalHours * hourlyRate);
+    empRegularHours = Number(empRegularHours.toFixed(2));
+    empHolidayHours = Number(empHolidayHours.toFixed(2));
+
+    const empTotalSalary = empRegularSalary + empHolidaySalary;
+    const holidayBonus = Math.max(0, empHolidaySalary - Math.round(empHolidayHours * hourlyRate));
 
     const advData = getSalaryAdvances(emp.id, currentYM);
     const advanceTotal = advData.totalAmount || 0;
@@ -1144,6 +1253,8 @@ function getMasterMonthlyReport(yearMonth) {
     const leaveDaysCount = countLeaveDaysInMonth(leaveData, currentYM);
 
     storeTotalHours += empTotalHours;
+    storeRegularHours += empRegularHours;
+    storeHolidayHours += empHolidayHours;
     storeTotalSalary += empTotalSalary;
     storeTotalAdvance += advanceTotal;
 
@@ -1162,6 +1273,8 @@ function getMasterMonthlyReport(yearMonth) {
       employee: sanitizedEmpWithSecrets,
       dailyData: dailyData,
       totalHours: empTotalHours,
+      regularHours: empRegularHours,
+      holidayHours: empHolidayHours,
       daysWorked: daysWorked,
       morningShifts: morningShifts,
       eveningShifts: eveningShifts,
@@ -1169,6 +1282,9 @@ function getMasterMonthlyReport(yearMonth) {
       leaveDaysCount: leaveDaysCount,
       leaves: leaveData,
       hourlyRate: hourlyRate,
+      regularSalary: empRegularSalary,
+      holidaySalary: empHolidaySalary,
+      holidayBonus: holidayBonus,
       totalSalary: empTotalSalary,
       advanceCount: advanceCount,
       advanceTotal: advanceTotal,
@@ -1188,6 +1304,8 @@ function getMasterMonthlyReport(yearMonth) {
     summary: {
       totalEmployees: employees.length,
       storeTotalHours: Number(storeTotalHours.toFixed(2)),
+      storeRegularHours: Number(storeRegularHours.toFixed(2)),
+      storeHolidayHours: Number(storeHolidayHours.toFixed(2)),
       storeTotalSalary: storeTotalSalary,
       storeTotalAdvance: storeTotalAdvance,
       storeTotalNetSalary: storeTotalSalary - storeTotalAdvance
@@ -1337,7 +1455,90 @@ function getShifts() {
   return db.shifts || [];
 }
 
+
+// ---------------- QUẢN LÝ NGÀY LỄ TRONG NĂM (HỆ SỐ LƯƠNG X2) ----------------
+function getHolidays(year = null) {
+  const db = ensureDbFile();
+  let list = db.holidays || [];
+  if (year) {
+    list = list.filter(h => h.date && h.date.startsWith(String(year)));
+  }
+  return list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+function getHolidayByDate(dateStr) {
+  if (!dateStr) return null;
+  const db = ensureDbFile();
+  const dOnly = String(dateStr).trim().split('T')[0];
+  const list = db.holidays || [];
+  return list.find(h => h.date === dOnly && h.active !== false) || null;
+}
+
+function addHoliday({ name, date, multiplier = 2, active = true, description = '' }) {
+  if (!name || !String(name).trim()) throw new Error("Vui lòng nhập tên ngày lễ!");
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Vui lòng chọn ngày lễ hợp lệ (Định dạng: YYYY-MM-DD)!");
+  const db = ensureDbFile();
+  if (!db.holidays) db.holidays = [];
+
+  const existing = db.holidays.find(h => h.date === date);
+  if (existing) {
+    throw new Error(`Ngày ${date} đã tồn tại trong danh sách ngày lễ (${existing.name})!`);
+  }
+
+  const newHol = {
+    id: `hol-${date}-${Date.now().toString(36)}`,
+    name: String(name).trim(),
+    date: date,
+    multiplier: Math.max(1, Number(multiplier) || 2),
+    active: active !== false,
+    isDefault: false,
+    description: String(description || '').trim()
+  };
+
+  db.holidays.push(newHol);
+  db.holidays.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  saveDatabase(db);
+  return newHol;
+}
+
+function updateHoliday(id, updateData) {
+  const db = ensureDbFile();
+  if (!db.holidays) db.holidays = [];
+  const idx = db.holidays.findIndex(h => h.id === id);
+  if (idx === -1) throw new Error("Không tìm thấy ngày lễ cần cập nhật!");
+
+  if (updateData.name !== undefined) db.holidays[idx].name = String(updateData.name).trim();
+  if (updateData.multiplier !== undefined) db.holidays[idx].multiplier = Math.max(1, Number(updateData.multiplier) || 2);
+  if (updateData.active !== undefined) db.holidays[idx].active = updateData.active === true;
+  if (updateData.description !== undefined) db.holidays[idx].description = String(updateData.description).trim();
+  if (updateData.date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(updateData.date)) {
+    db.holidays[idx].date = updateData.date;
+  }
+
+  saveDatabase(db);
+  return db.holidays[idx];
+}
+
+function deleteHoliday(id) {
+  const db = ensureDbFile();
+  if (!db.holidays) db.holidays = [];
+  const initialLen = db.holidays.length;
+  db.holidays = db.holidays.filter(h => h.id !== id);
+  if (db.holidays.length === initialLen) {
+    throw new Error("Không tìm thấy ngày lễ để xóa!");
+  }
+  saveDatabase(db);
+  return { success: true, message: "Đã xóa ngày lễ thành công!" };
+}
+
+
 module.exports = {
+  getHolidays,
+  getHolidayByDate,
+  addHoliday,
+  updateHoliday,
+  deleteHoliday,
+
   getEmployees,
   getEmployeeByIdOrUsername,
   addEmployee,
