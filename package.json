@@ -3,7 +3,6 @@
   "version": "1.5.0",
   "description": "Phần mềm Quản lý Chấm công & Tính Giờ làm Thông minh cho Chuỗi Cửa Hàng Kyodo Food",
   "main": "server/server.js",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
