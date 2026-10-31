@@ -1,5 +1,6 @@
 {
-  "cloudUrl": "",
-  "activeMode": "local",
-  "comment": "Mặc định chạy máy chủ Localhost trên máy tính này. Khi đã tạo Web Service trên Render thì điền link Cloud vào đây"
+  "cloudUrl": "https://kyodo-food-attendance.onrender.com",
+  "activeMode": "cloud",
+  "installedRole": "employee",
+  "comment": "Mặc định kết nối máy chủ Cloud Render https://kyodo-food-attendance.onrender.com hoạt động 24/7 đồng bộ Đà Nẵng và Nghệ An"
 }

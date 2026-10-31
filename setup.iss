@@ -195,59 +195,61 @@ begin
     'Cau Hinh May Chu Kyodo Food (Da Nang - Nghe An)',
     'Chon phuong thuc chay may chu:');
 
-  // Option 1: Localhost (Mac dinh de hoat dong ngay 100% tren moi may)
-  RbModeLocal := TRadioButton.Create(CloudPage);
-  RbModeLocal.Parent := CloudPage.Surface;
-  RbModeLocal.Top := ScaleY(10);
-  RbModeLocal.Left := ScaleX(15);
-  RbModeLocal.Width := ScaleX(430);
-  RbModeLocal.Height := ScaleY(22);
-  RbModeLocal.Caption := '1. Chay may chu cuc bo (Localhost:5000 - KHUYEN DUNG, HOAT DONG NGAY)';
-  RbModeLocal.Font.Style := [fsBold];
-  RbModeLocal.Checked := True;
-  RbModeLocal.OnClick := @CloudModeChange;
-
-  LblCloudTip1 := TLabel.Create(CloudPage);
-  LblCloudTip1.Parent := CloudPage.Surface;
-  LblCloudTip1.Top := ScaleY(34);
-  LblCloudTip1.Left := ScaleX(35);
-  LblCloudTip1.Width := ScaleX(410);
-  LblCloudTip1.Caption := 'Phan mem tu dong chay may chu noi bo tren may nay, hoat dong ngay 100%.' #13#10 'Tranh hoan toan loi Not Found khi chua tao dich vu tren Cloud.';
-  LblCloudTip1.Font.Color := clGray;
-
-  // Option 2: Cloud
+  // Option 1: Cloud (Khuyen dung - Dong bo Da Nang va Nghe An 24/7)
   RbModeCloud := TRadioButton.Create(CloudPage);
   RbModeCloud.Parent := CloudPage.Surface;
-  RbModeCloud.Top := ScaleY(85);
+  RbModeCloud.Top := ScaleY(10);
   RbModeCloud.Left := ScaleX(15);
   RbModeCloud.Width := ScaleX(430);
   RbModeCloud.Height := ScaleY(22);
-  RbModeCloud.Caption := '2. Ket noi truc tiep he thong CLOUD (Chi chon khi DA TAO Web Service tren Cloud)';
+  RbModeCloud.Caption := '1. Ket noi truc tiep he thong CLOUD (KHUYEN DUNG - DONG BO 24/7)';
   RbModeCloud.Font.Style := [fsBold];
+  RbModeCloud.Checked := True;
   RbModeCloud.OnClick := @CloudModeChange;
 
   LblCloudUrl := TLabel.Create(CloudPage);
   LblCloudUrl.Parent := CloudPage.Surface;
-  LblCloudUrl.Top := ScaleY(112);
+  LblCloudUrl.Top := ScaleY(34);
   LblCloudUrl.Left := ScaleX(35);
-  LblCloudUrl.Caption := 'Duong dan Cloud Server (Render / Cloudflare):';
-  LblCloudUrl.Enabled := False;
+  LblCloudUrl.Caption := 'Duong dan Cloud Server (Render):';
+  LblCloudUrl.Enabled := True;
 
   EdtCloudUrl := TEdit.Create(CloudPage);
   EdtCloudUrl.Parent := CloudPage.Surface;
-  EdtCloudUrl.Top := ScaleY(130);
+  EdtCloudUrl.Top := ScaleY(52);
   EdtCloudUrl.Left := ScaleX(35);
   EdtCloudUrl.Width := ScaleX(390);
   EdtCloudUrl.Text := 'https://kyodo-food-attendance.onrender.com';
-  EdtCloudUrl.Enabled := False;
-  EdtCloudUrl.Color := clBtnFace;
+  EdtCloudUrl.Enabled := True;
+  EdtCloudUrl.Color := clWindow;
+
+  LblCloudTip1 := TLabel.Create(CloudPage);
+  LblCloudTip1.Parent := CloudPage.Surface;
+  LblCloudTip1.Top := ScaleY(78);
+  LblCloudTip1.Left := ScaleX(35);
+  LblCloudTip1.Width := ScaleX(410);
+  LblCloudTip1.Caption := 'Dong bo du lieu cham cong va quan ly tuc thi giua Da Nang va Nghe An.' #13#10 'Hoat dong 24/7, khong lo tat may hay lech du lieu.';
+  LblCloudTip1.Font.Color := clGray;
+
+  // Option 2: Localhost
+  RbModeLocal := TRadioButton.Create(CloudPage);
+  RbModeLocal.Parent := CloudPage.Surface;
+  RbModeLocal.Top := ScaleY(120);
+  RbModeLocal.Left := ScaleX(15);
+  RbModeLocal.Width := ScaleX(430);
+  RbModeLocal.Height := ScaleY(22);
+  RbModeLocal.Caption := '2. Chay may chu cuc bo noi bo (Localhost:5000 - Khong can Internet)';
+  RbModeLocal.Font.Style := [fsBold];
+  RbModeLocal.Checked := False;
+  RbModeLocal.OnClick := @CloudModeChange;
 
   LblCloudTip2 := TLabel.Create(CloudPage);
   LblCloudTip2.Parent := CloudPage.Surface;
-  LblCloudTip2.Top := ScaleY(160);
+  LblCloudTip2.Top := ScaleY(144);
   LblCloudTip2.Left := ScaleX(35);
   LblCloudTip2.Width := ScaleX(410);
-  LblCloudTip2.Caption := 'Chi nhap link khi ban da vao Render.com tao thanh cong Web Service.' #13#10 'Neu link chua hoat dong, phan mem se tu dong fallback ve Localhost.';
+  LblCloudTip2.Caption := 'Chi luu tru du lieu tren may tinh nay (khong dong bo sang may tinh khac).';
+  LblCloudTip2.Font.Color := clGray;
   LblCloudTip2.Font.Color := clGray;
 end;
 

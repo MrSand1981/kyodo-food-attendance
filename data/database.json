@@ -22,7 +22,8 @@
       "password": "1234",
       "passwordChanged": false,
       "active": true,
-      "avatar": "/avatar-female.svg"
+      "avatar": "/avatar-female.svg",
+      "isDefaultPassword": true
     },
     {
       "id": "emp-bao",
@@ -33,20 +34,21 @@
       "name": "Bảo",
       "gender": "Nam",
       "dob": "",
-      "cccd": "",
-      "phone": "",
+      "cccd": "111111111",
+      "phone": "111111111",
       "address": "",
       "branch": "Trưng Nữ Vương",
       "role": "Nhân viên",
       "hourlyRate": 22000,
-      "bankCode": "",
-      "bankName": "",
+      "bankCode": "VCB",
+      "bankName": "Vietcombank",
       "bankAccount": "",
-      "accountName": "",
-      "password": "1234",
-      "passwordChanged": false,
+      "accountName": "BẢO",
+      "password": "1111",
+      "passwordChanged": true,
       "active": true,
-      "avatar": "/avatar-male.svg"
+      "avatar": "/avatar-male.svg",
+      "isDefaultPassword": false
     },
     {
       "id": "emp-1793417938505",
