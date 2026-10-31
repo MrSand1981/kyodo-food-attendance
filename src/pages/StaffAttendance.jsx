@@ -34,7 +34,7 @@ export default function StaffAttendance({
   const [activeShift, setActiveShift] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const todayYM = new Date().toISOString().substring(0, 7);
-  const [selectedMonth, setSelectedMonth] = useState(todayYM || "2026-10");
+  const [selectedMonth, setSelectedMonth] = useState("2026-11");
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
