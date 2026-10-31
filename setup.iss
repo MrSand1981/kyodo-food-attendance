@@ -219,7 +219,7 @@ begin
   EdtCloudUrl.Top := ScaleY(52);
   EdtCloudUrl.Left := ScaleX(35);
   EdtCloudUrl.Width := ScaleX(390);
-  EdtCloudUrl.Text := 'https://kyodo-food-attendance.onrender.com';
+  EdtCloudUrl.Text := 'https://kyodo-food-attendance-2.onrender.com';
   EdtCloudUrl.Enabled := True;
   EdtCloudUrl.Color := clWindow;
 
