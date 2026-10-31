@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Kyodo Food</string>
+    <string name="error_network_title">Không có kết nối mạng</string>
+    <string name="error_network_desc">Vui lòng kiểm tra lại kết nối Wifi hoặc 4G trên điện thoại của bạn.</string>
+    <string name="btn_retry">Thử lại</string>
+    <string name="exit_prompt">Nhấn lần nữa để thoát ứng dụng</string>
+</resources>
