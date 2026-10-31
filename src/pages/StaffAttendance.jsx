@@ -614,7 +614,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v1.4.4
+                  Bản v1.4.5
                 </span>
               </div>
               
@@ -978,9 +978,6 @@ export default function StaffAttendance({
                   <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">
                     Ứng Tiền Lương Trước
                   </h3>
-                  <p className="text-[11px] text-slate-500 whitespace-nowrap">
-                    Chu kỳ: <strong className="text-amber-800">{getAdvanceCycleRange(selectedMonth)}</strong> • Ngày trả lương: 05 hàng tháng
-                  </p>
                 </div>
               </div>
 
@@ -1491,7 +1488,7 @@ export default function StaffAttendance({
             </div>
 
             <p className="text-xs text-slate-500 mb-4">
-              Nhân viên: <strong className="text-slate-800">{employee.name}</strong> • Chu kỳ lương: <strong className="text-amber-800">{formatMonthVN(selectedMonth)}</strong> ({getAdvanceCycleRange(selectedMonth)})
+              Nhân viên: <strong className="text-slate-800">{employee.name}</strong> • Tháng tính lương: <strong className="text-amber-800">{formatMonthVN(selectedMonth)}</strong>
             </p>
 
             <form onSubmit={handleSalaryAdvanceSubmit} className="space-y-4 text-xs">

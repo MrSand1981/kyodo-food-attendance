@@ -523,7 +523,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v1.4.4
+              Bản v1.4.5
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
@@ -865,7 +865,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                   Tổng Số Tiền Lương Đã Tạm Ứng:
                                 </span>
                                 <p className="text-[11px] text-amber-700 font-medium whitespace-nowrap">
-                                  Chu kỳ: {getAdvanceCycleRange(selectedMonth)} • <strong>{row.advanceCount || 0} lần ứng lương</strong> (ngày trả lương 05)
+                                  <strong>{row.advanceCount || 0} lần ứng lương</strong> trong tháng
                                 </p>
                               </div>
                             </div>
@@ -1423,7 +1423,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 Quản Lý Tạm Ứng Lương & Đăng Ký Ngày Nghỉ
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Tổng hợp các khoản tạm ứng lương và đăng ký ngày nghỉ của nhân viên tại cơ sở Trưng Nữ Vương. Chu kỳ ứng lương: <strong className="text-amber-800">{getAdvanceCycleRange(selectedMonth)}</strong> (ngày trả lương 05 hàng tháng; ứng trước ngày 05 tính vào tháng trước, ứng từ ngày 06 tính vào tháng này).
+                Tổng hợp các khoản tạm ứng lương và đăng ký ngày nghỉ của nhân viên tại cơ sở Trưng Nữ Vương.
               </p>
             </div>
             
