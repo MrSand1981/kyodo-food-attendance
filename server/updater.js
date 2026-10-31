@@ -1,6 +1,7 @@
 // server/updater.js
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const AdmZip = require('adm-zip');
 
 const APP_DIR = path.join(__dirname, '..');
@@ -182,7 +183,7 @@ async function applyUpdate(githubRepoInput) {
 
   const arrayBuffer = await zipRes.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const tempZipPath = path.join(APP_DIR, 'temp_update.zip');
+  const tempZipPath = path.join(os.tmpdir(), `kyodo_temp_update_${Date.now()}.zip`);
   fs.writeFileSync(tempZipPath, buffer);
 
   try {

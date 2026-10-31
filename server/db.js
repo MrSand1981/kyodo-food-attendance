@@ -95,8 +95,12 @@ function saveVault(employees) {
     };
 
     const tmpVault = `${VAULT_PATH}.tmp`;
-    fs.writeFileSync(tmpVault, JSON.stringify(vaultData, null, 2), 'utf-8');
-    fs.renameSync(tmpVault, VAULT_PATH);
+    try {
+      fs.writeFileSync(tmpVault, JSON.stringify(vaultData, null, 2), 'utf-8');
+      fs.renameSync(tmpVault, VAULT_PATH);
+    } catch (writeErr) {
+      fs.writeFileSync(VAULT_PATH, JSON.stringify(vaultData, null, 2), 'utf-8');
+    }
   } catch (err) {
     console.error('[Vault] Lỗi lưu employee vault:', err.message);
   }
@@ -203,8 +207,12 @@ function ensureDbFile() {
 
 function saveDatabase(data) {
   const tmpPath = `${DB_PATH}.tmp`;
-  fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
-  fs.renameSync(tmpPath, DB_PATH);
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmpPath, DB_PATH);
+  } catch (writeErr) {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  }
 
   // Tự động đồng bộ và bảo vệ sang Kho nhân sự bất biến
   if (data.employees && Array.isArray(data.employees)) {

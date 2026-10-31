@@ -36,20 +36,28 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
 
+# Copy package files
+COPY --chown=node:node package*.json ./
+
 # Copy production dependencies
-COPY --from=deps /app/node_modules ./node_modules
+COPY --chown=node:node --from=deps /app/node_modules ./node_modules
 
 # Copy built frontend assets
-COPY --from=frontend-builder /app/dist ./dist
+COPY --chown=node:node --from=frontend-builder /app/dist ./dist
 
 # Copy server files
-COPY server ./server
+COPY --chown=node:node server ./server
 
 # Copy data directory structure
-COPY data ./data
+COPY --chown=node:node data ./data
 
 # Copy public assets
-COPY public ./public
+COPY --chown=node:node public ./public
+
+# Ensure data directory and files have full 777 read/write permissions for node user
+RUN mkdir -p /app/data /app/data/backups /app/public && \
+    chown -R node:node /app && \
+    chmod -R 777 /app/data /app/public
 
 # Use standard non-root node user for security
 USER node
