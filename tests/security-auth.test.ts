@@ -46,7 +46,8 @@ describe('Security & Authentication Tests', () => {
   it('should reject invalid password for Admin and Employees', () => {
     expect(() => db.authenticateUser('admin', 'wrongpass')).toThrow();
     expect(() => db.authenticateUser('UTNVTNV', 'wrongpass')).toThrow();
-    expect(() => db.authenticateUser('BAONVTNV', '1234')).toThrow(); // Bảo changed password to 1111
+    expect(() => db.authenticateUser('BAONVTNV', '1234')).toThrow();
+    expect(() => db.authenticateUser('BAONVTNV', '1111')).toThrow(); // Mật khẩu cũ 1111 bắt buộc phải bị từ chối
   });
 
   it('should generate and verify tamper-proof JWT tokens', () => {
