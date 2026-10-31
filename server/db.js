@@ -864,6 +864,28 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
 }
 
 /**
+ * Lấy ngày hôm nay theo múi giờ Việt Nam (Asia/Ho_Chi_Minh, GMT+7) định dạng YYYY-MM-DD
+ * Tuyệt đối không dùng toISOString() vì toISOString() trả về giờ UTC (GMT+0) khiến từ 00:00 đến 07:00 sáng tại VN bị lùi về ngày hôm trước!
+ */
+function getVietnamTodayYMD() {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+  } catch (e) {
+    const d = new Date(Date.now() + 7 * 3600 * 1000);
+    return d.toISOString().split('T')[0];
+  }
+}
+
+function getVietnamCurrentYM() {
+  return getVietnamTodayYMD().substring(0, 7);
+}
+
+/**
  * Quy tắc nghiệp vụ chu kỳ tạm ứng lương Kyodo Food:
  * - Chấm công tính từ ngày 01 đến ngày cuối cùng của tháng.
  * - Ngày trả lương là ngày 05 hàng tháng.
@@ -1073,7 +1095,7 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   const emp = db.employees.find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
   if (!emp) throw new Error("Nhân viên không tồn tại");
 
-  const currentYM = yearMonth || new Date().toISOString().substring(0, 7);
+  const currentYM = yearMonth || getVietnamCurrentYM();
 
   const monthRecords = (db.attendance || []).filter(
     a => a.employeeId === emp.id && a.date.startsWith(currentYM)
@@ -1191,7 +1213,7 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
 // ---------------- BẢNG TỔNG HỢP CỬA HÀNG TRƯNG NỮ VƯƠNG (ADMIN) ----------------
 function getMasterMonthlyReport(yearMonth) {
   const db = ensureDbFile();
-  const currentYM = yearMonth || new Date().toISOString().substring(0, 7);
+  const currentYM = yearMonth || getVietnamCurrentYM();
   
   const [yearStr, monthStr] = currentYM.split('-');
   const year = parseInt(yearStr, 10);
@@ -1622,6 +1644,8 @@ module.exports = {
   requestSalaryAdvance,
   getSalaryAdvances,
   getSalaryMonthForAdvance,
+  getVietnamTodayYMD,
+  getVietnamCurrentYM,
   updateSalaryAdvance,
   deleteSalaryAdvance,
   requestLeave,
