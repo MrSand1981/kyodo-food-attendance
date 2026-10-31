@@ -23,7 +23,9 @@ import {
   getAdvanceCycleExplanation,
   checkShiftOverlap,
   calculateHours,
-  getShiftNameFromTime
+  getShiftNameFromTime,
+  getVietnamTodayYMD,
+  getVietnamCurrentYM
 } from '@/shared/business-rules';
 import { 
   Card, Button, Input, SelectComponent as Select, Modal, Badge, Avatar, Table, Toast, StatusBadge
@@ -53,7 +55,7 @@ export default function StaffAttendance({
   const [localEmp, setLocalEmp] = useState(employee);
   const [activeShift, setActiveShift] = useState<any>(null);
   const [summaryData, setSummaryData] = useState<any>(null);
-  const todayYM = new Date().toISOString().substring(0, 7);
+  const todayYM = getVietnamCurrentYM();
   const [selectedMonth, setSelectedMonth] = useState(todayYM);
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -90,20 +92,20 @@ export default function StaffAttendance({
   const [pwdError, setPwdError] = useState("");
 
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
-  const [advDate, setAdvDate] = useState(new Date().toISOString().split('T')[0]);
+  const [advDate, setAdvDate] = useState(getVietnamTodayYMD());
   const [advAmount, setAdvAmount] = useState("");
   const [advReason, setAdvReason] = useState("");
   const [advLoading, setAdvLoading] = useState(false);
 
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [leaveDate, setLeaveDate] = useState(new Date().toISOString().split('T')[0]);
+  const [leaveDate, setLeaveDate] = useState(getVietnamTodayYMD());
   const [leaveEndDate, setLeaveEndDate] = useState("");
   const [leaveShift, setLeaveShift] = useState("Cả Ngày");
   const [leaveReason, setLeaveReason] = useState("");
   const [leaveLoading, setLeaveLoading] = useState(false);
 
   // Daily Entry Form
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [entryDate, setEntryDate] = useState(getVietnamTodayYMD());
   const [entryStart, setEntryStart] = useState("08:00");
   const [entryEnd, setEntryEnd] = useState("17:00");
   const [entryHours, setEntryHours] = useState("9");
@@ -595,7 +597,7 @@ export default function StaffAttendance({
                 <Badge variant="primary">TK: {localEmp.username || localEmp.code}</Badge>
                 <Badge variant="neutral">{localEmp.gender || "Nam"}</Badge>
                 <Badge variant="neutral" className="hidden sm:inline-block">Cơ sở Trưng Nữ Vương</Badge>
-                <Badge variant="primary" className="text-[10px]">Bản v1.4.8</Badge>
+                <Badge variant="primary" className="text-[10px]">Bản v1.5.4</Badge>
               </div>
               
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-1 font-medium">
@@ -921,7 +923,7 @@ export default function StaffAttendance({
               type="button"
               size="sm"
               onClick={() => {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = getVietnamTodayYMD();
                 const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
                 setAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
                 setShowAdvanceModal(true);

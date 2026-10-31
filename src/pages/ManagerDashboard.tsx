@@ -24,7 +24,9 @@ import {
   getAdvanceCycleRange, 
   getAdvanceCycleExplanation,
   calculateMonthlySalary,
-  formatVND
+  formatVND,
+  getVietnamTodayYMD,
+  getVietnamCurrentYM
 } from '@/shared/business-rules';
 import { 
   Card, Button, Input, SelectComponent as Select, Modal, Badge, Avatar, Table, Toast, StatusBadge
@@ -43,7 +45,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const { toast } = useToast();
   
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
-  const [selectedMonth, setSelectedMonth] = useState('2026-11');
+  const [selectedMonth, setSelectedMonth] = useState(getVietnamCurrentYM());
   
   // Data states
   const [report, setReport] = useState<any>(null);
@@ -288,7 +290,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
 
   const openManagerAdvanceModal = (emp: any) => {
     setMgrAdvTargetEmp(emp);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getVietnamTodayYMD();
     const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
     setMgrAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
     setMgrAdvAmount('');
@@ -528,7 +530,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </Badge>
-            <Badge variant="primary" className="text-xs">Bản v1.4.8</Badge>
+            <Badge variant="primary" className="text-xs">Bản v1.5.4</Badge>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
             Bảng Chấm Công & Quản Trị Nhân Sự
@@ -1012,7 +1014,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  const todayStr = new Date().toISOString().split('T')[0];
+                  const todayStr = getVietnamTodayYMD();
                   const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
                   setMgrAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
                   setShowManagerAdvanceModal(true);

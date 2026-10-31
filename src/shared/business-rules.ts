@@ -51,6 +51,31 @@ export function getSalaryMonthForAdvance(dateStr: string): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
+/**
+ * Lấy ngày hôm nay theo múi giờ Việt Nam (Asia/Ho_Chi_Minh, GMT+7) định dạng YYYY-MM-DD
+ * Tuyệt đối không dùng toISOString() vì toISOString() trả về giờ UTC (GMT+0) khiến từ 00:00 đến 07:00 sáng tại VN bị lùi về ngày hôm trước!
+ */
+export function getVietnamTodayYMD(): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+  } catch {
+    const d = new Date(Date.now() + 7 * 3600 * 1000);
+    return d.toISOString().split('T')[0];
+  }
+}
+
+/**
+ * Lấy tháng hiện tại theo múi giờ Việt Nam định dạng YYYY-MM
+ */
+export function getVietnamCurrentYM(): string {
+  return getVietnamTodayYMD().substring(0, 7);
+}
+
 export function formatDateVN(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
   if (dateInput instanceof Date) {
@@ -300,7 +325,10 @@ export function countLeaveDaysInMonth(leaveList: Array<{ date: string; endDate?:
     
     let count = 0;
     while (cur <= stop && count <= 31) {
-      const ymd = cur.toISOString().split('T')[0];
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, '0');
+      const d = String(cur.getDate()).padStart(2, '0');
+      const ymd = `${y}-${m}-${d}`;
       if (ymd.startsWith(yearMonth)) {
         uniqueDates.add(ymd);
       }
