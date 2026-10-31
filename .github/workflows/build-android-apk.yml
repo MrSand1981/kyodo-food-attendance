@@ -1,0 +1,80 @@
+name: Build Android APK
+
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Kyodo Food APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Initialize Gradle Wrapper and Build APK
+        run: |
+          cd android
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Collect and Rename APK
+        run: |
+          mkdir -p dist-apk
+          APK_FILE=$(find android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: No APK file generated!"
+            exit 1
+          fi
+          echo "Found APK: $APK_FILE"
+          cp "$APK_FILE" dist-apk/KyodoFood.apk
+          ls -lh dist-apk/
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KyodoFood-Android-APK
+          path: dist-apk/KyodoFood.apk
+          retention-days: 30
+
+      - name: Publish APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0-android
+          name: "Kyodo Food Android App v1.0.0"
+          draft: false
+          prerelease: false
+          body: |
+            ### 📱 Ứng Dụng Chấm Công Kyodo Food (Android APK)
+            - **Phiên bản**: v1.0.0
+            - **Máy chủ kết nối**: `https://kyodo-food-attendance-2.onrender.com`
+            - **Cơ sở dữ liệu**: MongoDB Atlas Cloud
+
+            #### 📥 Hướng dẫn tải và cài đặt:
+            1. Bấm vào file **[KyodoFood.apk](https://github.com/MrSand1981/kyodo-food-attendance/releases/download/v1.0.0-android/KyodoFood.apk)** bên dưới để tải về điện thoại Android.
+            2. Sau khi tải xong, nhấn vào file -> Chọn **Cài đặt**.
+            3. Nếu điện thoại hiển thị cảnh báo "Cho phép cài đặt ứng dụng từ nguồn không xác định" -> Chọn **Cho phép**.
+            4. Mở app Kyodo Food và đăng nhập chấm công!
+          files: dist-apk/KyodoFood.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
