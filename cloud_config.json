@@ -1,5 +1,5 @@
 {
-  "cloudUrl": "https://kyodo-food-attendance.onrender.com",
-  "activeMode": "cloud",
-  "comment": "Cấu hình kết nối đồng bộ Cloud giữa Đà Nẵng và Nghệ An"
+  "cloudUrl": "",
+  "activeMode": "local",
+  "comment": "Mặc định chạy máy chủ Localhost trên máy tính này. Khi đã tạo Web Service trên Render thì điền link Cloud vào đây"
 }

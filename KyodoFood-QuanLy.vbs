@@ -28,7 +28,7 @@ If fso.FileExists(focusExe) Then
 End If
 
 ' ==============================================================================
-' 2. XAC DINH CHE DO KET NOI: CLOUD ONLINE HAY LOCALHOST
+' 2. XAC DINH CHE DO KET NOI: CLOUD ONLINE HAY LOCALHOST (CO TU DONG FALLBACK)
 ' ==============================================================================
 Function ReadCloudUrl(cfgPath)
     On Error Resume Next
@@ -61,7 +61,7 @@ Function CheckServer(url)
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     If http Is Nothing Then Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
     http.open "GET", url, False
-    http.setTimeouts 800, 800, 800, 800
+    http.setTimeouts 1200, 1200, 1200, 1200
     http.send ""
     If Err.Number = 0 Then
         If http.status = 200 Then
@@ -77,11 +77,23 @@ cfgFile = strDir & "\cloud_config.json"
 cloudUrl = ReadCloudUrl(cfgFile)
 
 Dim appUrl
+Dim useCloud
+useCloud = False
+
+' Neu co cau hinh link Cloud, kiem tra xem link Cloud co song thuc su khong
 If Len(cloudUrl) > 5 Then
-    ' Che do Cloud Online: Ket noi truc tiep Cloud
-    appUrl = cloudUrl & "/?mode=manager"
-Else
-    ' Che do Localhost noi bo
+    cloudHealthUrl = cloudUrl & "/api/settings"
+    If CheckServer(cloudHealthUrl) Then
+        useCloud = True
+        appUrl = cloudUrl & "/?mode=manager"
+    Else
+        ' Neu Cloud bi Not Found hoac mat ket noi -> Tu dong fallback ve Localhost noi bo
+        useCloud = False
+    End If
+End If
+
+' Neu khong dung Cloud (hoac Cloud chua hoat dong), khoi dong may chu Localhost noi bo
+If Not useCloud Then
     localCheckUrl = "http://localhost:5000/api/settings"
     appUrl = "http://localhost:5000/?mode=manager"
     
@@ -93,7 +105,7 @@ Else
             strCmd = Chr(34) & nodeExe & Chr(34) & " " & Chr(34) & serverJs & Chr(34)
             WshShell.Run strCmd, 0, False
             
-            ' Cho may chu san sang (toi da 20 giay, kiem tra moi 300ms)
+            ' Cho may chu cuc bo san sang (toi da 20 giay, kiem tra moi 300ms)
             Dim isReady, retryCount
             isReady = False
             For retryCount = 1 To 60
@@ -105,7 +117,7 @@ Else
             Next
             
             If Not isReady Then
-                MsgBox "May chu Kyodo Food noi bo (port 5000) dang mat nhieu thoi gian khoi dong hoac bi Firewall chan." & vbCrLf & vbCrLf & "Phan mem van se mo trinh duyet, hoac ban co the su dung che do Cloud de dong bo giua Da Nang va Nghe An.", 48, "Thong Bao May Chu - Kyodo Food"
+                MsgBox "May chu Kyodo Food noi bo (port 5000) dang mat nhieu thoi gian khoi dong hoac bi Firewall chan." & vbCrLf & vbCrLf & "Phan mem van se mo trinh duyet de ban kiem tra.", 48, "Thong Bao May Chu - Kyodo Food"
             End If
         Else
             MsgBox "Khong tim thay tap tin khoi dong Node.js tai:" & vbCrLf & nodeExe, 16, "Loi Khoi Dong - Kyodo Food"
