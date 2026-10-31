@@ -1,6 +1,5 @@
-{
-  "cloudUrl": "https://kyodo-food-attendance.onrender.com",
-  "activeMode": "cloud",
-  "installedRole": "employee",
-  "comment": "Mặc định kết nối máy chủ Cloud Render https://kyodo-food-attendance.onrender.com hoạt động 24/7 đồng bộ Đà Nẵng và Nghệ An"
+﻿{
+    "activeMode":  "cloud",
+    "installedRole":  "admin",
+    "cloudUrl":  "https://kyodo-food-attendance-2.onrender.com"
 }
