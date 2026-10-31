@@ -98,7 +98,7 @@ export default function App() {
       />
 
       {/* Main Viewport */}
-      <main className={`flex-1 flex flex-col ${!currentRole ? 'justify-center items-center py-4 sm:py-6' : 'pb-16'}`}>
+      <main className={`flex-1 flex flex-col ${!currentRole ? 'items-center pt-3 sm:pt-5 pb-8' : 'pb-16'}`}>
         {/* 1. MÀN HÌNH ĐĂNG NHẬP */}
         {!currentRole && (
           <LoginKiosk

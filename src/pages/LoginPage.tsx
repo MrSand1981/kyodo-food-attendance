@@ -301,7 +301,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
   }, [appMode]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-1.5 sm:py-3 my-auto flex flex-col items-center justify-center">
+    <div className="w-full max-w-4xl mx-auto px-4 pt-1 sm:pt-2 pb-6 flex flex-col items-center">
       {/* Hero Store Greeting */}
       <div className="text-center mb-2 sm:mb-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-bold mb-1.5 border border-brand-200">
