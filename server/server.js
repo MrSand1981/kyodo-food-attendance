@@ -221,15 +221,22 @@ app.get('/api/employees', (req, res) => {
   }
 });
 
-app.post('/api/employees/change-password', requireAuth, (req, res) => {
+app.post('/api/employees/change-password', (req, res) => {
   try {
     const { employeeId, oldPassword, newPassword } = req.body;
-    // Đảm bảo nhân viên chỉ đổi được mật khẩu của chính mình (hoặc Admin đổi cho nhân viên)
-    if (req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
+    // Nếu có token đăng nhập và không phải admin thì kiểm tra đúng tài khoản
+    if (req.user && req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền đổi mật khẩu của tài khoản khác!' });
     }
     const result = db.changeEmployeePassword(employeeId, oldPassword, newPassword);
-    res.json(result);
+
+    // Cấp luôn token mới để phiên làm việc tiếp tục duy trì 30 ngày thông suốt
+    const emp = db.getEmployeeByIdOrUsername(employeeId);
+    let token = null;
+    if (emp) {
+      token = generateToken(emp, 'employee');
+    }
+    res.json({ ...result, token });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -246,13 +253,13 @@ app.post('/api/employees/:id/reset-password', (req, res) => {
 });
 
 // Cập nhật Avatar cá nhân cho nhân viên
-app.post('/api/employees/avatar', requireAuth, (req, res) => {
+app.post('/api/employees/avatar', (req, res) => {
   try {
     const { employeeId, avatar } = req.body;
     if (!employeeId || !avatar) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin employeeId hoặc ảnh avatar!' });
     }
-    if (req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
+    if (req.user && req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa ảnh của tài khoản khác!' });
     }
     const result = db.updateEmployeeAvatar(employeeId, avatar);
