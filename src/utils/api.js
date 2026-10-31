@@ -171,10 +171,16 @@ export const api = {
   deleteAttendance: (id) => request(`/attendance/${id}`, { method: 'DELETE' }),
 
   // Nhân viên tự đổi mật khẩu riêng biệt
-  changePassword: ({ employeeId, oldPassword, newPassword }) => request('/employees/change-password', {
-    method: 'POST',
-    body: JSON.stringify({ employeeId, oldPassword, newPassword })
-  }),
+  changePassword: async ({ employeeId, oldPassword, newPassword }) => {
+    const res = await request('/employees/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, oldPassword, newPassword })
+    });
+    if (res.success && res.token && typeof window !== 'undefined') {
+      localStorage.setItem('kyodo_token', res.token);
+    }
+    return res;
+  },
 
   // Link xuất file Excel chuẩn
   getExportExcelUrl: (month) => {
