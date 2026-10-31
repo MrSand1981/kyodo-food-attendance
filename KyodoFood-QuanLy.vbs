@@ -79,17 +79,17 @@ useCloud = False
 
 ' Neu duoc cau hinh che do Cloud
 If activeMode = "cloud" And Len(cloudUrl) > 7 Then
-    cloudHealthUrl = cloudUrl & "/api/settings"
-    ' Kiem tra nhanh trong 3 giay xem Cloud co dang san sang khong
-    If CheckServer(cloudHealthUrl, 3000) Then
+    cloudHealthUrl = cloudUrl & "/api/ping"
+    ' Kiem tra nhanh trong 4 giay xem Cloud co dang san sang khong
+    If CheckServer(cloudHealthUrl, 4000) Then
         useCloud = True
         appUrl = cloudUrl & "/?mode=manager"
     Else
-        ' Neu Cloud chua phan hoi (co the Render dang ngu hoac mang cham), hoi nguoi dung
+        ' Neu Cloud chua phan hoi ngay, hoi nguoi dung
         Dim choice
         choice = MsgBox("May chu Cloud chua phan hoi ngay tai:" & vbCrLf & cloudUrl & vbCrLf & vbCrLf & _
-                        "- Neu may chu Render/Cloud dang o che do nghi (Sleep), se can khoang 30-40 giay de thuc day." & vbCrLf & _
-                        "- Bam [YES] de tiep tuc mo Cloud (trinh duyet se cho may chu Cloud tai trang)." & vbCrLf & _
+                        "- Neu may chu Cloud Render vua thuc day, se can vai giay de nap." & vbCrLf & _
+                        "- Bam [YES] de tiep tuc mo Cloud (giao dien se tu dong ket noi va cho may chu)." & vbCrLf & _
                         "- Bam [NO] de chuyen sang chay May Chu Cuc Bo (Localhost) tren may nay.", _
                         36, "Ket Noi He Thong Kyodo Food - Da Nang & Nghe An")
         If choice = 6 Then ' vbYes
@@ -100,9 +100,8 @@ If activeMode = "cloud" And Len(cloudUrl) > 7 Then
         End If
     End If
 ElseIf Len(cloudUrl) > 7 Then
-    ' activeMode = "local" nhung co cloudUrl -> kiem tra neu Cloud online thi ho tro ket noi
-    cloudHealthUrl = cloudUrl & "/api/settings"
-    If CheckServer(cloudHealthUrl, 2500) Then
+    cloudHealthUrl = cloudUrl & "/api/ping"
+    If CheckServer(cloudHealthUrl, 3000) Then
         useCloud = True
         appUrl = cloudUrl & "/?mode=manager"
     End If

@@ -24,12 +24,14 @@ export default function App() {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState(null);
+  const [retryCountdown, setRetryCountdown] = useState(null);
 
   // Tải dữ liệu hệ thống
   const loadInitialData = async () => {
     try {
       setLoading(true);
       setInitError(null);
+      setRetryCountdown(null);
       const [settingsRes, employeesRes] = await Promise.all([
         api.getSettings(),
         api.getEmployees(false) // Che giấu tuyệt đối lương khi khởi tạo
@@ -48,6 +50,27 @@ export default function App() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Tự động thử kết nối lại sau 4 giây nếu máy chủ đang khởi động hoặc chưa phản hồi
+  useEffect(() => {
+    let timer;
+    if (initError && !settings) {
+      setRetryCountdown(4);
+      timer = setInterval(() => {
+        setRetryCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            loadInitialData();
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [initError]);
 
   // Xử lý đăng nhập (Nhân viên: UTNVTNV, BAONVTNV | Admin: 20162020)
   const handleLoginSubmit = async ({ username, password }) => {
@@ -84,20 +107,27 @@ export default function App() {
   if (initError && !settings) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 shadow-sm">
+        <div className="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 shadow-sm animate-pulse">
           <div className="w-8 h-8 rounded-full border-2 border-amber-600 flex items-center justify-center font-bold text-lg">!</div>
         </div>
-        <h3 className="text-xl font-black text-slate-800 mb-2">Đang kết nối máy chủ Kyodo Food</h3>
-        <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
-          Máy chủ đang khởi động hoặc chưa phản hồi ({initError}). Vui lòng bấm nút bên dưới để thử kết nối lại.
+        <h3 className="text-xl font-black text-slate-800 mb-2">Đang kết nối máy chủ Kyodo Food Cloud</h3>
+        <p className="text-sm text-slate-500 max-w-md mb-4 leading-relaxed">
+          {initError}. Đang duy trì kết nối đám mây giữa Đà Nẵng và Nghệ An...
         </p>
-        <button
-          type="button"
-          onClick={loadInitialData}
-          className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
-        >
-          <span>Thử Kết Nối Lại</span>
-        </button>
+        {retryCountdown !== null && (
+          <p className="text-xs font-semibold text-amber-600 mb-6 bg-amber-50 px-3 py-1.5 rounded-full inline-block border border-amber-200">
+            ⏳ Tự động kết nối lại sau {retryCountdown} giây...
+          </p>
+        )}
+        <div>
+          <button
+            type="button"
+            onClick={loadInitialData}
+            className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
+          >
+            <span>Thử Kết Nối Ngay</span>
+          </button>
+        </div>
       </div>
     );
   }

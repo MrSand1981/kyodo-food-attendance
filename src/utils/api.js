@@ -2,7 +2,7 @@
 
 const BASE_URL = '/api';
 
-async function request(endpoint, options = {}) {
+async function request(endpoint, options = {}, retries = 2) {
   const url = `${BASE_URL}${endpoint}`;
   const config = {
     headers: {
@@ -12,16 +12,22 @@ async function request(endpoint, options = {}) {
     ...options
   };
 
-  try {
-    const response = await fetch(url, config);
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Lỗi xử lý yêu cầu từ máy chủ');
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Lỗi xử lý yêu cầu từ máy chủ');
+      }
+      return data;
+    } catch (error) {
+      if (attempt === retries) {
+        console.error(`API Error [${endpoint}]:`, error);
+        throw error;
+      }
+      // Đợi ngắn rồi thử lại (rất hữu ích khi mạng chập chờn hoặc máy chủ Cloud đang nạp)
+      await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
     }
-    return data;
-  } catch (error) {
-    console.error(`API Error [${endpoint}]:`, error);
-    throw error;
   }
 }
 

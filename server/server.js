@@ -39,6 +39,25 @@ const upload = multer({ storage: storage });
 
 // ================= API ROUTES =================
 
+// 0. KEEP-ALIVE & HEALTH CHECK (DÀNH CHO CRON-JOB / UPTIMEROBOT GIỮ MÁY CHỦ THỨC 24/7)
+app.get('/api/ping', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    app: 'Kyodo Food Attendance',
+    store: 'Trưng Nữ Vương, Đà Nẵng',
+    time: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    message: 'Máy chủ Kyodo Food đang hoạt động 24/7'
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 1. SETTINGS & SHIFTS
 app.get('/api/settings', (req, res) => {
   try {
@@ -631,6 +650,24 @@ if (require.main === module) {
     console.log(`🍗 KYODO FOOD - CƠ SỞ TRƯNG NỮ VƯƠNG`);
     console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
     console.log(`=======================================================`);
+
+    // Cơ chế phụ trợ tự giữ nhịp 24/7 nếu được triển khai trên Cloud Render
+    const publicCloudUrl = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
+    if (publicCloudUrl && publicCloudUrl.startsWith('http')) {
+      console.log(`[Keep-Alive] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping`);
+      const httpModule = publicCloudUrl.startsWith('https') ? require('https') : require('http');
+      setInterval(() => {
+        try {
+          httpModule.get(`${publicCloudUrl}/api/ping`, (pingRes) => {
+            pingRes.resume(); // Tiêu thụ stream để giải phóng socket
+          }).on('error', () => {
+            // Không làm gián đoạn server nếu mạng ngoài chập chờn
+          });
+        } catch (e) {
+          // Bỏ qua lỗi
+        }
+      }, 9 * 60 * 1000); // 9 phút một lần (dưới ngưỡng 15 phút của Render)
+    }
   });
 }
 
