@@ -191,6 +191,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    continue-on-error: true
     permissions:
       contents: read
       packages: write
