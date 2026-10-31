@@ -614,7 +614,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v1.4.5
+                  Bản v1.4.6
                 </span>
               </div>
               
@@ -1235,7 +1235,7 @@ export default function StaffAttendance({
                 {summaryData?.totalHours ?? 0} <span className="text-xs sm:text-sm font-bold">giờ</span>
               </div>
               <p className="text-[10px] text-amber-700/80 font-semibold mt-0.5 whitespace-nowrap">
-                Tích lũy trong {formatMonthVN(selectedMonth)}
+                Tổng số giờ đã làm trong tháng
               </p>
             </div>
           </div>
