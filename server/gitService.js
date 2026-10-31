@@ -116,7 +116,9 @@ async function pushToGitHub(messageInput) {
     let latestHash = '';
     try {
       latestHash = await runCmd('git rev-parse --short HEAD');
-    } catch {}
+    } catch (err) {
+      latestHash = '';
+    }
 
     return {
       success: true,
