@@ -2235,7 +2235,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             </div>
 
             <p className="text-xs text-slate-500 mb-4">
-              Cơ sở Trưng Nữ Vương • Chu kỳ tính lương: <strong className="text-amber-800">Tháng {selectedMonth}</strong>
+              Cơ sở Trưng Nữ Vương • Chu kỳ tính lương: <strong className="text-amber-800">{formatMonthVN(selectedMonth)}</strong>
             </p>
 
             <form onSubmit={handleManagerAdvanceSubmit} className="space-y-4 text-xs">
