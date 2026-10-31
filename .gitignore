@@ -6,3 +6,4 @@ cloudflared.exe
 
 installer_output/
 data/backups/
+data/kyodo_employee_vault.json

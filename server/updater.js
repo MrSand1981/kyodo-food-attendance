@@ -5,6 +5,7 @@ const AdmZip = require('adm-zip');
 
 const APP_DIR = path.join(__dirname, '..');
 const DB_FILE = path.join(APP_DIR, 'data', 'database.json');
+const VAULT_FILE = path.join(APP_DIR, 'data', 'kyodo_employee_vault.json');
 const BACKUP_DIR = path.join(APP_DIR, 'data', 'backups');
 const VERSION_FILE = path.join(APP_DIR, 'package.json');
 
@@ -139,17 +140,27 @@ async function applyUpdate(githubRepoInput) {
     throw new Error('Chưa cấu hình GitHub repository!');
   }
 
-  // Bước 1: Sao lưu database.json an toàn
+  // Bước 1: Sao lưu database.json và employee vault an toàn
   if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
   }
 
   let dbBackup = null;
+  let vaultBackup = null;
+  const timestamp = Date.now();
+
   if (fs.existsSync(DB_FILE)) {
     dbBackup = fs.readFileSync(DB_FILE, 'utf-8');
-    const backupName = `db_backup_before_update_${Date.now()}.json`;
+    const backupName = `db_backup_before_update_${timestamp}.json`;
     fs.writeFileSync(path.join(BACKUP_DIR, backupName), dbBackup, 'utf-8');
     console.log(`[Updater] Đã sao lưu database an toàn tại ${backupName}`);
+  }
+
+  if (fs.existsSync(VAULT_FILE)) {
+    vaultBackup = fs.readFileSync(VAULT_FILE, 'utf-8');
+    const vaultBackupName = `vault_backup_before_update_${timestamp}.json`;
+    fs.writeFileSync(path.join(BACKUP_DIR, vaultBackupName), vaultBackup, 'utf-8');
+    console.log(`[Updater] Đã sao lưu employee vault an toàn tại ${vaultBackupName}`);
   }
 
   // Bước 2: Tải zip từ GitHub
@@ -189,8 +200,13 @@ async function applyUpdate(githubRepoInput) {
       const relPath = entry.entryName.substring(rootDirName.length + 1);
       if (!relPath) return;
 
-      // TUYỆT ĐỐI KHÔNG GHI ĐÈ FILE DỮ LIỆU CHẤM CÔNG CỦA CỬA HÀNG
-      if (relPath.startsWith('data/database.json') || relPath.startsWith('bin/')) {
+      // TUYỆT ĐỐI KHÔNG GHI ĐÈ FILE DỮ LIỆU CHẤM CÔNG VÀ KHO NHÂN SỰ CỦA CỬA HÀNG
+      if (
+        relPath.startsWith('data/database.json') || 
+        relPath.startsWith('data/kyodo_employee_vault.json') || 
+        relPath.startsWith('data/backups') || 
+        relPath.startsWith('bin/')
+      ) {
         return;
       }
 
@@ -210,10 +226,14 @@ async function applyUpdate(githubRepoInput) {
       fs.unlinkSync(tempZipPath);
     }
 
-    // Đảm bảo dữ liệu database.json được giữ nguyên vẹn 100%
+    // Đảm bảo dữ liệu database.json và vault được giữ nguyên vẹn 100%
     if (dbBackup) {
       fs.writeFileSync(DB_FILE, dbBackup, 'utf-8');
       console.log('[Updater] Đã bảo toàn nguyên vẹn dữ liệu chấm công của cửa hàng.');
+    }
+    if (vaultBackup) {
+      fs.writeFileSync(VAULT_FILE, vaultBackup, 'utf-8');
+      console.log('[Updater] Đã bảo toàn nguyên vẹn kho nhân sự bất biến của cửa hàng.');
     }
   }
 
