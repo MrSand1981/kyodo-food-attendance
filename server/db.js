@@ -5,9 +5,73 @@ const { MongoClient } = require('mongodb');
 const { generateSeedData } = require('./seedData');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
+const VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
+const BACKUP_DIR = path.join(__dirname, '..', 'data', 'backups');
+
 let mongoClient = null;
 let mongoDb = null;
 let isMongo = false;
+
+// ---------------- KHO LƯU TRỮ NHÂN SỰ BẤT BIẾN (EMPLOYEE VAULT) ----------------
+// Dữ liệu nhân viên khi đã được Lưu lại từ Nhân viên hoặc Quản lý sẽ được khóa bất biến,
+// KHÔNG BAO GIỜ bị xóa, làm rỗng hoặc ghi đè bởi bất kỳ bản cập nhật nào từ GitHub/Installer.
+function loadVault() {
+  try {
+    if (fs.existsSync(VAULT_PATH)) {
+      const content = fs.readFileSync(VAULT_PATH, 'utf-8');
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed.employees) ? parsed.employees : [];
+    }
+  } catch (err) {
+    console.warn('[Vault] Lỗi đọc kyodo_employee_vault.json:', err.message);
+  }
+  return [];
+}
+
+function saveVault(employees) {
+  try {
+    if (!Array.isArray(employees)) return;
+    const vaultDir = path.dirname(VAULT_PATH);
+    if (!fs.existsSync(vaultDir)) fs.mkdirSync(vaultDir, { recursive: true });
+
+    const currentVault = loadVault();
+    const vaultMap = new Map();
+    currentVault.forEach(e => {
+      const key = e.id || e.code || e.username;
+      if (key) vaultMap.set(key, e);
+    });
+
+    employees.forEach(e => {
+      const key = e.id || e.code || e.username;
+      if (!key) return;
+      const existing = vaultMap.get(key) || {};
+
+      // Hợp nhất thông tin: Luôn bảo toàn các trường dữ liệu thực tế đã có
+      const merged = { ...existing, ...e };
+      const importantFields = ['fullName', 'shortName', 'dob', 'cccd', 'phone', 'address', 'bankCode', 'bankName', 'bankAccount', 'accountName', 'hourlyRate', 'password', 'passwordChanged', 'gender', 'avatar'];
+      importantFields.forEach(f => {
+        if ((merged[f] === undefined || merged[f] === '') && (existing[f] !== undefined && existing[f] !== '')) {
+          merged[f] = existing[f];
+        }
+      });
+
+      vaultMap.set(key, merged);
+    });
+
+    const finalEmployees = Array.from(vaultMap.values());
+    const vaultData = {
+      lastUpdated: new Date().toISOString(),
+      protectionNotice: "Kho du lieu nhan su bat bien Kyodo Food - Khong the bi ghi de boi cap nhat!",
+      employees: finalEmployees
+    };
+
+    const tmpVault = `${VAULT_PATH}.tmp`;
+    fs.writeFileSync(tmpVault, JSON.stringify(vaultData, null, 2), 'utf-8');
+    fs.renameSync(tmpVault, VAULT_PATH);
+  } catch (err) {
+    console.error('[Vault] Lỗi lưu employee vault:', err.message);
+  }
+}
 
 // Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Render/Railway)
 if (process.env.MONGODB_URI) {
@@ -29,45 +93,90 @@ function ensureDbFile() {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  let parsed = null;
+  let dbNeedSave = false;
+
   if (!fs.existsSync(DB_PATH)) {
-    const seed = generateSeedData();
-    saveDatabase(seed);
-    return seed;
+    parsed = generateSeedData();
+    dbNeedSave = true;
+  } else {
+    try {
+      const content = fs.readFileSync(DB_PATH, 'utf-8');
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.error("Lỗi đọc database.json, khôi phục từ mẫu:", err);
+      parsed = generateSeedData();
+      dbNeedSave = true;
+    }
   }
 
-  try {
-    const content = fs.readFileSync(DB_PATH, 'utf-8');
-    const parsed = JSON.parse(content);
-    if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
-    if (!parsed.leaveRequests) parsed.leaveRequests = [];
+  if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
+  if (!parsed.leaveRequests) parsed.leaveRequests = [];
+  if (!parsed.employees) parsed.employees = [];
 
-    // Tự động chuyển avatar mặc định về hình hiển thị Nam/Nữ (không dùng ảnh cá nhân cũ)
-    let dbUpdated = false;
-    if (parsed.employees && Array.isArray(parsed.employees)) {
-      parsed.employees.forEach(e => {
-        if (!e.avatar || e.avatar.includes('images.unsplash.com') || e.avatar.startsWith('http')) {
-          e.avatar = (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
-          dbUpdated = true;
-        }
-      });
-    }
-    if (dbUpdated) {
-      saveDatabase(parsed);
-    }
+  // --- BẢO VỆ VÀ PHỤC HỒI DỮ LIỆU NHÂN SỰ BẤT BIẾN TỪ KHO VAULT ---
+  const vaultEmployees = loadVault();
+  if (vaultEmployees.length > 0) {
+    const vaultMap = new Map();
+    vaultEmployees.forEach(ve => {
+      const k = ve.id || ve.code || ve.username;
+      if (k) vaultMap.set(k, ve);
+    });
 
-    return parsed;
-  } catch (err) {
-    console.error("Lỗi đọc database.json, tạo lại dữ liệu mẫu:", err);
-    const seed = generateSeedData();
-    saveDatabase(seed);
-    return seed;
+    parsed.employees.forEach(emp => {
+      const k = emp.id || emp.code || emp.username;
+      const v = vaultMap.get(k);
+      if (v) {
+        const fields = ['fullName', 'shortName', 'dob', 'cccd', 'phone', 'address', 'bankCode', 'bankName', 'bankAccount', 'accountName', 'password', 'passwordChanged', 'hourlyRate', 'gender', 'avatar'];
+        fields.forEach(f => {
+          if (v[f] !== undefined && v[f] !== '' && (emp[f] === undefined || emp[f] === '')) {
+            emp[f] = v[f];
+            dbNeedSave = true;
+          }
+        });
+      }
+    });
+
+    // Nếu có nhân viên trong vault mà database.json bị mất do cập nhật, phục hồi lại ngay
+    vaultEmployees.forEach(ve => {
+      const exists = parsed.employees.find(e => 
+        (e.id && ve.id && e.id === ve.id) || 
+        (e.username && ve.username && e.username === ve.username)
+      );
+      if (!exists) {
+        parsed.employees.push(ve);
+        dbNeedSave = true;
+      }
+    });
+  } else if (parsed.employees.length > 0) {
+    // Nếu vault chưa có nhưng database có nhân viên, lưu sang vault ngay để bảo vệ
+    saveVault(parsed.employees);
   }
+
+  // Tự động chuyển avatar mặc định về hình hiển thị Nam/Nữ (không dùng ảnh cá nhân cũ)
+  parsed.employees.forEach(e => {
+    if (!e.avatar || e.avatar.includes('images.unsplash.com') || e.avatar.startsWith('http')) {
+      e.avatar = (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
+      dbNeedSave = true;
+    }
+  });
+
+  if (dbNeedSave) {
+    saveDatabase(parsed);
+  }
+
+  return parsed;
 }
 
 function saveDatabase(data) {
   const tmpPath = `${DB_PATH}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
   fs.renameSync(tmpPath, DB_PATH);
+
+  // Tự động đồng bộ và bảo vệ sang Kho nhân sự bất biến
+  if (data.employees && Array.isArray(data.employees)) {
+    saveVault(data.employees);
+  }
 
   // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud
   if (isMongo && mongoDb) {
@@ -190,7 +299,7 @@ function updateEmployeeAvatar(employeeId, avatarUrl) {
 
 function updateEmployee(id, updateData) {
   const db = ensureDbFile();
-  const idx = db.employees.findIndex(e => e.id === id);
+  const idx = db.employees.findIndex(e => e.id === id || e.username === id || e.code === id);
   if (idx === -1) return null;
 
   const current = db.employees[idx];
@@ -216,6 +325,16 @@ function updateEmployee(id, updateData) {
     }
   }
 
+  // Bảo vệ dữ liệu thực tế do người dùng / nhân viên nhập
+  const cccd = updateData.cccd !== undefined ? String(updateData.cccd).trim() : (current.cccd || '');
+  const phone = updateData.phone !== undefined ? String(updateData.phone).trim() : (current.phone || '');
+  const address = updateData.address !== undefined ? String(updateData.address).trim() : (current.address || '');
+  const dob = updateData.dob !== undefined ? String(updateData.dob).trim() : (current.dob || '');
+  const bankCode = updateData.bankCode !== undefined ? String(updateData.bankCode).trim() : (current.bankCode || '');
+  const bankName = updateData.bankName !== undefined ? String(updateData.bankName).trim() : (current.bankName || '');
+  const bankAccount = updateData.bankAccount !== undefined ? String(updateData.bankAccount).trim() : (current.bankAccount || '');
+  const accountName = updateData.accountName !== undefined ? String(updateData.accountName).trim().toUpperCase() : (current.accountName || fullName.toUpperCase());
+
   db.employees[idx] = {
     ...current,
     ...updateData,
@@ -223,15 +342,35 @@ function updateEmployee(id, updateData) {
     shortName: shortName || fullName,
     name: shortName || fullName,
     gender: gender,
+    dob: dob,
+    cccd: cccd,
+    phone: phone,
+    address: address,
+    bankCode: bankCode,
+    bankName: bankName,
+    bankAccount: bankAccount,
+    accountName: accountName,
     avatar: avatar,
     hourlyRate: hourlyRate,
     password: newPassword,
     passwordChanged: passwordChanged,
-    branch: "Trưng Nữ Vương", // Cố định cơ sở Trưng Nữ Vương
-    id
+    branch: "Trưng Nữ Vương",
+    id: current.id,
+    code: current.code,
+    username: current.username
   };
 
   saveDatabase(db);
+
+  // Tự động sao lưu dữ liệu an toàn
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const backupPath = path.join(BACKUP_DIR, `db_backup_auto_${Date.now()}.json`);
+    fs.writeFileSync(backupPath, JSON.stringify(db, null, 2), 'utf-8');
+  } catch (e) {
+    // ignore
+  }
+
   return db.employees[idx];
 }
 
