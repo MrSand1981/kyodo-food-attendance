@@ -3,13 +3,13 @@
 # =============================================================================
 # Stage 1: Build frontend assets
 # =============================================================================
-FROM node:20-alpine AS frontend-builder
+FROM node:22-slim AS frontend-builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install all dependencies (ignore dev git hooks like husky)
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Copy source and build
 COPY . .
@@ -18,51 +18,43 @@ RUN npm run build
 # =============================================================================
 # Stage 2: Install production dependencies only
 # =============================================================================
-FROM node:20-alpine AS deps
+FROM node:22-slim AS deps
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev --legacy-peer-deps
+RUN npm ci --omit=dev --legacy-peer-deps --ignore-scripts
 
 # =============================================================================
 # Stage 3: Production runtime
 # =============================================================================
-FROM node:20-alpine AS runner
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 -G nodejs
+FROM node:22-slim AS runner
 
 WORKDIR /app
-
-# Copy production dependencies
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
-
-# Copy built frontend assets
-COPY --from=frontend-builder --chown=nextjs:nodejs /app/dist ./dist
-
-# Copy server files
-COPY --chown=nextjs:nodejs server ./server
-
-# Copy data directory structure (will be mounted as volume in production)
-COPY --chown=nextjs:nodejs data ./data
-
-# Copy public assets
-COPY --chown=nextjs:nodejs public ./public
-
-# Switch to non-root user
-USER nextjs
 
 # Environment variables
 ENV NODE_ENV=production
 ENV PORT=5000
 
-EXPOSE 5000
+# Copy production dependencies
+COPY --from=deps /app/node_modules ./node_modules
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+# Copy built frontend assets
+COPY --from=frontend-builder /app/dist ./dist
+
+# Copy server files
+COPY server ./server
+
+# Copy data directory structure
+COPY data ./data
+
+# Copy public assets
+COPY public ./public
+
+# Use standard non-root node user for security
+USER node
+
+EXPOSE 5000
 
 # Start server
 CMD ["node", "server/server.js"]
