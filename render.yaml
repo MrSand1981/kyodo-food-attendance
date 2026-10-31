@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kyodo-food-attendance-2
+    name: kyodo-food-attendance-1
     env: node
     plan: free
     region: singapore
