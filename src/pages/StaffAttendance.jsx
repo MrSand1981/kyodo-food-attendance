@@ -16,7 +16,9 @@ import {
   formatShortTime, 
   getSalaryMonthForAdvance, 
   getAdvanceCycleRange, 
-  getAdvanceCycleExplanation 
+  getAdvanceCycleExplanation,
+  getVietnamTodayYMD,
+  getVietnamCurrentYM
 } from '../utils/date';
 
 export default function StaffAttendance({ 
@@ -33,7 +35,7 @@ export default function StaffAttendance({
 
   const [activeShift, setActiveShift] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
-  const todayYM = new Date().toISOString().substring(0, 7);
+  const todayYM = getVietnamCurrentYM();
   const [selectedMonth, setSelectedMonth] = useState("2026-11");
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -74,20 +76,20 @@ export default function StaffAttendance({
 
   // Modal ứng tiền lương trước
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
-  const [advDate, setAdvDate] = useState(new Date().toISOString().split('T')[0]);
+  const [advDate, setAdvDate] = useState(getVietnamTodayYMD());
   const [advAmount, setAdvAmount] = useState("");
   const [advReason, setAdvReason] = useState("");
   const [advLoading, setAdvLoading] = useState(false);
 
   // Modal xin ngày nghỉ phép
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [leaveDate, setLeaveDate] = useState(new Date().toISOString().split('T')[0]);
+  const [leaveDate, setLeaveDate] = useState(getVietnamTodayYMD());
   const [leaveShift, setLeaveShift] = useState("Cả Ngày");
   const [leaveReason, setLeaveReason] = useState("");
   const [leaveLoading, setLeaveLoading] = useState(false);
 
   // Form: Nhập thời gian làm việc từng ngày (2 ca: Sáng 8-17h, Chiều 17-22h | Định dạng 24h từ 0-23h, không có AM/PM)
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [entryDate, setEntryDate] = useState(getVietnamTodayYMD());
   const [entryStart, setEntryStart] = useState("08:00");
   const [entryEnd, setEntryEnd] = useState("17:00");
   const [entryHours, setEntryHours] = useState("9.0");
@@ -627,7 +629,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v1.5.2
+                  Bản v1.5.4
                 </span>
               </div>
               
@@ -1025,7 +1027,7 @@ export default function StaffAttendance({
               <button
                 type="button"
                 onClick={() => {
-                  const todayStr = new Date().toISOString().split('T')[0];
+                  const todayStr = getVietnamTodayYMD();
                   const currentSalaryMonth = getSalaryMonthForAdvance(todayStr);
                   setAdvDate(selectedMonth === currentSalaryMonth ? todayStr : `${selectedMonth}-06`);
                   setShowAdvanceModal(true);

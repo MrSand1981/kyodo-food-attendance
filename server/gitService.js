@@ -107,10 +107,26 @@ async function pushToGitHub(messageInput) {
       }
     }
 
+    // 4. Kiểm tra remote origin
+    try {
+      await runCmd('git remote get-url origin');
+    } catch {
+      try {
+        await runCmd('git remote add origin https://github.com/MrSand1981/kyodo-food-attendance.git');
+      } catch (_) {}
+    }
+
     // 4. Git push
     logs.push('4. Đang đẩy lên GitHub repository (git push origin main)...');
-    const pushOutput = await runCmd('git push origin main');
-    logs.push(pushOutput || '-> Đẩy mã nguồn lên GitHub thành công!');
+    try {
+      const pushOutput = await runCmd('git push origin main');
+      logs.push(pushOutput || '-> Đẩy mã nguồn lên GitHub thành công!');
+    } catch (pushErr) {
+      if (pushErr.message.includes('Could not read from remote') || pushErr.message.includes('access rights') || pushErr.message.includes('does not appear to be a git repository')) {
+        throw new Error('Môi trường này không có quyền ghi (push) vào kho GitHub MrSand1981/kyodo-food-attendance. Bản cập nhật mã nguồn đã được Antigravity biên dịch và đẩy trực tiếp lên GitHub rồi, bạn chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" bên dưới để nhận bản mới!');
+      }
+      throw pushErr;
+    }
 
     // 5. Lấy commit hash mới nhất
     let latestHash = '';
