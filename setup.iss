@@ -1,11 +1,11 @@
 ; =====================================================================
-; KYODO FOOD - TRƯNG NỮ VƯƠNG, ĐÀ NẴNG
-; BỘ CÀI ĐẶT DUY NHẤT (SINGLE INSTALLER) VỚI LỰA CHỌN QUYỀN VÀ MẬT KHẨU ADMIN
+; KYODO FOOD - TRUNG NU VUONG, DA NANG
+; BO CAI DAT CHUYEN NGHIEP (SINGLE INSTALLER) - HO TRO CLOUD VA TU CHON THU MUC
 ; =====================================================================
 
 #define MyAppName "Kyodo Food"
-#define MyAppVersion "1.5.2"
-#define MyAppPublisher "Kyodo Food - Trưng Nữ Vương"
+#define MyAppVersion "1.5.3"
+#define MyAppPublisher "Kyodo Food - Trung Nu Vuong"
 #define MyAppURL "https://github.com/MrSand1981/kyodo-food-attendance"
 
 [Setup]
@@ -16,9 +16,14 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={userappdata}\KyodoFood
+DefaultDirName=C:\KyodoFood
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+DisableDirPage=no
+UsePreviousAppDir=no
+AlwaysShowDirOnReadyPage=yes
+DirExistsWarning=no
+EnableDirDoesntExistWarning=no
 OutputDir=C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\installer_output
 OutputBaseFilename=Setup_Kyodo_Food
 SetupIconFile=C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\kyodo-icon.ico
@@ -36,6 +41,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\KyodoFood-NhanVien.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\KyodoFood-QuanLy.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\KyodoFood.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\cloud_config.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Day-Len-GitHub.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Cap-Nhat-Phan-Mem.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\kyodo-icon.ico"; DestDir: "{app}"; Flags: ignoreversion
@@ -52,17 +58,17 @@ Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\node_mo
 
 [Icons]
 ; Shortcut danh cho Nhan Vien (Khong hien thi muc luong)
-Name: "{autodesktop}\Kyodo Food - Nhan Vien Cham Cong"; Filename: "{app}\KyodoFood-NhanVien.vbs"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsEmployeeInstall
-Name: "{group}\Kyodo Food - Nhan Vien Cham Cong"; Filename: "{app}\KyodoFood-NhanVien.vbs"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsEmployeeInstall
+Name: "{autodesktop}\Kyodo Food - Nhan Vien Cham Cong"; Filename: "{app}\KyodoFood-NhanVien.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsEmployeeInstall
+Name: "{group}\Kyodo Food - Nhan Vien Cham Cong"; Filename: "{app}\KyodoFood-NhanVien.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsEmployeeInstall
 
 ; Shortcut danh cho Quan Ly / Admin (Xem bang luong, day GitHub)
-Name: "{autodesktop}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-QuanLy.vbs"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
-Name: "{group}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-QuanLy.vbs"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
-Name: "{group}\Day Ban Cap Nhat Len GitHub"; Filename: "{app}\Day-Len-GitHub.bat"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
+Name: "{autodesktop}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-QuanLy.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
+Name: "{group}\Kyodo Food - Quan Ly & Bang Luong"; Filename: "{app}\KyodoFood-QuanLy.vbs"; WorkingDir: "{app}"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
+Name: "{group}\Day Ban Cap Nhat Len GitHub"; Filename: "{app}\Day-Len-GitHub.bat"; WorkingDir: "{app}"; IconFilename: "{app}\kyodo-icon.ico"; Check: IsAdminInstall
 
 ; Tien ich chung
 Name: "{group}\Huong Dan Su Dung (PDF)"; Filename: "{app}\public\Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf"
-Name: "{group}\Cap Nhat Phan Mem Tu GitHub"; Filename: "{app}\Cap-Nhat-Phan-Mem.bat"; IconFilename: "{app}\kyodo-icon.ico"
+Name: "{group}\Cap Nhat Phan Mem Tu GitHub"; Filename: "{app}\Cap-Nhat-Phan-Mem.bat"; WorkingDir: "{app}"; IconFilename: "{app}\kyodo-icon.ico"
 Name: "{group}\Go cai dat Kyodo Food"; Filename: "{uninstallexe}"
 
 [Run]
@@ -72,6 +78,7 @@ Filename: "{app}\KyodoFood-QuanLy.vbs"; Description: "Khoi chay Kyodo Food - Qua
 [Code]
 var
   RolePage: TWizardPage;
+  CloudPage: TWizardPage;
   RbEmployee: TRadioButton;
   RbAdmin: TRadioButton;
   LblDescEmployee: TLabel;
@@ -79,6 +86,13 @@ var
   LblPass: TLabel;
   EdtPass: TPasswordEdit;
   IsAdminMode: Boolean;
+  
+  RbModeCloud: TRadioButton;
+  RbModeLocal: TRadioButton;
+  LblCloudUrl: TLabel;
+  EdtCloudUrl: TEdit;
+  LblCloudTip1: TLabel;
+  LblCloudTip2: TLabel;
 
 procedure RoleChange(Sender: TObject);
 begin
@@ -97,18 +111,35 @@ begin
   end;
 end;
 
+procedure CloudModeChange(Sender: TObject);
+begin
+  if RbModeCloud.Checked then
+  begin
+    LblCloudUrl.Enabled := True;
+    EdtCloudUrl.Enabled := True;
+    EdtCloudUrl.Color := clWindow;
+  end
+  else
+  begin
+    LblCloudUrl.Enabled := False;
+    EdtCloudUrl.Enabled := False;
+    EdtCloudUrl.Color := clBtnFace;
+  end;
+end;
+
 procedure InitializeWizard;
 begin
+  // Trang 1: Lua chon quyen han (wpSelectDir da hien thi truoc do)
   RolePage := CreateCustomPage(wpSelectDir,
     'Lua Chon Quyen Su Dung Kyodo Food',
     'Vui long chon loai may tinh va quyen han cai dat tren thiet bi nay:');
 
-  // 1. Tùy chọn Nhân Viên
+  // 1. Tuy chon Nhan Vien
   RbEmployee := TRadioButton.Create(RolePage);
   RbEmployee.Parent := RolePage.Surface;
-  RbEmployee.Top := ScaleY(12);
+  RbEmployee.Top := ScaleY(10);
   RbEmployee.Left := ScaleX(15);
-  RbEmployee.Width := ScaleX(420);
+  RbEmployee.Width := ScaleX(430);
   RbEmployee.Height := ScaleY(22);
   RbEmployee.Caption := '1. Cai dat danh cho NHAN VIEN (May tinh quan Trung Nu Vuong, Da Nang)';
   RbEmployee.Font.Style := [fsBold];
@@ -117,18 +148,18 @@ begin
 
   LblDescEmployee := TLabel.Create(RolePage);
   LblDescEmployee.Parent := RolePage.Surface;
-  LblDescEmployee.Top := ScaleY(38);
+  LblDescEmployee.Top := ScaleY(34);
   LblDescEmployee.Left := ScaleX(35);
-  LblDescEmployee.Width := ScaleX(400);
-  LblDescEmployee.Caption := 'Tao bieu tuong "Kyodo Food - Nhan Vien" ngoai Desktop de nhan vien dang nhap cham cong hang ngay.' #13#10 '-> Khong can mat khau khi cai dat.';
+  LblDescEmployee.Width := ScaleX(410);
+  LblDescEmployee.Caption := 'Tao bieu tuong "Kyodo Food - Nhan Vien" de nhan vien dang nhap cham cong hang ngay.' #13#10 '-> Khong can mat khau khi cai dat.';
   LblDescEmployee.Font.Color := clGray;
 
-  // 2. Tùy chọn Quản Lý / Admin
+  // 2. Tuy chon Quan Ly / Admin
   RbAdmin := TRadioButton.Create(RolePage);
   RbAdmin.Parent := RolePage.Surface;
-  RbAdmin.Top := ScaleY(100);
+  RbAdmin.Top := ScaleY(85);
   RbAdmin.Left := ScaleX(15);
-  RbAdmin.Width := ScaleX(420);
+  RbAdmin.Width := ScaleX(430);
   RbAdmin.Height := ScaleY(22);
   RbAdmin.Caption := '2. Cai dat quyen QUAN LY / ADMIN (Chu cua hang tai Nghe An)';
   RbAdmin.Font.Style := [fsBold];
@@ -136,16 +167,16 @@ begin
 
   LblDescAdmin := TLabel.Create(RolePage);
   LblDescAdmin.Parent := RolePage.Surface;
-  LblDescAdmin.Top := ScaleY(126);
+  LblDescAdmin.Top := ScaleY(109);
   LblDescAdmin.Left := ScaleX(35);
-  LblDescAdmin.Width := ScaleX(400);
-  LblDescAdmin.Caption := 'Tao bieu tuong "Kyodo Food - Quan Ly" ngoai Desktop danh cho Chu cua hang.' #13#10 '-> YEU CAU NHAP DUNG MAT KHAU QUAN TRI (ADMIN) DE TIEP TUC.';
+  LblDescAdmin.Width := ScaleX(410);
+  LblDescAdmin.Caption := 'Tao bieu tuong "Kyodo Food - Quan Ly" danh cho Chu cua hang xem bang luong va quan ly.' #13#10 '-> YEU CAU NHAP DUNG MAT KHAU QUAN TRI (ADMIN) DE TIEP TUC.';
   LblDescAdmin.Font.Color := clGray;
 
-  // Trường nhập mật khẩu
+  // Truong nhap mat khau
   LblPass := TLabel.Create(RolePage);
   LblPass.Parent := RolePage.Surface;
-  LblPass.Top := ScaleY(190);
+  LblPass.Top := ScaleY(165);
   LblPass.Left := ScaleX(35);
   LblPass.Caption := 'Nhap mat khau xac nhan quyen Admin (Chu cua hang):';
   LblPass.Font.Style := [fsBold];
@@ -153,11 +184,68 @@ begin
 
   EdtPass := TPasswordEdit.Create(RolePage);
   EdtPass.Parent := RolePage.Surface;
-  EdtPass.Top := ScaleY(210);
+  EdtPass.Top := ScaleY(185);
   EdtPass.Left := ScaleX(35);
   EdtPass.Width := ScaleX(220);
   EdtPass.Enabled := False;
   EdtPass.Color := clBtnFace;
+
+  // Trang 2: Cau hinh Cloud / Localhost
+  CloudPage := CreateCustomPage(RolePage.ID,
+    'Cau Hinh Dong Bo Cloud (Da Nang - Nghe An)',
+    'Chon phuong thuc ket noi may chu va dong bo du lieu:');
+
+  // Option 1: Cloud
+  RbModeCloud := TRadioButton.Create(CloudPage);
+  RbModeCloud.Parent := CloudPage.Surface;
+  RbModeCloud.Top := ScaleY(10);
+  RbModeCloud.Left := ScaleX(15);
+  RbModeCloud.Width := ScaleX(430);
+  RbModeCloud.Height := ScaleY(22);
+  RbModeCloud.Caption := '1. Ket noi truc tiep he thong CLOUD (Khuyen nghi - Dong bo online Da Nang & Nghe An)';
+  RbModeCloud.Font.Style := [fsBold];
+  RbModeCloud.Checked := True;
+  RbModeCloud.OnClick := @CloudModeChange;
+
+  LblCloudUrl := TLabel.Create(CloudPage);
+  LblCloudUrl.Parent := CloudPage.Surface;
+  LblCloudUrl.Top := ScaleY(38);
+  LblCloudUrl.Left := ScaleX(35);
+  LblCloudUrl.Caption := 'Duong dan Cloud Server (Render / Cloudflare):';
+
+  EdtCloudUrl := TEdit.Create(CloudPage);
+  EdtCloudUrl.Parent := CloudPage.Surface;
+  EdtCloudUrl.Top := ScaleY(56);
+  EdtCloudUrl.Left := ScaleX(35);
+  EdtCloudUrl.Width := ScaleX(390);
+  EdtCloudUrl.Text := 'https://kyodo-food-attendance.onrender.com';
+
+  LblCloudTip1 := TLabel.Create(CloudPage);
+  LblCloudTip1.Parent := CloudPage.Surface;
+  LblCloudTip1.Top := ScaleY(86);
+  LblCloudTip1.Left := ScaleX(35);
+  LblCloudTip1.Width := ScaleX(410);
+  LblCloudTip1.Caption := 'Khi dung Cloud: Nhan vien tai Da Nang cham cong, Chu quan tai Nghe An xem ngay tuc thi.' #13#10 'Khong lo loi man trang va khong phu thuoc may chu cuc bo tren may tinh Da Nang.';
+  LblCloudTip1.Font.Color := clGray;
+
+  // Option 2: Localhost
+  RbModeLocal := TRadioButton.Create(CloudPage);
+  RbModeLocal.Parent := CloudPage.Surface;
+  RbModeLocal.Top := ScaleY(135);
+  RbModeLocal.Left := ScaleX(15);
+  RbModeLocal.Width := ScaleX(430);
+  RbModeLocal.Height := ScaleY(22);
+  RbModeLocal.Caption := '2. Chay may chu cuc bo (Localhost:5000 doc lap tren may tinh nay)';
+  RbModeLocal.Font.Style := [fsBold];
+  RbModeLocal.OnClick := @CloudModeChange;
+
+  LblCloudTip2 := TLabel.Create(CloudPage);
+  LblCloudTip2.Parent := CloudPage.Surface;
+  LblCloudTip2.Top := ScaleY(160);
+  LblCloudTip2.Left := ScaleX(35);
+  LblCloudTip2.Width := ScaleX(410);
+  LblCloudTip2.Caption := 'Su dung Node.js noi bo tren may de chay co so du lieu offline doc lap.' #13#10 'Luu y: Du lieu giua Nghe An va Da Nang se can dong bo qua GitHub.';
+  LblCloudTip2.Font.Color := clGray;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
@@ -179,6 +267,46 @@ begin
     begin
       IsAdminMode := False;
     end;
+  end;
+end;
+
+function GetRoleName: String;
+begin
+  if IsAdminMode then
+    Result := 'admin'
+  else
+    Result := 'employee';
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ConfigFile: String;
+  ConfigContent: String;
+  TargetCloudUrl: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    ConfigFile := ExpandConstant('{app}\cloud_config.json');
+    if RbModeCloud.Checked then
+    begin
+      TargetCloudUrl := Trim(EdtCloudUrl.Text);
+      if TargetCloudUrl = '' then
+        TargetCloudUrl := 'https://kyodo-food-attendance.onrender.com';
+      ConfigContent := '{' #13#10 +
+        '  "cloudUrl": "' + TargetCloudUrl + '",' #13#10 +
+        '  "activeMode": "cloud",' #13#10 +
+        '  "installedRole": "' + GetRoleName() + '"' #13#10 +
+        '}';
+    end
+    else
+    begin
+      ConfigContent := '{' #13#10 +
+        '  "cloudUrl": "",' #13#10 +
+        '  "activeMode": "local",' #13#10 +
+        '  "installedRole": "' + GetRoleName() + '"' #13#10 +
+        '}';
+    end;
+    SaveStringToFile(ConfigFile, ConfigContent, False);
   end;
 end;
 

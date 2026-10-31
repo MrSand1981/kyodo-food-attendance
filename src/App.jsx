@@ -23,11 +23,13 @@ export default function App() {
   const [settings, setSettings] = useState(null);
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState(null);
 
   // Tải dữ liệu hệ thống
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      setInitError(null);
       const [settingsRes, employeesRes] = await Promise.all([
         api.getSettings(),
         api.getEmployees(false) // Che giấu tuyệt đối lương khi khởi tạo
@@ -37,6 +39,7 @@ export default function App() {
       setEmployees(employeesRes.employees || []);
     } catch (err) {
       console.error("Lỗi khởi tạo hệ thống:", err);
+      setInitError(err.message || 'Không thể kết nối đến máy chủ');
     } finally {
       setLoading(false);
     }
@@ -74,6 +77,27 @@ export default function App() {
         </div>
         <h3 className="text-lg font-black text-slate-800">Đang khởi tạo hệ thống Kyodo Food...</h3>
         <p className="text-xs text-slate-500 mt-1">Cơ sở Trưng Nữ Vương</p>
+      </div>
+    );
+  }
+
+  if (initError && !settings) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 shadow-sm">
+          <div className="w-8 h-8 rounded-full border-2 border-amber-600 flex items-center justify-center font-bold text-lg">!</div>
+        </div>
+        <h3 className="text-xl font-black text-slate-800 mb-2">Đang kết nối máy chủ Kyodo Food</h3>
+        <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
+          Máy chủ đang khởi động hoặc chưa phản hồi ({initError}). Vui lòng bấm nút bên dưới để thử kết nối lại.
+        </p>
+        <button
+          type="button"
+          onClick={loadInitialData}
+          className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
+        >
+          <span>Thử Kết Nối Lại</span>
+        </button>
       </div>
     );
   }

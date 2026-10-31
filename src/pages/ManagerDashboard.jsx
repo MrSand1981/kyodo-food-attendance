@@ -504,10 +504,44 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
     }
   };
 
-  useEffect(() => {
+    // Cau hinh ket noi Cloud (Nghe An - Da Nang)
+  const [cloudConfig, setCloudConfig] = useState({ cloudUrl: 'https://kyodo-food-attendance.onrender.com', activeMode: 'cloud' });
+  const [savingCloud, setSavingCloud] = useState(false);
+  const [cloudMsg, setCloudMsg] = useState('');
+
+  const loadCloudConfig = async () => {
+    try {
+      const res = await api.getCloudConfig();
+      if (res && res.config) {
+        setCloudConfig({
+          cloudUrl: res.config.cloudUrl || '',
+          activeMode: res.config.activeMode || 'cloud'
+        });
+      }
+    } catch (e) {
+      console.warn('Loi tai cau hinh cloud:', e);
+    }
+  };
+
+  const handleSaveCloudConfig = async (e) => {
+    e.preventDefault();
+    try {
+      setSavingCloud(true);
+      setCloudMsg('');
+      const res = await api.updateCloudConfig(cloudConfig);
+      setCloudMsg(res.message || 'Da luu cau hinh Cloud thanh cong!');
+    } catch (err) {
+      alert('Loi luu cau hinh Cloud: ' + err.message);
+    } finally {
+      setSavingCloud(false);
+    }
+  };
+
+useEffect(() => {
     if (activeTab === 'settings') {
       loadGitStatus();
       loadAdminProfile();
+      loadCloudConfig();
     }
   }, [activeTab]);
 
@@ -1971,6 +2005,103 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
       {/* ================= TAB 5: CÀI ĐẶT CỬA HÀNG ================= */}
       {activeTab === 'settings' && (
         <div className="max-w-2xl mx-auto space-y-6">
+          {/* Card: CẤU HÌNH KẾT NỐI CLOUD ĐỒNG BỘ NGHỆ AN - ĐÀ NẴNG */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center font-bold text-lg">
+                  ☁️
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900">
+                    Cấu Hình Kết Nối Cloud (Đà Nẵng - Nghệ An)
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Đồng bộ chấm công trực tuyến tức thì giữa cơ sở Đà Nẵng và Nghệ An
+                  </p>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
+                cloudConfig.activeMode === 'cloud' && cloudConfig.cloudUrl 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${cloudConfig.activeMode === 'cloud' && cloudConfig.cloudUrl ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                {cloudConfig.activeMode === 'cloud' && cloudConfig.cloudUrl ? 'Cloud Online' : 'Localhost'}
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveCloudConfig} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Đường dẫn Cloud Máy Chủ (Render / Cloudflare):
+                </label>
+                <input
+                  type="url"
+                  value={cloudConfig.cloudUrl}
+                  onChange={(e) => setCloudConfig({ ...cloudConfig, cloudUrl: e.target.value })}
+                  placeholder="https://kyodo-food-attendance.onrender.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Khi cấu hình link này, máy tính ở Đà Nẵng và điện thoại của quản lý tại Nghệ An sẽ tự động kết nối chung 1 cơ sở dữ liệu trên Cloud.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                  <input
+                    type="radio"
+                    name="cloudMode"
+                    value="cloud"
+                    checked={cloudConfig.activeMode === 'cloud'}
+                    onChange={() => setCloudConfig({ ...cloudConfig, activeMode: 'cloud' })}
+                    className="text-amber-600 focus:ring-amber-500"
+                  />
+                  <span>Ưu tiên chạy Cloud (Khuyến nghị)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                  <input
+                    type="radio"
+                    name="cloudMode"
+                    value="local"
+                    checked={cloudConfig.activeMode === 'local'}
+                    onChange={() => setCloudConfig({ ...cloudConfig, activeMode: 'local' })}
+                    className="text-amber-600 focus:ring-amber-500"
+                  />
+                  <span>Chạy máy chủ Localhost nội bộ</span>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingCloud}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold transition-all cursor-pointer shadow-md shadow-amber-600/20"
+                >
+                  {savingCloud ? 'Đang lưu...' : 'Lưu Cấu Hình Cloud'}
+                </button>
+
+                {cloudConfig.cloudUrl && (
+                  <a
+                    href={cloudConfig.cloudUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <span>Mở thử link Cloud</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+
+              {cloudMsg && (
+                <p className="text-emerald-600 font-bold mt-2">✅ {cloudMsg}</p>
+              )}
+            </form>
+          </div>
+
           
           {/* Card: ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB (DÀNH CHO CHỦ CỬA HÀNG) */}
           <div className="bg-linear-to-br from-slate-900 via-slate-850 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-700">
