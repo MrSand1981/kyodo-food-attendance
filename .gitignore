@@ -4,7 +4,7 @@ node_modules/
 .pnp.js
 
 # Build outputs
-dist/
+# dist/ is included so cloud hosts and cloned repos have pre-built assets
 build/
 *.local
 
