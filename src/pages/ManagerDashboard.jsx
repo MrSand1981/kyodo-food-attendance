@@ -523,7 +523,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v1.4.6
+              Bản v1.4.7
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
@@ -932,7 +932,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               </div>
                             ) : (
                               <p className="text-[11px] text-amber-700/80 italic bg-white/70 p-2 rounded-xl text-center mt-1">
-                                Nhân viên {row.employee.name} chưa có đợt tạm ứng lương nào trong tháng {selectedMonth}.
+                                Nhân viên {row.employee.name} chưa có đợt tạm ứng lương nào trong tháng.
                               </p>
                             )}
                           </div>
