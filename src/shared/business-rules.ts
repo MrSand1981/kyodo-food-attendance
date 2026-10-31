@@ -117,9 +117,12 @@ export function formatShortTime(isoString: string): string {
   if (!isoString) return '--:--';
   const d = new Date(isoString);
   if (isNaN(d.getTime())) return '--:--';
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${h}:${m}`;
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(d);
 }
 
 /**
@@ -191,11 +194,13 @@ export function parseTimeToMinutes(timeStr: string): number {
 }
 
 /**
- * Parse ISO string to minutes since midnight (local time)
+ * Parse ISO string to minutes since midnight in Vietnam timezone
  */
 export function parseISOToMinutes(isoString: string): number {
-  const d = new Date(isoString);
-  return d.getHours() * 60 + d.getMinutes();
+  if (!isoString) return 0;
+  const timeStr = formatShortTime(isoString);
+  if (timeStr === '--:--') return 0;
+  return parseTimeToMinutes(timeStr);
 }
 
 /**

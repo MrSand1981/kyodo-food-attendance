@@ -16,7 +16,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
+  TZ: 'Asia/Ho_Chi_Minh'
 
 jobs:
   # =============================================================================
