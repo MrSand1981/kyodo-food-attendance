@@ -1,11 +1,11 @@
 ﻿// src/components/ui/Button.tsx
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from '\''react'\'';
-import { clsx } from '\''clsx'\'';
-import { twMerge } from '\''tailwind-merge'\'';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: '\''primary'\'' | '\''secondary'\'' | '\''outline'\'' | '\''ghost'\'' | '\''danger'\'';
-  size?: '\''sm'\'' | '\''md'\'' | '\''lg'\'';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   iconLeft?: ReactNode;
   iconRight?: ReactNode;
@@ -13,7 +13,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = '\''primary'\'', size = '\''md'\'', loading, iconLeft, iconRight, fullWidth, disabled, children, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', loading, iconLeft, iconRight, fullWidth, disabled, children, ...props }, ref) => {
     const baseStyles = '\'inline-flex items-center justify-center font-semibold transition-all duration-200 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed\'';
     
     const variants = {
@@ -33,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={twMerge(baseStyles, variants[variant], sizes[size], fullWidth && '\''w-full\'', className)}
+        className={twMerge(baseStyles, variants[variant], sizes[size], fullWidth && 'w-full\'', className)}
         disabled={disabled || loading}
         {...props}
       >

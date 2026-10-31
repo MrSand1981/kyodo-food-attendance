@@ -1,11 +1,11 @@
 ﻿// src/shared/types.ts
 // Shared TypeScript types between client and server
 
-export type UserRole = '\''admin'\'' | '\''employee'\'';
-export type AttendanceStatus = '\''working'\'' | '\''completed'\'' | '\''cancelled'\'';
-export type ShiftCode = '\''SANG'\'' | '\''CHIEU'\'' | '\''TOI'\'' | '\''CA1'\'' | '\''CA2'\'' | '\''CA3'\'' | '\''MANUAL'\'';
-export type AdvanceStatus = '\''approved'\'' | '\''pending'\'' | '\''rejected'\'';
-export type LeaveStatus = '\''approved'\'' | '\''pending'\'' | '\''rejected'\'';
+export type UserRole = 'admin' | 'employee';
+export type AttendanceStatus = 'working' | 'completed' | 'cancelled';
+export type ShiftCode = 'SANG' | 'CHIEU' | 'TOI' | 'CA1' | 'CA2' | 'CA3' | 'MANUAL';
+export type AdvanceStatus = 'approved' | 'pending' | 'rejected';
+export type LeaveStatus = 'approved' | 'pending' | 'rejected';
 
 export interface Employee {
   id: string;
@@ -14,7 +14,7 @@ export interface Employee {
   fullName: string;
   shortName: string;
   name: string;
-  gender: '\''Nam'\'' | '\''Nữ'\'';
+  gender: 'Nam' | 'Nữ';
   dob: string;
   cccd: string;
   phone: string;
@@ -34,7 +34,7 @@ export interface Employee {
   updatedAt?: string;
 }
 
-export interface EmployeePublic extends Omit<Employee, '\''password'\'' | '\''passwordChanged'\''> {
+export interface EmployeePublic extends Omit<Employee, 'password' | 'passwordChanged'> {
   passwordChanged: boolean;
   isDefaultPassword: boolean;
 }
@@ -123,7 +123,7 @@ export interface AuthResult {
 export interface AdminUser {
   username: string;
   name: string;
-  role: '\''admin'\'';
+  role: 'admin';
   email: string;
   phone: string;
 }
@@ -208,7 +208,7 @@ export interface EmployeeFormData {
   username: string;
   fullName: string;
   shortName: string;
-  gender: '\''Nam'\'' | '\''Nữ'\'';
+  gender: 'Nam' | 'Nữ';
   dob: string;
   cccd: string;
   phone: string;

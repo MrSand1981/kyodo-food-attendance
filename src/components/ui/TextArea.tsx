@@ -1,7 +1,7 @@
 ﻿// src/components/ui/TextArea.tsx
-import { forwardRef, type TextareaHTMLAttributes } from '\''react'\'';
-import { clsx } from '\''clsx'\'';
-import { twMerge } from '\''tailwind-merge'\'';
+import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -12,10 +12,10 @@ export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
   ({ className, label, error, helperText, fullWidth, id, disabled, required, ...props }, ref) => {
-    const textareaId = id || label?.toLowerCase().replace(/\s+/g, '\''-'\'');
+    const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
     
     return (
-      <div className={twMerge(fullWidth && '\''w-full\'')}>
+      <div className={twMerge(fullWidth && 'w-full\'')}>
         {label && (
           <label htmlFor={textareaId} className="\'label\'">
             {label}
@@ -27,13 +27,13 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           id={textareaId}
           disabled={disabled}
           className={twMerge(
-            '\''w-full px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 font-medium text-neutral-900 text-sm\'',
-            '\''focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all resize-y min-h-[80px]\'',
-            error && '\''border-error-main focus:ring-error-main bg-error-light\'',
-            disabled && '\''opacity-50 cursor-not-allowed bg-neutral-100\'',
+            'w-full px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 font-medium text-neutral-900 text-sm\'',
+            'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all resize-y min-h-[80px]\'',
+            error && 'border-error-main focus:ring-error-main bg-error-light\'',
+            disabled && 'opacity-50 cursor-not-allowed bg-neutral-100\'',
             className
           )}
-          aria-invalid={error ? '\''true'\'' : '\''false'\''}
+          aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `\${textareaId}-error` : helperText ? `\${textareaId}-helper` : undefined}
           {...props}
         />

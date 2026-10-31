@@ -1,7 +1,7 @@
 ﻿// src/components/ui/Input.tsx
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from '\''react'\'';
-import { clsx } from '\''clsx'\'';
-import { twMerge } from '\''tailwind-merge'\'';
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -14,10 +14,10 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, helperText, iconLeft, iconRight, fullWidth, id, disabled, required, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '\''-'\'');
+    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
     
     return (
-      <div className={twMerge(fullWidth && '\''w-full\'')}>
+      <div className={twMerge(fullWidth && 'w-full\'')}>
         {label && (
           <label htmlFor={inputId} className="\'label\'">
             {label}
@@ -35,15 +35,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             disabled={disabled}
             className={twMerge(
-              '\''w-full px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 font-medium text-neutral-900 text-sm\'',
-              '\''focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all\'',
-              iconLeft && '\''pl-10\'',
-              iconRight && '\''pr-10\'',
-              error && '\''border-error-main focus:ring-error-main bg-error-light\'',
-              disabled && '\''opacity-50 cursor-not-allowed bg-neutral-100\'',
+              'w-full px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 font-medium text-neutral-900 text-sm\'',
+              'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all\'',
+              iconLeft && 'pl-10\'',
+              iconRight && 'pr-10\'',
+              error && 'border-error-main focus:ring-error-main bg-error-light\'',
+              disabled && 'opacity-50 cursor-not-allowed bg-neutral-100\'',
               className
             )}
-            aria-invalid={error ? '\''true'\'' : '\''false'\''}
+            aria-invalid={error ? 'true' : 'false'}
             aria-describedby={error ? `\${inputId}-error` : helperText ? `\${inputId}-helper` : undefined}
             {...props}
           />

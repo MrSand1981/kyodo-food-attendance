@@ -1,9 +1,9 @@
 ﻿// src/components/ui/Modal.tsx
-import { type ReactNode, Fragment } from '\''react'\'';
-import * as DialogPrimitive from '\''@radix-ui/react-dialog'\'';
-import { X } from '\''lucide-react'\'';
-import { clsx } from '\''clsx'\'';
-import { twMerge } from '\''tailwind-merge'\'';
+import { type ReactNode, Fragment } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export interface ModalProps {
   open: boolean;
@@ -11,18 +11,18 @@ export interface ModalProps {
   title: string;
   description?: string;
   children: ReactNode;
-  size?: '\''sm'\'' | '\''md'\'' | '\''lg'\'' | '\''xl'\'' | '\''full'\'';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
 }
 
 const sizes = {
-  sm: '\''max-w-sm\'',
-  md: '\''max-w-md\'',
-  lg: '\''max-w-lg\'',
-  xl: '\''max-w-xl\'',
-  full: '\''max-w-4xl\''
+  sm: 'max-w-sm\'',
+  md: 'max-w-md\'',
+  lg: 'max-w-lg\'',
+  xl: 'max-w-xl\'',
+  full: 'max-w-4xl\''
 };
 
 export function Modal({
@@ -31,7 +31,7 @@ export function Modal({
   title,
   description,
   children,
-  size = '\''md'\'',
+  size = 'md',
   showCloseButton = true,
   closeOnOverlayClick = true,
   closeOnEscape = true
@@ -41,17 +41,17 @@ export function Modal({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           className={twMerge(
-            '\''fixed inset-0 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 z-50\'',
-            !closeOnOverlayClick && '\''pointer-events-none\''
+            'fixed inset-0 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 z-50\'',
+            !closeOnOverlayClick && 'pointer-events-none\''
           )}
           onPointerDown={closeOnOverlayClick ? () => onOpenChange(false) : undefined}
         />
         <DialogPrimitive.Content
           className={twMerge(
-            '\''fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-h-[90vh] overflow-y-auto\'',
-            '\''bg-white rounded-3xl shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200\'',
+            'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-h-[90vh] overflow-y-auto\'',
+            'bg-white rounded-3xl shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200\'',
             sizes[size],
-            '\''sm:mx-4\''
+            'sm:mx-4\''
           )}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
@@ -99,7 +99,7 @@ export interface AlertDialogProps {
   cancelText?: string;
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
-  variant?: '\''danger'\'' | '\''primary'\'';
+  variant?: 'danger' | 'primary';
   loading?: boolean;
 }
 
@@ -108,11 +108,11 @@ export function AlertDialog({
   onOpenChange,
   title,
   description,
-  confirmText = '\''Xác nhận\'',
-  cancelText = '\''Hủy\'',
+  confirmText = 'Xác nhận\'',
+  cancelText = 'Hủy\'',
   onConfirm,
   onCancel,
-  variant = '\''danger'\'',
+  variant = 'danger',
   loading = false
 }: AlertDialogProps) {
   const handleConfirm = async () => {
@@ -154,10 +154,10 @@ export function AlertDialog({
                 onClick={handleConfirm}
                 disabled={loading}
                 className={twMerge(
-                  '\''flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-white transition-all\'',
-                  variant === '\''danger'\'' 
-                    ? '\''bg-error-main hover:bg-error-dark active:bg-error-darker focus-visible:ring-error-main\'' 
-                    : '\''bg-brand-600 hover:bg-brand-700 active:bg-brand-800 focus-visible:ring-brand-500\''
+                  'flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-white transition-all\'',
+                  variant === 'danger' 
+                    ? 'bg-error-main hover:bg-error-dark active:bg-error-darker focus-visible:ring-error-main\'' 
+                    : 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800 focus-visible:ring-brand-500\''
                 )}
               >
                 {loading ? (
