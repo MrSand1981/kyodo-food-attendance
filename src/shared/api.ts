@@ -1,8 +1,8 @@
 ﻿// src/shared/api.ts
 // React Query hooks + Axios client
 
-import axios, { AxiosError, InternalAxiosRequestConfig } from '\''axios'\'';
-import { QueryClient } from '\''@tanstack/react-query'\'';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { QueryClient } from '@tanstack/react-query';
 import type {
   LoginCredentials,
   AuthResult,
@@ -37,7 +37,7 @@ import type {
   AdvanceQuery,
   LeaveQuery,
   ApiResponse
-} from '\''./types'\'';
+} from './types';
 
 // ============ AXIOS INSTANCE ============
 const api = axios.create({

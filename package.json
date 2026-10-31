@@ -11,9 +11,10 @@
     "dev:server": "tsx watch server/server.ts",
     "test": "vitest run",
     "test:ui": "vitest --ui",
-    "lint": "eslint . --ext ts,tsx,js,jsx",
-    "lint:fix": "eslint . --ext ts,tsx,js,jsx --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepare": "husky install",
     "db:seed": "node server/seedData.js",
     "typecheck": "tsc --noEmit"

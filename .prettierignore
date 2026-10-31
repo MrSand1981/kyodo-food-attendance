@@ -1,0 +1,12 @@
+dist
+node_modules
+coverage
+package-lock.json
+data
+installer_output
+bin
+*.ico
+*.exe
+*.vbs
+*.bat
+*.iss

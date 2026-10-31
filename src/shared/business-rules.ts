@@ -2,7 +2,7 @@
 // SHARED business logic between client and server
 // Single source of truth for salary advance cycles, overlap detection, etc.
 
-import { AttendanceRecord } from '\''./types'\'';
+import { AttendanceRecord } from './types';
 
 /**
  * Quy tắc nghiệp vụ chu kỳ tạm ứng lương Kyodo Food:
@@ -13,12 +13,12 @@ import { AttendanceRecord } from '\''./types'\'';
  */
 
 export function getSalaryMonthForAdvance(dateStr: string): string {
-  if (!dateStr) return '\'\'';
-  const s = String(dateStr).trim().split('\''T'\'')[0];
+  if (!dateStr) return '';
+  const s = String(dateStr).trim().split('T')[0];
   let year = 0, month = 0, day = 0;
 
-  if (s.includes('\''-'\'')) {
-    const parts = s.split('\''-'\'');
+  if (s.includes('-')) {
+    const parts = s.split('-');
     if (parts[0].length === 4) {
       year = parseInt(parts[0], 10);
       month = parseInt(parts[1], 10);
@@ -28,8 +28,8 @@ export function getSalaryMonthForAdvance(dateStr: string): string {
       month = parseInt(parts[1], 10);
       day = parseInt(parts[0], 10);
     }
-  } else if (s.includes('\''/'\'')) {
-    const parts = s.split('\''/'\''');
+  } else if (s.includes('/')) {
+    const parts = s.split('/');
     if (parts[2].length === 4) {
       year = parseInt(parts[2], 10);
       month = parseInt(parts[1], 10);
@@ -48,7 +48,7 @@ export function getSalaryMonthForAdvance(dateStr: string): string {
     }
   }
 
-  return `\${year}-\${String(month).padStart(2, '\''0'\'')}`;
+  return `${year}-${String(month).padStart(2, '0')}`;
 }
 
 export function formatDateVN(dateInput: string | Date | undefined | null): string {
@@ -114,28 +114,28 @@ export function formatMonthShort(monthStr: string): string {
 }
 
 export function formatShortTime(isoString: string): string {
-  if (!isoString) return '\'--:--\'';
+  if (!isoString) return '--:--';
   const d = new Date(isoString);
-  if (isNaN(d.getTime())) return '\'--:--\'';
-  const h = String(d.getHours()).padStart(2, '\''0'\'');
-  const m = String(d.getMinutes()).padStart(2, '\''0'\'');
-  return `\${h}:\${m}`;
+  if (isNaN(d.getTime())) return '--:--';
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 /**
  * Lấy khoảng ngày chu kỳ tạm ứng của một tháng lương:
- * Ví dụ: '\''2026-11'\'' -> '\''Từ 06/11/2026 đến 05/12/2026'\''
+ * Ví dụ: '2026-11' -> 'Từ 06/11/2026 đến 05/12/2026'
  */
 export function getAdvanceCycleRange(yearMonth: string): string {
-  if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) return '\'\'';
-  const [y, m] = yearMonth.split('\''-'\'').map(Number);
+  if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) return '';
+  const [y, m] = yearMonth.split('-').map(Number);
   let nextY = y;
   let nextM = m + 1;
   if (nextM > 12) {
     nextM = 1;
     nextY += 1;
   }
-  return `Từ 06/\${String(m).padStart(2, '\''0'\'')}/\${y} đến 05/\${String(nextM).padStart(2, '\''0'\'')}/\${nextY}`;
+  return `Từ 06/${String(m).padStart(2, '0')}/${y} đến 05/${String(nextM).padStart(2, '0')}/${nextY}`;
 }
 
 /**
@@ -149,13 +149,13 @@ export function getAdvanceCycleExplanation(dateStr: string): {
 } | null {
   if (!dateStr) return null;
   const targetYM = getSalaryMonthForAdvance(dateStr);
-  const s = String(dateStr).trim().split('\''T'\'')[0];
+  const s = String(dateStr).trim().split('T')[0];
   let day = 0;
-  if (s.includes('\''-'\'')) {
-    const parts = s.split('\''-'\'');
+  if (s.includes('-')) {
+    const parts = s.split('-');
     day = parseInt(parts[parts[0].length === 4 ? 2 : 0], 10);
-  } else if (s.includes('\''/'\''')) {
-    day = parseInt(s.split('\''/'\''')[0], 10);
+  } else if (s.includes('/')) {
+    day = parseInt(s.split('/')[0], 10);
   }
 
   const isBeforeOrOn5th = day <= 5;
@@ -164,8 +164,8 @@ export function getAdvanceCycleExplanation(dateStr: string): {
     formattedMonth: formatMonthVN(targetYM),
     isBeforeOrOn5th,
     note: isBeforeOrOn5th 
-      ? `Khấu trừ vào lương \${formatMonthVN(targetYM)} (ứng trước ngày 05).`
-      : `Khấu trừ vào lương \${formatMonthVN(targetYM)} (ứng từ ngày 06).`
+      ? `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng trước ngày 05).`
+      : `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng từ ngày 06).`
   };
 }
 
@@ -186,7 +186,7 @@ export function hasTimeOverlap(
  * Parse time string HH:mm to minutes since midnight
  */
 export function parseTimeToMinutes(timeStr: string): number {
-  const [h, m] = timeStr.split('\''_'\'').map(Number);
+  const [h, m] = timeStr.split(':').map(Number);
   return h * 60 + m;
 }
 
@@ -209,7 +209,7 @@ export function checkShiftOverlap(
   existingRecords: AttendanceRecord[]
 ): { hasOverlap: boolean; errorMessage?: string; conflictingRecord?: AttendanceRecord } {
   const dayRecords = existingRecords.filter(
-    r => r.date === newDate && r.status === '\''completed'\'' && r.checkIn && r.checkOut
+    r => r.date === newDate && r.status === 'completed' && r.checkIn && r.checkOut
   );
 
   const newStartMins = parseTimeToMinutes(newStartTime);
@@ -225,19 +225,19 @@ export function checkShiftOverlap(
       const existStartStr = formatShortTime(rec.checkIn);
       const existEndStr = formatShortTime(rec.checkOut);
       const recDate = rec.date || newDate;
-      const [y, m, d] = recDate.split('\''-'\'');
-      const recDateVN = `\${d}/\${m}/\${y}`;
+      const [y, m, d] = recDate.split('-');
+      const recDateVN = `${d}/${m}/${y}`;
 
       if (newStartTime === existStartStr && newEndTime === existEndStr) {
         return {
           hasOverlap: true,
-          errorMessage: `Trùng lặp thời gian! Bạn đã chấm công ca \${existStartStr} - \${existEndStr} (\${rec.totalHours}h) trong ngày \${recDateVN} rồi. Không được khai báo lặp lại 2 lần để gian lận giờ làm!`,
+          errorMessage: `Trùng lặp thời gian! Bạn đã chấm công ca ${existStartStr} - ${existEndStr} (${rec.totalHours}h) trong ngày ${recDateVN} rồi. Không được khai báo lặp lại 2 lần để gian lận giờ làm!`,
           conflictingRecord: rec
         };
       } else {
         return {
           hasOverlap: true,
-          errorMessage: `Trùng thời gian làm việc! Khoảng giờ bạn nhập (\${newStartTime} - \${newEndTime}) bị giao thoa/trùng đè với ca làm (\${existStartStr} - \${existEndStr}) đã chấm ngày \${recDateVN}. Vui lòng nhập khoảng giờ khác!`,
+          errorMessage: `Trùng thời gian làm việc! Khoảng giờ bạn nhập (${newStartTime} - ${newEndTime}) bị giao thoa/trùng đè với ca làm (${existStartStr} - ${existEndStr}) đã chấm ngày ${recDateVN}. Vui lòng nhập khoảng giờ khác!`,
           conflictingRecord: rec
         };
       }
@@ -270,7 +270,7 @@ export function getShiftNameFromTime(startTime: string, endTime: string): string
   } else if (startTime === "17:00" && endTime === "22:00") {
     return "Ca Chiều";
   } else {
-    return `Ca \${startTime}-\${endTime}`;
+    return `Ca ${startTime}-${endTime}`;
   }
 }
 
@@ -295,7 +295,7 @@ export function countLeaveDaysInMonth(leaveList: Array<{ date: string; endDate?:
     
     let count = 0;
     while (cur <= stop && count <= 31) {
-      const ymd = cur.toISOString().split('\''T'\'')[0];
+      const ymd = cur.toISOString().split('T')[0];
       if (ymd.startsWith(yearMonth)) {
         uniqueDates.add(ymd);
       }
@@ -324,12 +324,12 @@ export function calculateMonthlySalary(
  * Format tiền VNĐ
  */
 export function formatVND(amount: number): string {
-  return Number(amount || 0).toLocaleString('\''vi-VN'\'');
+  return Number(amount || 0).toLocaleString('vi-VN');
 }
 
 /**
  * Format tiền VNĐ + đơn vị
  */
 export function formatVNDWithUnit(amount: number): string {
-  return `\${formatVND(amount)} đ`;
+  return `${formatVND(amount)} đ`;
 }

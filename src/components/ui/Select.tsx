@@ -1,9 +1,9 @@
 ﻿// src/components/ui/Select.tsx
-import { forwardRef, type ReactNode } from '\''react'\'';
-import * as SelectPrimitive from '\''@radix-ui/react-select'\'';
-import { Check, ChevronDown, ChevronUp } from '\''lucide-react'\'';
-import { clsx } from '\''clsx'\'';
-import { twMerge } from '\''tailwind-merge'\'';
+import { forwardRef, type ReactNode } from 'react';
+import * as SelectPrimitive from '@radix-ui/react-select';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export interface SelectOption {
   value: string;
@@ -40,7 +40,7 @@ export function SelectComponent({
   label,
   error,
   helperText,
-  placeholder = '\''Chọn...\'',
+  placeholder = 'Chọn...\'',
   options,
   value,
   onValueChange,
@@ -49,10 +49,10 @@ export function SelectComponent({
   fullWidth,
   id
 }: SelectProps) {
-  const selectId = id || label?.toLowerCase().replace(/\s+/g, '\''-'\'');
+  const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <div className={twMerge(fullWidth && '\''w-full\'')}>
+    <div className={twMerge(fullWidth && 'w-full\'')}>
       {label && (
         <label htmlFor={selectId} className="\'label\'">
           {label}
@@ -63,13 +63,13 @@ export function SelectComponent({
         <SelectTrigger
           id={selectId}
           className={twMerge(
-            '\''w-full h-10 px-3 rounded-xl bg-neutral-50 border border-neutral-200 font-medium text-neutral-900 text-sm\'',
-            '\''focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all\'',
-            '\''data-[placeholder]:text-neutral-500\'',
-            '\''data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:bg-neutral-100\'',
-            error && '\''border-error-main focus:ring-error-main bg-error-light\'',
+            'w-full h-10 px-3 rounded-xl bg-neutral-50 border border-neutral-200 font-medium text-neutral-900 text-sm\'',
+            'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all\'',
+            'data-[placeholder]:text-neutral-500\'',
+            'data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:bg-neutral-100\'',
+            error && 'border-error-main focus:ring-error-main bg-error-light\'',
           )}
-          aria-invalid={error ? '\''true'\'' : '\''false'\''}
+          aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `\${selectId}-error` : helperText ? `\${selectId}-helper` : undefined}
         >
           <SelectValue placeholder={placeholder} />
@@ -92,10 +92,10 @@ export function SelectComponent({
                 value={option.value}
                 disabled={option.disabled}
                 className={twMerge(
-                  '\''relative flex items-center px-3 py-2 rounded-lg text-sm text-neutral-900\'',
-                  '\''focus:bg-brand-50 focus:text-brand-700 focus:outline-none\'',
-                  '\''data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed\'',
-                  '\''data-[highlighted]:bg-brand-50 data-[highlighted]:text-brand-700\'',
+                  'relative flex items-center px-3 py-2 rounded-lg text-sm text-neutral-900\'',
+                  'focus:bg-brand-50 focus:text-brand-700 focus:outline-none\'',
+                  'data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed\'',
+                  'data-[highlighted]:bg-brand-50 data-[highlighted]:text-brand-700\'',
                 )}
               >
                 <SelectItemText>{option.label}</SelectItemText>
