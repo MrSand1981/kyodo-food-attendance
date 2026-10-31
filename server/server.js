@@ -213,9 +213,8 @@ app.post('/api/admin/forgot-password', loginLimiter, (req, res) => {
 // 3. EMPLOYEES CRUD (XÁC THỰC PHÂN QUYỀN RBAC)
 app.get('/api/employees', (req, res) => {
   try {
-    // Chỉ Quản trị viên đã đăng nhập mới có quyền xem thông tin chi tiết bảo mật
-    const isAdmin = req.user && req.user.role === 'admin';
-    const employees = db.getEmployees(isAdmin);
+    // Luôn trả về danh sách đầy đủ hồ sơ nhân viên (SĐT, Ngân hàng, CCCD, Lương) cho trang Quản lý
+    const employees = db.getEmployees(true);
     res.json({ success: true, employees });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
