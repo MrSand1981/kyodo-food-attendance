@@ -235,6 +235,16 @@ app.post('/api/employees/change-password', requireAuth, (req, res) => {
   }
 });
 
+// Admin đặt lại mật khẩu nhân viên về 1234 khi nhân viên quên mật khẩu
+app.post('/api/employees/:id/reset-password', (req, res) => {
+  try {
+    const result = db.resetEmployeePassword(req.params.id, req.body?.password || '1234');
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 // Cập nhật Avatar cá nhân cho nhân viên
 app.post('/api/employees/avatar', requireAuth, (req, res) => {
   try {

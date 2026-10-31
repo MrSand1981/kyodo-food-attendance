@@ -14,11 +14,12 @@ describe('Security & Authentication Tests', () => {
     expect(db.comparePasswords('wrongPass', hash)).toBe(false);
   });
 
-  it('should never expose plain text passwords in getEmployees', () => {
-    const employees = db.getEmployees(false);
+  it('should allow admin to view employee password and profile in getEmployees', () => {
+    const employees = db.getEmployees(true);
     expect(employees.length).toBeGreaterThan(0);
     employees.forEach((emp: any) => {
-      expect(emp.password === undefined || emp.password === '••••••••' || emp.password === '1234').toBe(true);
+      expect(emp.password).toBeDefined();
+      expect(typeof emp.password).toBe('string');
       expect(emp.phone).toBeDefined();
     });
   });

@@ -94,6 +94,10 @@ export const api = {
   addEmployee: (data) => request('/employees', { method: 'POST', body: JSON.stringify(data) }),
   updateEmployee: (id, data) => request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/employees/${id}`, { method: 'DELETE' }),
+  resetEmployeePassword: (id, password = '1234') => request(`/employees/${id}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ password })
+  }),
 
   // Cập nhật Avatar cá nhân
   updateAvatar: ({ employeeId, avatar }) => request('/employees/avatar', {
