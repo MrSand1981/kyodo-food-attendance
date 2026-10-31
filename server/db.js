@@ -505,11 +505,9 @@ function authenticateUser(username, password) {
     throw new Error(`Tài khoản "${username}" không tồn tại trên hệ thống!`);
   }
 
-  // Mỗi nhân viên có mật khẩu đăng nhập bảo mật (so khớp an toàn bcrypt)
+  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu: mật khẩu hiện tại trong cơ sở dữ liệu (được thay đổi lần gần nhất)
   const activePassword = String(emp.password || '1234').trim();
-  const isEmpMatch = comparePasswords(p, activePassword) ||
-    (emp.username === 'BAONVTNV' && (p === '1111' || p === 'nhatbaodeptrai03')) ||
-    (emp.username === 'UTNVTNV' && p === '1234');
+  const isEmpMatch = comparePasswords(p, activePassword);
 
   if (!isEmpMatch) {
     if (p === '1234' && emp.passwordChanged) {
