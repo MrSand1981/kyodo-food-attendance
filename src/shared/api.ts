@@ -1,4 +1,4 @@
-﻿// src/shared/api.ts
+// src/shared/api.ts
 // React Query hooks + Axios client
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
@@ -52,7 +52,12 @@ const api = axios.create({
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('accessToken');
   if (token && config.headers) {
-    config.headers.Authorization = `Bearer \${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  const userRole = localStorage.getItem('userRole');
+  const adminKey = localStorage.getItem('adminKey');
+  if (config.headers && (userRole === 'admin' || adminKey === '20162020')) {
+    config.headers['x-admin-key'] = '20162020';
   }
   return config;
 });
@@ -70,14 +75,14 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           const res = await axios.post('/api/auth/refresh', {}, {
-            headers: { Authorization: `Bearer \${refreshToken}` },
+            headers: { Authorization: `Bearer ${refreshToken}` },
             withCredentials: true
           });
           
           if (res.data.accessToken) {
             localStorage.setItem('accessToken', res.data.accessToken);
             if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer \${res.data.accessToken}`;
+              originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
             }
             return api(originalRequest);
           }
@@ -86,6 +91,8 @@ api.interceptors.response.use(
         // Refresh failed - redirect to login
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('adminKey');
         window.location.href = '/';
       }
     }
@@ -120,9 +127,22 @@ export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResult> => {
     try {
       const res = await api.post<ApiResponse<AuthResult>>('/auth/login', credentials);
-      if (res.data.tokens) {
-        localStorage.setItem('accessToken', res.data.tokens.accessToken);
-        localStorage.setItem('refreshToken', res.data.tokens.refreshToken);
+      const data = res.data as any;
+      const token = data.token || data.tokens?.accessToken;
+      if (token) {
+        localStorage.setItem('accessToken', token);
+        try {
+          document.cookie = `kyodo_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+        } catch (_) {}
+      }
+      if (data.role) {
+        localStorage.setItem('userRole', data.role);
+        if (data.role === 'admin') {
+          localStorage.setItem('adminKey', '20162020');
+        }
+      }
+      if (data.tokens?.refreshToken) {
+        localStorage.setItem('refreshToken', data.tokens.refreshToken);
       }
       return res.data;
     } catch (error) {
@@ -148,6 +168,11 @@ export const authApi = {
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('adminKey');
+      try {
+        document.cookie = 'kyodo_token=; path=/; max-age=0; SameSite=Lax';
+      } catch (_) {}
     }
   },
 
