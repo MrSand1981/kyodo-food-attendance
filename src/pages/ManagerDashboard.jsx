@@ -523,7 +523,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v1.4.7
+              Bản v1.4.8
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
@@ -945,10 +945,10 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               <span className="w-6 h-6 rounded-lg bg-white text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">3</span>
                               <div>
                                 <span className="text-xs font-black uppercase tracking-wide block whitespace-nowrap">
-                                  Số Tiền Lương Còn Lại Sau Trừ Tạm Ứng (Thực Lĩnh):
+                                  Lương Thực Lĩnh (Sau Trừ Tạm Ứng):
                                 </span>
                                 <p className="text-[11px] text-emerald-100 font-medium whitespace-nowrap">
-                                  Lương ca làm ({Number(row.totalSalary).toLocaleString()} đ) - Tạm ứng ({Number(row.advanceTotal || 0).toLocaleString()} đ)
+                                  Lương ca ({Number(row.totalSalary).toLocaleString()} đ) - Tạm ứng ({Number(row.advanceTotal || 0).toLocaleString()} đ)
                                 </p>
                               </div>
                             </div>
@@ -1020,15 +1020,15 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900 text-xs sm:text-sm">
+                    <span className="font-black text-slate-900 text-xs sm:text-sm whitespace-nowrap">
                       Bảng Chấm Công Ma Trận: {formatMonthVN(selectedMonth)}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black text-[11px] border border-amber-300">
-                      Chu kỳ chuẩn {report?.days?.length || 31} ngày (Ngày 01 ➔ Ngày {String(report?.days?.length || 31).padStart(2, '0')})
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black text-[11px] border border-amber-300 whitespace-nowrap">
+                      Chu kỳ {report?.days?.length || 31} ngày (Ngày 01 ➔ Ngày {String(report?.days?.length || 31).padStart(2, '0')})
                     </span>
                   </div>
-                  <p className="text-[11px] text-amber-800 font-medium mt-0.5">
-                    Tháng này có đúng <strong>{report?.days?.length || 31} ngày</strong> • Toàn bộ ngày trong tháng được căn chỉnh hiển thị trực diện trên màn hình
+                  <p className="text-[11px] text-amber-800 font-medium mt-0.5 whitespace-nowrap">
+                    Tháng này có <strong>{report?.days?.length || 31} ngày</strong> • Toàn bộ ngày hiển thị trực diện trên màn hình
                   </p>
                 </div>
               </div>
@@ -1206,7 +1206,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 Hồ Sơ Nhân Sự Cửa Hàng Trưng Nữ Vương
               </h3>
               <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
-                Chủ cửa hàng quản lý đầy đủ thông tin: Ngày sinh, Địa chỉ, Số điện thoại, CCCD, Giới tính và Mức lương.
+                Quản lý hồ sơ: Ngày sinh, SĐT, CCCD, Ngân hàng và Mức lương.
               </p>
             </div>
 
@@ -1419,11 +1419,11 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
         <div className="space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-200">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-lg font-bold text-slate-900 whitespace-nowrap">
                 Quản Lý Tạm Ứng Lương & Đăng Ký Ngày Nghỉ
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Tổng hợp các khoản tạm ứng lương và đăng ký ngày nghỉ của nhân viên tại cơ sở Trưng Nữ Vương.
+              <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
+                Tổng hợp tạm ứng lương và đăng ký ngày nghỉ của nhân viên.
               </p>
             </div>
             
@@ -1589,11 +1589,11 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   <UploadCloud className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2 whitespace-nowrap">
                     <span>Đẩy Bản Cập Nhật Mới Lên GitHub</span>
                   </h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    Dành riêng cho bạn tại Nghệ An sau khi Antigravity hoàn tất chỉnh sửa
+                  <p className="text-xs text-slate-400 font-medium mt-0.5 whitespace-nowrap">
+                    Đóng gói và đẩy phiên bản mới lên kho lưu trữ GitHub
                   </p>
                 </div>
               </div>

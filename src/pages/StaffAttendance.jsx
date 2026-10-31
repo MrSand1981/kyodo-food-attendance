@@ -558,7 +558,7 @@ export default function StaffAttendance({
                 <span>⚠️ Bạn Đang Dùng Mật Khẩu Khởi Tạo (1234)!</span>
               </h4>
               <p className="text-[11px] text-amber-800 mt-0.5 whitespace-nowrap">
-                Vui lòng đổi sang mật khẩu riêng để bảo vệ quyền riêng tư và số giờ làm của mình.
+                Vui lòng đổi sang mật khẩu riêng để bảo vệ tài khoản và số giờ làm.
               </p>
             </div>
           </div>
@@ -614,7 +614,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v1.4.7
+                  Bản v1.4.8
                 </span>
               </div>
               
@@ -714,7 +714,7 @@ export default function StaffAttendance({
                 Nhập Thời Gian Làm Việc Từng Ngày
               </h3>
               <p className="text-[11px] text-slate-500 whitespace-nowrap">
-                Bấm chọn nhanh Ca Sáng / Ca Chiều (nếu đủ ca) hoặc chỉnh giờ vào/ra (nếu đi muộn/về sớm) rồi bấm <strong>Xác Nhận Giờ Làm</strong>.
+                Bấm chọn nhanh ca làm hoặc chỉnh giờ vào/ra rồi bấm <strong>Xác Nhận Giờ Làm</strong>.
               </p>
             </div>
           </div>
@@ -1186,8 +1186,8 @@ export default function StaffAttendance({
                 Kết Quả Tổng Giờ Làm Việc Của Bạn
               </h3>
             </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Hệ thống tự động tổng hợp tổng số giờ làm việc, số ca và số ngày nghỉ trong chu kỳ.
+            <p className="text-[11px] text-slate-500 mt-0.5 whitespace-nowrap">
+              Tổng hợp giờ làm việc, số ca và ngày nghỉ trong tháng.
             </p>
           </div>
 

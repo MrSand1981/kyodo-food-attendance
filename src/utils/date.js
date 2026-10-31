@@ -143,7 +143,7 @@ export function getAdvanceCycleExplanation(dateStr) {
     formattedMonth: formatMonthVN(targetYM),
     isBeforeOrOn5th,
     note: isBeforeOrOn5th 
-      ? `Khoản ứng ngày ${formatDateVN(dateStr)} (trước ngày 05) được tính khấu trừ vào kỳ lương ${formatMonthVN(targetYM)}.`
-      : `Khoản ứng ngày ${formatDateVN(dateStr)} (từ ngày 06 trở đi) được tính khấu trừ vào kỳ lương ${formatMonthVN(targetYM)}.`
+      ? `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng trước ngày 05).`
+      : `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng từ ngày 06).`
   };
 }

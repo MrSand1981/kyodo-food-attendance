@@ -88,7 +88,7 @@ export default function LoginKiosk({
       if (res.hasUpdate) {
         setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
       } else {
-        setUpdateMsg(`Bản v${res.currentVersion || '1.4.7'} (Mới nhất)`);
+        setUpdateMsg(`Bản v${res.currentVersion || '1.4.8'} (Mới nhất)`);
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra cập nhật:', err.message);
@@ -315,7 +315,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v1.4.7</span>
+          <span className="font-black text-amber-950">Bản v1.4.8</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -324,7 +324,7 @@ export default function LoginKiosk({
               Trang Quản Lý <span className="text-amber-600">Chấm Công</span>
             </h2>
             <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm whitespace-nowrap">
-              Mỗi nhân viên đăng nhập để chấm công và theo dõi giờ làm việc.
+              Mỗi nhân viên đăng nhập để chấm công và theo dõi giờ làm.
             </p>
           </>
         ) : isManagerOnly ? (
@@ -333,7 +333,7 @@ export default function LoginKiosk({
               Cổng Quản Trị & <span className="text-amber-600">Bảng Tính Lương</span>
             </h2>
             <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm whitespace-nowrap">
-              Dành riêng cho Chủ cửa hàng quản lý nhân sự, xem chi tiết bảng công và duyệt chi lương.
+              Quản lý nhân sự, theo dõi bảng chấm công và duyệt chi lương.
             </p>
           </>
         ) : (
@@ -342,7 +342,7 @@ export default function LoginKiosk({
               Trang Quản Lý <span className="text-amber-600">Chấm Công</span>
             </h2>
             <p className="text-slate-600 mt-0.5 sm:mt-1 max-w-xl mx-auto text-xs sm:text-sm whitespace-nowrap">
-              Đăng nhập tài khoản để chấm công và theo dõi giờ làm việc.
+              Đăng nhập tài khoản để chấm công và theo dõi giờ làm.
             </p>
           </>
         )}
@@ -1042,7 +1042,7 @@ export default function LoginKiosk({
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.4.7 • Kiểm Tra Cập Nhật')}</span>
+          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.4.8 • Kiểm Tra Cập Nhật')}</span>
         </button>
 
         {updateStatus?.hasUpdate && (
