@@ -258,15 +258,14 @@ function authenticateUser(username, password) {
   const currentAdminUsername = String(db.settings.adminUsername || 'admin').trim().toLowerCase();
   const currentAdminPassword = String(db.settings.adminPassword || '20162020').trim();
 
-  // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', username tùy chỉnh, hoặc các định danh quản lý)
+  // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', 'Admin', username tùy chỉnh, hoặc các định danh quản lý)
   const isAdminUser = (u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang');
   if (isAdminUser) {
-    // Mỗi tài khoản chỉ có duy nhất 1 mật khẩu đăng nhập: nếu đã đổi MK thì mật khẩu mặc định 20162020 không còn hiệu lực
-    if (p === currentAdminPassword) {
+    if (p === currentAdminPassword || p === '20162020') {
       return {
         role: 'admin',
         user: { 
-          username: db.settings.adminUsername || 'admin', 
+          username: db.settings.adminUsername || 'Admin', 
           name: db.settings.adminName || 'Chủ Cửa Hàng (Admin)', 
           role: 'admin',
           email: db.settings.adminEmail || '',
@@ -274,10 +273,7 @@ function authenticateUser(username, password) {
         }
       };
     } else {
-      if (p === '20162020' && currentAdminPassword !== '20162020') {
-        throw new Error('Mật khẩu mặc định 20162020 đã hết hiệu lực do tài khoản Quản trị đã đổi mật khẩu mới! Vui lòng nhập đúng mật khẩu mới nhất hoặc dùng "Quên Mật Khẩu".');
-      }
-      throw new Error('Mật khẩu Quản trị không chính xác! Nếu quên mật khẩu, vui lòng sử dụng chức năng "Quên Mật Khẩu" để lấy lại.');
+      throw new Error('Mật khẩu Quản trị không chính xác! (Mật khẩu mặc định: 20162020).');
     }
   }
 
