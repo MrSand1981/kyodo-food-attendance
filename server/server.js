@@ -76,10 +76,11 @@ app.use(extractUserMiddleware);
 const publicDir = path.join(__dirname, '..', 'public');
 const distDir = path.join(__dirname, '..', 'dist');
 
-app.use(express.static(publicDir));
+// Ưu tiên phục vụ bản build mới nhất từ dist/ trước public/
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
 }
+app.use(express.static(publicDir));
 
 // Multer lưu logo an toàn (chỉ chấp nhận ảnh, giới hạn 5MB)
 const storage = multer.diskStorage({
