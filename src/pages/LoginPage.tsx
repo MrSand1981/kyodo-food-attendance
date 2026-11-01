@@ -308,7 +308,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
-          <span className="font-black text-brand-950">Bản v1.5.4</span>
+          <span className="font-black text-brand-950">Bản v1.5.5</span>
         </div>
 
         {activeTab === 'employee' || appMode === 'employee' ? (
@@ -594,7 +594,8 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
                 <Input
                   type={showAdminPassword ? "text" : "password"}
                   required
-                  placeholder="20162020"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   iconLeft={<Lock className="w-4 h-4" />}
@@ -642,7 +643,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
             className="w-full sm:w-auto text-slate-600 hover:text-brand-700 flex items-center justify-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-brand-50/60 border border-slate-200/80 hover:border-brand-200 shadow-2xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-brand-600' : ''}`} />
-            <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.4 • Kiểm Tra Cập Nhật')}</span>
+            <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.5 • Kiểm Tra Cập Nhật')}</span>
           </Button>
 
           {updateStatus?.hasUpdate && (
@@ -794,7 +795,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
               <Input
                 type="password"
                 required
-                placeholder="Nhập mật khẩu hiện tại (mặc định: 20162020)..."
+                placeholder="Nhập mật khẩu quản trị hiện tại..."
                 value={oldAdminPwd}
                 onChange={(e) => setOldAdminPwd(e.target.value)}
                 fullWidth
