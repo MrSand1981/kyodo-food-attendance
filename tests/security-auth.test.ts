@@ -34,11 +34,15 @@ describe('Security & Authentication Tests', () => {
     expect(adminAuth.role).toBe('admin');
     expect(adminAuth.user.username).toBe('Admin');
 
-    const utAuth = db.authenticateUser('UTNVTNV', '1234');
+    const ut = db.getEmployees().find((e: any) => e.username === 'UTNVTNV' || e.code === 'UTNVTNV');
+    const utPwd = ut?.password || '2008';
+    const utAuth = db.authenticateUser('UTNVTNV', utPwd);
     expect(utAuth.role).toBe('employee');
     expect(utAuth.user.name).toBe('Út');
 
-    const baoAuth = db.authenticateUser('BAONVTNV', 'nhatbaodeptrai03');
+    const bao = db.getEmployees().find((e: any) => e.username === 'BAONVTNV' || e.code === 'BAONVTNV');
+    const baoPwd = bao?.password || 'nhatbaodeptrai03';
+    const baoAuth = db.authenticateUser('BAONVTNV', baoPwd);
     expect(baoAuth.role).toBe('employee');
     expect(baoAuth.user.name).toBe('Bảo');
   });

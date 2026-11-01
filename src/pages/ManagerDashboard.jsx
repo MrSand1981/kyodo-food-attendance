@@ -2160,9 +2160,18 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               </span>
             </div>
 
-            <p className="text-xs text-slate-300 mb-5 leading-relaxed">
-              Mỗi khi bạn yêu cầu chỉnh sửa phần mềm xong, bạn chỉ cần nhấn nút <strong>"Đẩy Lên GitHub Ngay"</strong> bên dưới. Hệ thống sẽ tự động đóng gói bản mới, commit và đẩy trực tiếp lên kho lưu trữ. Sau đó máy ở Đà Nẵng chỉ cần nhấn nút nhận bản mới!
-            </p>
+            <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-amber-500/30 mb-5 text-xs text-slate-300 leading-relaxed space-y-1.5">
+              <p className="flex items-center gap-1.5 text-amber-300 font-bold">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Quy trình cập nhật tự động (Auto-Deploy):</span>
+              </p>
+              <p>
+                Mỗi khi bạn yêu cầu chỉnh sửa phần mềm qua Trợ lý AI Antigravity, hệ thống đã <strong>tự động đóng gói, chạy kiểm thử và đẩy thẳng lên GitHub</strong>. Máy chủ Cloud (Render) sẽ <strong>tự động nhận diện và cập nhật (Auto-Deploy)</strong> trong vòng 1-2 phút mà <strong>bạn không cần phải bấm nút gì cả</strong>!
+              </p>
+              <p className="text-slate-400 text-[11px]">
+                ℹ️ <em>Nút "Đẩy Bản Cập Nhật Lên GitHub Ngay" bên dưới là tính năng dự phòng chỉ dùng khi bạn tự chỉnh sửa code offline trên máy mà không dùng AI.</em>
+              </p>
+            </div>
 
             {/* Trạng thái Git hiện tại */}
             <div className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 mb-5 text-xs">
