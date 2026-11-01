@@ -231,5 +231,16 @@ export const api = {
   testTelegram: (data) => request('/system/telegram-test', {
     method: 'POST',
     body: JSON.stringify(data)
+  }),
+
+  // Cấu hình thông báo Zalo tức thì (Nghệ An - Đà Nẵng)
+  getZaloConfig: () => request('/system/zalo-config'),
+  updateZaloConfig: (data) => request('/system/zalo-config', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  testZalo: (data) => request('/system/zalo-test', {
+    method: 'POST',
+    body: JSON.stringify(data)
   })
 };

@@ -12,6 +12,7 @@ const db = require('./db');
 const updater = require('./updater');
 const gitService = require('./gitService');
 const telegramService = require('./telegramService');
+const zaloService = require('./zaloService');
 const { generateToken, extractUserMiddleware, requireAuth, requireAdmin } = require('./auth');
 
 const app = express();
@@ -346,10 +347,11 @@ app.post('/api/attendance/daily-entry', (req, res) => {
     const { employeeId, date, startTime, endTime, hours, shiftName, note } = req.body;
     const record = db.recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note });
     
-    // Bắn thông báo Telegram (nếu bật)
+    // Bắn thông báo Telegram & Zalo (nếu bật)
     try {
       const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
       telegramService.notifyAttendance({ employee: emp, date, shiftName, startTime, endTime, hours: record.totalHours }).catch(() => {});
+      zaloService.notifyAttendance({ employee: emp, date, shiftName, startTime, endTime, hours: record.totalHours }).catch(() => {});
     } catch (_) {}
 
     res.json({
@@ -378,10 +380,11 @@ app.post('/api/advances', (req, res) => {
     const { employeeId, date, amount, reason } = req.body;
     const record = db.requestSalaryAdvance({ employeeId, date, amount, reason });
     
-    // Bắn thông báo Telegram tức thì về máy Quản lý
+    // Bắn thông báo Telegram & Zalo tức thì về máy Quản lý
     try {
       const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
       telegramService.notifySalaryAdvance({ employee: emp, amount, date, reason }).catch(() => {});
+      zaloService.notifySalaryAdvance({ employee: emp, amount, date, reason }).catch(() => {});
     } catch (_) {}
 
     res.json({
@@ -430,10 +433,11 @@ app.post('/api/leaves', (req, res) => {
     const { employeeId, date, endDate, shift, reason } = req.body;
     const record = db.requestLeave({ employeeId, date, endDate, shift, reason });
     
-    // Bắn thông báo Telegram tức thì về máy Quản lý
+    // Bắn thông báo Telegram & Zalo tức thì về máy Quản lý
     try {
       const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
       telegramService.notifyLeaveRequest({ employee: emp, date, endDate, shift, reason }).catch(() => {});
+      zaloService.notifyLeaveRequest({ employee: emp, date, endDate, shift, reason }).catch(() => {});
     } catch (_) {}
 
     res.json({
@@ -748,6 +752,47 @@ app.post('/api/system/telegram-test', requireAdmin, async (req, res) => {
     res.json({ success: true, message: '🎉 Đã gửi tin nhắn thử nghiệm thành công! Vui lòng kiểm tra ứng dụng Telegram của bạn.' });
   } catch (err) {
     res.status(400).json({ success: false, message: `Lỗi kết nối Telegram: ${err.message}` });
+  }
+});
+
+// 12. CẤU HÌNH THÔNG BÁO ZALO (WEBHOOK & ZALO OA DÀNH CHO QUẢN LÝ)
+app.get('/api/system/zalo-config', requireAdmin, (req, res) => {
+  try {
+    const config = zaloService.getZaloConfig();
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/zalo-config', requireAdmin, (req, res) => {
+  try {
+    const { enabled, mode, webhookUrl, oaAccessToken, oaUserId, notifyAdvance, notifyLeave, notifyAttendance } = req.body || {};
+    const updated = db.updateSettings({
+      zalo: {
+        enabled: Boolean(enabled),
+        mode: mode === 'oa' ? 'oa' : 'webhook',
+        webhookUrl: String(webhookUrl || '').trim(),
+        oaAccessToken: String(oaAccessToken || '').trim(),
+        oaUserId: String(oaUserId || '').trim(),
+        notifyAdvance: notifyAdvance !== false,
+        notifyLeave: notifyLeave !== false,
+        notifyAttendance: Boolean(notifyAttendance)
+      }
+    });
+    res.json({ success: true, message: 'Đã lưu cấu hình thông báo Zalo thành công!', config: updated.zalo });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/zalo-test', requireAdmin, async (req, res) => {
+  try {
+    const testConfig = req.body || {};
+    await zaloService.testZalo(testConfig);
+    res.json({ success: true, message: '🎉 Đã gửi tin nhắn thử nghiệm Zalo thành công! Vui lòng kiểm tra ứng dụng Zalo của bạn.' });
+  } catch (err) {
+    res.status(400).json({ success: false, message: `Lỗi kết nối Zalo: ${err.message}` });
   }
 });
 

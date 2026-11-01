@@ -8,7 +8,7 @@ import {
   MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle,
   UploadCloud, GitCommit, Terminal, ExternalLink, CheckCircle2,
   Bell, Copy, CalendarDays, Phone, Home, CreditCard, Sparkles,
-  QrCode, Eye, EyeOff, X, Mail, Send
+  QrCode, Eye, EyeOff, X, Mail, Send, MessageCircle
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
@@ -577,6 +577,74 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
     }
   };
 
+  // Cấu hình thông báo Zalo tức thì (Webhook / Zalo OA)
+  const [notifyTab, setNotifyTab] = useState('zalo'); // 'zalo' | 'telegram'
+  const [zaloForm, setZaloForm] = useState({
+    enabled: false,
+    mode: 'webhook',
+    webhookUrl: '',
+    oaAccessToken: '',
+    oaUserId: '',
+    notifyAdvance: true,
+    notifyLeave: true,
+    notifyAttendance: false
+  });
+  const [savingZalo, setSavingZalo] = useState(false);
+  const [testingZalo, setTestingZalo] = useState(false);
+  const [zaloMsg, setZaloMsg] = useState('');
+  const [zaloError, setZaloError] = useState('');
+
+  const loadZaloConfig = async () => {
+    try {
+      const res = await api.getZaloConfig();
+      if (res && res.config) {
+        setZaloForm({
+          enabled: Boolean(res.config.enabled),
+          mode: res.config.mode || 'webhook',
+          webhookUrl: res.config.webhookUrl || '',
+          oaAccessToken: res.config.oaAccessToken || '',
+          oaUserId: res.config.oaUserId || '',
+          notifyAdvance: res.config.notifyAdvance !== false,
+          notifyLeave: res.config.notifyLeave !== false,
+          notifyAttendance: Boolean(res.config.notifyAttendance)
+        });
+      }
+    } catch (e) {
+      console.warn('Lỗi tải cấu hình Zalo:', e);
+    }
+  };
+
+  const handleSaveZaloConfig = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setSavingZalo(true);
+      setZaloMsg('');
+      setZaloError('');
+      const res = await api.updateZaloConfig(zaloForm);
+      setZaloMsg(res.message || 'Đã lưu cấu hình thông báo Zalo thành công!');
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+    } catch (err) {
+      setZaloError(err.message || 'Lỗi khi lưu cấu hình Zalo');
+    } finally {
+      setSavingZalo(false);
+    }
+  };
+
+  const handleTestZalo = async () => {
+    try {
+      setTestingZalo(true);
+      setZaloMsg('');
+      setZaloError('');
+      const res = await api.testZalo(zaloForm);
+      setZaloMsg(res.message || '🎉 Đã gửi tin nhắn thử nghiệm Zalo thành công!');
+      confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
+    } catch (err) {
+      setZaloError(err.message || 'Lỗi gửi tin nhắn thử nghiệm Zalo');
+    } finally {
+      setTestingZalo(false);
+    }
+  };
+
   const loadCloudConfig = async () => {
     try {
       const res = await api.getCloudConfig();
@@ -611,6 +679,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
       loadAdminProfile();
       loadCloudConfig();
       loadTelegramConfig();
+      loadZaloConfig();
     }
   }, [activeTab]);
 
@@ -727,7 +796,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v1.5.6
+              Bản v1.5.7
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
@@ -2204,155 +2273,358 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             </form>
           </div>
 
-          {/* Card: CẤU HÌNH THÔNG BÁO TELEGRAM BOT TỨC THÌ */}
+          {/* Card: CẤU HÌNH THÔNG BÁO TỨC THÌ (ZALO & TELEGRAM) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center font-bold text-lg">
-                  <Send className="w-5 h-5 text-sky-600" />
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg border ${
+                  notifyTab === 'zalo' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-sky-50 text-sky-600 border-sky-200'
+                }`}>
+                  {notifyTab === 'zalo' ? <MessageCircle className="w-5 h-5 text-blue-600" /> : <Send className="w-5 h-5 text-sky-600" />}
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-                    <span>Thông Báo Telegram Tức Thì</span>
-                    <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[10px] font-bold">Miễn phí 100%</span>
+                    <span>Thông Báo Báo Động Tức Thì</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">Zalo / Telegram</span>
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
                     Tự động gửi tin nhắn báo về điện thoại Quản lý khi nhân viên Ứng Lương hoặc Xin Nghỉ
                   </p>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
-                telegramForm.enabled && telegramForm.botToken && telegramForm.chatId
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                  : 'bg-slate-50 text-slate-600 border-slate-200'
-              }`}>
-                <span className={`w-2 h-2 rounded-full ${telegramForm.enabled && telegramForm.botToken && telegramForm.chatId ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                {telegramForm.enabled && telegramForm.botToken && telegramForm.chatId ? 'Đang Hoạt Động' : 'Chưa Kích Hoạt'}
-              </span>
-            </div>
 
-            <form onSubmit={handleSaveTelegramConfig} className="space-y-4 text-xs">
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                <div>
-                  <p className="font-bold text-slate-800 text-sm">Bật tính năng gửi thông báo Telegram</p>
-                  <p className="text-[11px] text-slate-500">Mỗi khi nhân viên bấm gửi đơn, tin nhắn sẽ báo ngay về điện thoại Quản lý tại Nghệ An</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={telegramForm.enabled}
-                    onChange={(e) => setTelegramForm({ ...telegramForm, enabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Telegram Bot Token: <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={telegramForm.botToken}
-                    onChange={(e) => setTelegramForm({ ...telegramForm, botToken: e.target.value })}
-                    placeholder="Ví dụ: 123456789:ABCdefGhIjkLmNoPqRsTuVwXyZ"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Telegram Chat ID (ID cá nhân hoặc ID Nhóm): <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={telegramForm.chatId}
-                    onChange={(e) => setTelegramForm({ ...telegramForm, chatId: e.target.value })}
-                    placeholder="Ví dụ: 987654321 hoặc -100123456789"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* Các tùy chọn thông báo */}
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                <p className="font-bold text-slate-700 mb-1">Các sự kiện gửi thông báo:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={telegramForm.notifyAdvance}
-                      onChange={(e) => setTelegramForm({ ...telegramForm, notifyAdvance: e.target.checked })}
-                      className="rounded text-amber-600 focus:ring-amber-500"
-                    />
-                    <span>💸 Yêu cầu Ứng Lương</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={telegramForm.notifyLeave}
-                      onChange={(e) => setTelegramForm({ ...telegramForm, notifyLeave: e.target.checked })}
-                      className="rounded text-amber-600 focus:ring-amber-500"
-                    />
-                    <span>📅 Đơn Xin Nghỉ Làm</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={telegramForm.notifyAttendance}
-                      onChange={(e) => setTelegramForm({ ...telegramForm, notifyAttendance: e.target.checked })}
-                      className="rounded text-amber-600 focus:ring-amber-500"
-                    />
-                    <span>🕒 Chấm Công Ca Làm</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Nút hành động */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={savingTelegram}
-                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold transition-all cursor-pointer shadow-md shadow-amber-600/20"
-                >
-                  {savingTelegram ? 'Đang lưu...' : 'Lưu Cài Đặt Telegram 💾'}
-                </button>
-
+              {/* Nút chuyển đổi Zalo vs Telegram */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
                 <button
                   type="button"
-                  onClick={handleTestTelegram}
-                  disabled={testingTelegram || !telegramForm.botToken || !telegramForm.chatId}
-                  className="px-4 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setNotifyTab('zalo')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    notifyTab === 'zalo' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <Send className={`w-3.5 h-3.5 ${testingTelegram ? 'animate-spin' : ''}`} />
-                  <span>{testingTelegram ? 'Đang gửi thử...' : 'Gửi Tin Nhắn Thử Nghiệm 📨'}</span>
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Kênh Zalo</span>
+                  {zaloForm.enabled && <span className="w-2 h-2 rounded-full bg-emerald-400"></span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNotifyTab('telegram')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    notifyTab === 'telegram' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Kênh Telegram</span>
+                  {telegramForm.enabled && <span className="w-2 h-2 rounded-full bg-emerald-400"></span>}
                 </button>
               </div>
+            </div>
 
-              {telegramMsg && (
-                <p className="text-emerald-600 font-bold mt-2">✅ {telegramMsg}</p>
-              )}
-              {telegramError && (
-                <p className="text-amber-800 font-bold mt-2">⚠️ {telegramError}</p>
-              )}
-
-              {/* Hướng dẫn 3 bước tạo bot */}
-              <details className="mt-3 p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-slate-700">
-                <summary className="font-bold text-amber-900 cursor-pointer flex items-center gap-1.5">
-                  <span>📖 Hướng dẫn 2 phút tạo Bot và lấy Chat ID Telegram miễn phí</span>
-                </summary>
-                <div className="mt-2.5 space-y-2 text-[11px] text-slate-600 leading-relaxed pl-2">
-                  <p><strong>Bước 1:</strong> Mở Telegram trên điện thoại, tìm bot <code>@BotFather</code> ➔ bấm <code>/start</code> ➔ gõ <code>/newbot</code> và làm theo hướng dẫn để đặt tên bot (ví dụ: <em>KyodoFoodBot</em>). BotFather sẽ gửi cho bạn một chuỗi <strong>Bot Token</strong> (dán vào ô Bot Token ở trên).</p>
-                  <p><strong>Bước 2:</strong> Bấm vào đường link bot vừa tạo ➔ bấm <strong>START</strong> để kích hoạt trò chuyện với bot.</p>
-                  <p><strong>Bước 3:</strong> Tìm bot <code>@userinfobot</code> trên Telegram và bấm <code>/start</code>. Bot sẽ hiển thị <strong>Id</strong> của bạn (ví dụ: <em>987654321</em>). Dán số Id này vào ô <strong>Chat ID</strong> ở trên.</p>
-                  <p><strong>Bước 4:</strong> Bấm <strong>"Gửi Tin Nhắn Thử Nghiệm"</strong> để kiểm tra nhận tin nhắn ngay trên điện thoại!</p>
+            {/* TAB 1: CẤU HÌNH ZALO */}
+            {notifyTab === 'zalo' && (
+              <form onSubmit={handleSaveZaloConfig} className="space-y-4 text-xs animate-in fade-in">
+                <div className="flex items-center justify-between p-3.5 bg-blue-50/60 rounded-2xl border border-blue-200">
+                  <div>
+                    <p className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                      <span>Bật tính năng gửi thông báo qua Zalo</span>
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Mỗi khi nhân viên gửi đơn ứng lương hoặc xin nghỉ, thông báo sẽ báo ngay về Zalo của bạn</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={zaloForm.enabled}
+                      onChange={(e) => setZaloForm({ ...zaloForm, enabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
-              </details>
-            </form>
+
+                {/* Chọn phương thức kết nối Zalo */}
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <p className="font-bold text-slate-700 mb-1">Phương thức kết nối Zalo:</p>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                      <input
+                        type="radio"
+                        name="zaloMode"
+                        value="webhook"
+                        checked={zaloForm.mode === 'webhook'}
+                        onChange={() => setZaloForm({ ...zaloForm, mode: 'webhook' })}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>1. Zalo Webhook (Đơn giản nhất - Dùng Webhook Chatbot / Make / Pancake)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                      <input
+                        type="radio"
+                        name="zaloMode"
+                        value="oa"
+                        checked={zaloForm.mode === 'oa'}
+                        onChange={() => setZaloForm({ ...zaloForm, mode: 'oa' })}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>2. Zalo Official Account (Zalo OA Doanh Nghiệp)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Trường nhập Webhook */}
+                {zaloForm.mode === 'webhook' ? (
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Zalo Webhook URL: <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={zaloForm.webhookUrl}
+                      onChange={(e) => setZaloForm({ ...zaloForm, webhookUrl: e.target.value })}
+                      placeholder="Ví dụ: https://hook.eu1.make.com/... hoặc https://botcake.io/webhook/..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-blue-500"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Dán link Webhook từ các nền tảng tự động hóa Zalo hoặc Chatbot Zalo mà bạn sử dụng.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Zalo OA Access Token: <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={zaloForm.oaAccessToken}
+                        onChange={(e) => setZaloForm({ ...zaloForm, oaAccessToken: e.target.value })}
+                        placeholder="Nhập Access Token của Zalo Official Account..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Zalo User ID người nhận: <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={zaloForm.oaUserId}
+                        onChange={(e) => setZaloForm({ ...zaloForm, oaUserId: e.target.value })}
+                        placeholder="User ID của Quản lý đã quan tâm Zalo OA..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Các sự kiện gửi thông báo */}
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <p className="font-bold text-slate-700 mb-1">Các sự kiện gửi tin nhắn Zalo:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={zaloForm.notifyAdvance}
+                        onChange={(e) => setZaloForm({ ...zaloForm, notifyAdvance: e.target.checked })}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>💸 Yêu cầu Ứng Lương</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={zaloForm.notifyLeave}
+                        onChange={(e) => setZaloForm({ ...zaloForm, notifyLeave: e.target.checked })}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>📅 Đơn Xin Nghỉ Làm</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={zaloForm.notifyAttendance}
+                        onChange={(e) => setZaloForm({ ...zaloForm, notifyAttendance: e.target.checked })}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>🕒 Chấm Công Ca Làm</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Nút hành động Zalo */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={savingZalo}
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold transition-all cursor-pointer shadow-md shadow-blue-600/20"
+                  >
+                    {savingZalo ? 'Đang lưu...' : 'Lưu Cài Đặt Zalo 💾'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleTestZalo}
+                    disabled={testingZalo || (zaloForm.mode === 'webhook' ? !zaloForm.webhookUrl : (!zaloForm.oaAccessToken || !zaloForm.oaUserId))}
+                    className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <MessageCircle className={`w-3.5 h-3.5 ${testingZalo ? 'animate-spin' : ''}`} />
+                    <span>{testingZalo ? 'Đang gửi thử...' : 'Gửi Tin Nhắn Thử Nghiệm Zalo 📨'}</span>
+                  </button>
+                </div>
+
+                {zaloMsg && (
+                  <p className="text-emerald-600 font-bold mt-2">✅ {zaloMsg}</p>
+                )}
+                {zaloError && (
+                  <p className="text-amber-800 font-bold mt-2">⚠️ {zaloError}</p>
+                )}
+
+                {/* Thông tin cần biết về Zalo */}
+                <details className="mt-3 p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-slate-700">
+                  <summary className="font-bold text-blue-900 cursor-pointer flex items-center gap-1.5">
+                    <span>💡 Lưu ý về chính sách gửi tin nhắn Zalo tự động</span>
+                  </summary>
+                  <div className="mt-2.5 space-y-2 text-[11px] text-slate-600 leading-relaxed pl-2">
+                    <p>• <strong>Tại sao Zalo cần Webhook hoặc OA:</strong> Zalo (VNG) không cung cấp API Bot cá nhân mở như Telegram mà yêu cầu liên kết qua <em>Zalo Official Account</em> hoặc <em>Webhook tự động hóa</em>.</p>
+                    <p>• <strong>Cách cấu hình nhanh nhất:</strong> Nếu bạn chưa có Zalo OA, bạn có thể tạo 1 kịch bản miễn phí trên <em>Make.com</em> hoặc dịch vụ Chatbot Zalo (Pancake/Botcake) để lấy Webhook URL dán vào đây.</p>
+                    <p>• <strong>Lựa chọn thay thế:</strong> Bạn cũng có thể chuyển sang tab <strong>Kênh Telegram</strong> bên cạnh để nhận tin nhắn hoàn toàn miễn phí chỉ sau 30 giây cài đặt.</p>
+                  </div>
+                </details>
+              </form>
+            )}
+
+            {/* TAB 2: CẤU HÌNH TELEGRAM */}
+            {notifyTab === 'telegram' && (
+              <form onSubmit={handleSaveTelegramConfig} className="space-y-4 text-xs animate-in fade-in">
+                <div className="flex items-center justify-between p-3.5 bg-sky-50/60 rounded-2xl border border-sky-200">
+                  <div>
+                    <p className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-sky-600"></span>
+                      <span>Bật tính năng gửi thông báo qua Telegram (Miễn phí 100%)</span>
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Mỗi khi nhân viên bấm gửi đơn, tin nhắn sẽ báo ngay về điện thoại Quản lý tại Nghệ An</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={telegramForm.enabled}
+                      onChange={(e) => setTelegramForm({ ...telegramForm, enabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Telegram Bot Token: <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={telegramForm.botToken}
+                      onChange={(e) => setTelegramForm({ ...telegramForm, botToken: e.target.value })}
+                      placeholder="Ví dụ: 123456789:ABCdefGhIjkLmNoPqRsTuVwXyZ"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Telegram Chat ID (ID cá nhân hoặc ID Nhóm): <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={telegramForm.chatId}
+                      onChange={(e) => setTelegramForm({ ...telegramForm, chatId: e.target.value })}
+                      placeholder="Ví dụ: 987654321 hoặc -100123456789"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Các tùy chọn thông báo */}
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <p className="font-bold text-slate-700 mb-1">Các sự kiện gửi thông báo Telegram:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={telegramForm.notifyAdvance}
+                        onChange={(e) => setTelegramForm({ ...telegramForm, notifyAdvance: e.target.checked })}
+                        className="rounded text-sky-600 focus:ring-sky-500"
+                      />
+                      <span>💸 Yêu cầu Ứng Lương</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={telegramForm.notifyLeave}
+                        onChange={(e) => setTelegramForm({ ...telegramForm, notifyLeave: e.target.checked })}
+                        className="rounded text-sky-600 focus:ring-sky-500"
+                      />
+                      <span>📅 Đơn Xin Nghỉ Làm</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={telegramForm.notifyAttendance}
+                        onChange={(e) => setTelegramForm({ ...telegramForm, notifyAttendance: e.target.checked })}
+                        className="rounded text-sky-600 focus:ring-sky-500"
+                      />
+                      <span>🕒 Chấm Công Ca Làm</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Nút hành động */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={savingTelegram}
+                    className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-bold transition-all cursor-pointer shadow-md shadow-sky-600/20"
+                  >
+                    {savingTelegram ? 'Đang lưu...' : 'Lưu Cài Đặt Telegram 💾'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleTestTelegram}
+                    disabled={testingTelegram || !telegramForm.botToken || !telegramForm.chatId}
+                    className="px-4 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className={`w-3.5 h-3.5 ${testingTelegram ? 'animate-spin' : ''}`} />
+                    <span>{testingTelegram ? 'Đang gửi thử...' : 'Gửi Tin Nhắn Thử Nghiệm 📨'}</span>
+                  </button>
+                </div>
+
+                {telegramMsg && (
+                  <p className="text-emerald-600 font-bold mt-2">✅ {telegramMsg}</p>
+                )}
+                {telegramError && (
+                  <p className="text-amber-800 font-bold mt-2">⚠️ {telegramError}</p>
+                )}
+
+                {/* Hướng dẫn 3 bước tạo bot */}
+                <details className="mt-3 p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-slate-700">
+                  <summary className="font-bold text-amber-900 cursor-pointer flex items-center gap-1.5">
+                    <span>📖 Hướng dẫn 2 phút tạo Bot và lấy Chat ID Telegram miễn phí</span>
+                  </summary>
+                  <div className="mt-2.5 space-y-2 text-[11px] text-slate-600 leading-relaxed pl-2">
+                    <p><strong>Bước 1:</strong> Mở Telegram trên điện thoại, tìm bot <code>@BotFather</code> ➔ bấm <code>/start</code> ➔ gõ <code>/newbot</code> và làm theo hướng dẫn để đặt tên bot (ví dụ: <em>KyodoFoodBot</em>). BotFather sẽ gửi cho bạn một chuỗi <strong>Bot Token</strong> (dán vào ô Bot Token ở trên).</p>
+                    <p><strong>Bước 2:</strong> Bấm vào đường link bot vừa tạo ➔ bấm <strong>START</strong> để kích hoạt trò chuyện với bot.</p>
+                    <p><strong>Bước 3:</strong> Tìm bot <code>@userinfobot</code> trên Telegram và bấm <code>/start</code>. Bot sẽ hiển thị <strong>Id</strong> của bạn (ví dụ: <em>987654321</em>). Dán số Id này vào ô <strong>Chat ID</strong> ở trên.</p>
+                    <p><strong>Bước 4:</strong> Bấm <strong>"Gửi Tin Nhắn Thử Nghiệm"</strong> để kiểm tra nhận tin nhắn ngay trên điện thoại!</p>
+                  </div>
+                </details>
+              </form>
+            )}
           </div>
 
           
