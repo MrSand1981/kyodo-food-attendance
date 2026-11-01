@@ -597,7 +597,7 @@ export default function StaffAttendance({
                 <Badge variant="primary">TK: {localEmp.username || localEmp.code}</Badge>
                 <Badge variant="neutral">{localEmp.gender || "Nam"}</Badge>
                 <Badge variant="neutral" className="hidden sm:inline-block">Cơ sở Trưng Nữ Vương</Badge>
-                <Badge variant="primary" className="text-[10px]">Bản v1.5.5</Badge>
+                <Badge variant="primary" className="text-[10px]">Bản v1.5.6</Badge>
               </div>
               
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-1 font-medium">

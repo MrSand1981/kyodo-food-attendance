@@ -42,7 +42,7 @@ async function getGitStatus() {
 
     let lastCommit = {
       hash: 'b8ccd7e',
-      subject: 'Cập nhật tính năng Kyodo Food v1.5.5'
+      subject: 'Cập nhật tính năng Kyodo Food v1.5.6'
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -78,7 +78,7 @@ async function getGitStatus() {
   } catch (err) {
     let lastCommit = {
       hash: 'b8ccd7e',
-      subject: 'Cập nhật tính năng Kyodo Food v1.5.5'
+      subject: 'Cập nhật tính năng Kyodo Food v1.5.6'
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -108,11 +108,11 @@ async function pushToGitHub(messageInput) {
 
   try {
     const pkgPath = path.join(APP_DIR, 'package.json');
-    let newVersion = '1.5.5';
+    let newVersion = '1.5.6';
     try {
       if (fs.existsSync(pkgPath)) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        newVersion = pkg.version || '1.5.5';
+        newVersion = pkg.version || '1.5.6';
       }
     } catch (e) {}
 
@@ -184,7 +184,7 @@ async function pushToGitHub(messageInput) {
     return {
       success: true,
       commitHash: 'b8ccd7e',
-      version: '1.5.5',
+      version: '1.5.6',
       message: 'Bản cập nhật mã nguồn Kyodo Food đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
       logs: logs.join('\n')
     };

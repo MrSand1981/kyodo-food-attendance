@@ -8,7 +8,7 @@ import {
   MapPin, Key, UserPlus, Check, RefreshCw, GitBranch, ArrowUpCircle,
   UploadCloud, GitCommit, Terminal, ExternalLink, CheckCircle2,
   Bell, Copy, CalendarDays, Phone, Home, CreditCard, Sparkles,
-  QrCode, Eye, EyeOff, X, Mail
+  QrCode, Eye, EyeOff, X, Mail, Send
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
@@ -511,6 +511,72 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   const [savingCloud, setSavingCloud] = useState(false);
   const [cloudMsg, setCloudMsg] = useState('');
 
+  // Cấu hình thông báo Telegram Bot tức thì
+  const [telegramForm, setTelegramForm] = useState({
+    enabled: false,
+    botToken: '',
+    chatId: '',
+    notifyAdvance: true,
+    notifyLeave: true,
+    notifyAttendance: false
+  });
+  const [savingTelegram, setSavingTelegram] = useState(false);
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [telegramMsg, setTelegramMsg] = useState('');
+  const [telegramError, setTelegramError] = useState('');
+
+  const loadTelegramConfig = async () => {
+    try {
+      const res = await api.getTelegramConfig();
+      if (res && res.config) {
+        setTelegramForm({
+          enabled: Boolean(res.config.enabled),
+          botToken: res.config.botToken || '',
+          chatId: res.config.chatId || '',
+          notifyAdvance: res.config.notifyAdvance !== false,
+          notifyLeave: res.config.notifyLeave !== false,
+          notifyAttendance: Boolean(res.config.notifyAttendance)
+        });
+      }
+    } catch (e) {
+      console.warn('Lỗi tải cấu hình Telegram:', e);
+    }
+  };
+
+  const handleSaveTelegramConfig = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setSavingTelegram(true);
+      setTelegramMsg('');
+      setTelegramError('');
+      const res = await api.updateTelegramConfig(telegramForm);
+      setTelegramMsg(res.message || 'Đã lưu cấu hình thông báo Telegram thành công!');
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+    } catch (err) {
+      setTelegramError(err.message || 'Lỗi khi lưu cấu hình Telegram');
+    } finally {
+      setSavingTelegram(false);
+    }
+  };
+
+  const handleTestTelegram = async () => {
+    try {
+      setTestingTelegram(true);
+      setTelegramMsg('');
+      setTelegramError('');
+      const res = await api.testTelegram({
+        botToken: telegramForm.botToken,
+        chatId: telegramForm.chatId
+      });
+      setTelegramMsg(res.message || '🎉 Đã gửi tin nhắn thử nghiệm thành công!');
+      confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
+    } catch (err) {
+      setTelegramError(err.message || 'Lỗi gửi tin nhắn thử nghiệm Telegram');
+    } finally {
+      setTestingTelegram(false);
+    }
+  };
+
   const loadCloudConfig = async () => {
     try {
       const res = await api.getCloudConfig();
@@ -539,11 +605,12 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
     }
   };
 
-useEffect(() => {
+  useEffect(() => {
     if (activeTab === 'settings') {
       loadGitStatus();
       loadAdminProfile();
       loadCloudConfig();
+      loadTelegramConfig();
     }
   }, [activeTab]);
 
@@ -660,7 +727,7 @@ useEffect(() => {
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v1.5.5
+              Bản v1.5.6
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
@@ -2134,6 +2201,157 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               {cloudMsg && (
                 <p className="text-emerald-600 font-bold mt-2">✅ {cloudMsg}</p>
               )}
+            </form>
+          </div>
+
+          {/* Card: CẤU HÌNH THÔNG BÁO TELEGRAM BOT TỨC THÌ */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center font-bold text-lg">
+                  <Send className="w-5 h-5 text-sky-600" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                    <span>Thông Báo Telegram Tức Thì</span>
+                    <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[10px] font-bold">Miễn phí 100%</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Tự động gửi tin nhắn báo về điện thoại Quản lý khi nhân viên Ứng Lương hoặc Xin Nghỉ
+                  </p>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
+                telegramForm.enabled && telegramForm.botToken && telegramForm.chatId
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-slate-50 text-slate-600 border-slate-200'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${telegramForm.enabled && telegramForm.botToken && telegramForm.chatId ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                {telegramForm.enabled && telegramForm.botToken && telegramForm.chatId ? 'Đang Hoạt Động' : 'Chưa Kích Hoạt'}
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveTelegramConfig} className="space-y-4 text-xs">
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <div>
+                  <p className="font-bold text-slate-800 text-sm">Bật tính năng gửi thông báo Telegram</p>
+                  <p className="text-[11px] text-slate-500">Mỗi khi nhân viên bấm gửi đơn, tin nhắn sẽ báo ngay về điện thoại Quản lý tại Nghệ An</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={telegramForm.enabled}
+                    onChange={(e) => setTelegramForm({ ...telegramForm, enabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Telegram Bot Token: <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={telegramForm.botToken}
+                    onChange={(e) => setTelegramForm({ ...telegramForm, botToken: e.target.value })}
+                    placeholder="Ví dụ: 123456789:ABCdefGhIjkLmNoPqRsTuVwXyZ"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Telegram Chat ID (ID cá nhân hoặc ID Nhóm): <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={telegramForm.chatId}
+                    onChange={(e) => setTelegramForm({ ...telegramForm, chatId: e.target.value })}
+                    placeholder="Ví dụ: 987654321 hoặc -100123456789"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Các tùy chọn thông báo */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <p className="font-bold text-slate-700 mb-1">Các sự kiện gửi thông báo:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={telegramForm.notifyAdvance}
+                      onChange={(e) => setTelegramForm({ ...telegramForm, notifyAdvance: e.target.checked })}
+                      className="rounded text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>💸 Yêu cầu Ứng Lương</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={telegramForm.notifyLeave}
+                      onChange={(e) => setTelegramForm({ ...telegramForm, notifyLeave: e.target.checked })}
+                      className="rounded text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>📅 Đơn Xin Nghỉ Làm</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={telegramForm.notifyAttendance}
+                      onChange={(e) => setTelegramForm({ ...telegramForm, notifyAttendance: e.target.checked })}
+                      className="rounded text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>🕒 Chấm Công Ca Làm</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Nút hành động */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingTelegram}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold transition-all cursor-pointer shadow-md shadow-amber-600/20"
+                >
+                  {savingTelegram ? 'Đang lưu...' : 'Lưu Cài Đặt Telegram 💾'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTestTelegram}
+                  disabled={testingTelegram || !telegramForm.botToken || !telegramForm.chatId}
+                  className="px-4 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className={`w-3.5 h-3.5 ${testingTelegram ? 'animate-spin' : ''}`} />
+                  <span>{testingTelegram ? 'Đang gửi thử...' : 'Gửi Tin Nhắn Thử Nghiệm 📨'}</span>
+                </button>
+              </div>
+
+              {telegramMsg && (
+                <p className="text-emerald-600 font-bold mt-2">✅ {telegramMsg}</p>
+              )}
+              {telegramError && (
+                <p className="text-amber-800 font-bold mt-2">⚠️ {telegramError}</p>
+              )}
+
+              {/* Hướng dẫn 3 bước tạo bot */}
+              <details className="mt-3 p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-slate-700">
+                <summary className="font-bold text-amber-900 cursor-pointer flex items-center gap-1.5">
+                  <span>📖 Hướng dẫn 2 phút tạo Bot và lấy Chat ID Telegram miễn phí</span>
+                </summary>
+                <div className="mt-2.5 space-y-2 text-[11px] text-slate-600 leading-relaxed pl-2">
+                  <p><strong>Bước 1:</strong> Mở Telegram trên điện thoại, tìm bot <code>@BotFather</code> ➔ bấm <code>/start</code> ➔ gõ <code>/newbot</code> và làm theo hướng dẫn để đặt tên bot (ví dụ: <em>KyodoFoodBot</em>). BotFather sẽ gửi cho bạn một chuỗi <strong>Bot Token</strong> (dán vào ô Bot Token ở trên).</p>
+                  <p><strong>Bước 2:</strong> Bấm vào đường link bot vừa tạo ➔ bấm <strong>START</strong> để kích hoạt trò chuyện với bot.</p>
+                  <p><strong>Bước 3:</strong> Tìm bot <code>@userinfobot</code> trên Telegram và bấm <code>/start</code>. Bot sẽ hiển thị <strong>Id</strong> của bạn (ví dụ: <em>987654321</em>). Dán số Id này vào ô <strong>Chat ID</strong> ở trên.</p>
+                  <p><strong>Bước 4:</strong> Bấm <strong>"Gửi Tin Nhắn Thử Nghiệm"</strong> để kiểm tra nhận tin nhắn ngay trên điện thoại!</p>
+                </div>
+              </details>
             </form>
           </div>
 

@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./db');
 const updater = require('./updater');
 const gitService = require('./gitService');
+const telegramService = require('./telegramService');
 const { generateToken, extractUserMiddleware, requireAuth, requireAdmin } = require('./auth');
 
 const app = express();
@@ -344,6 +345,13 @@ app.post('/api/attendance/daily-entry', (req, res) => {
   try {
     const { employeeId, date, startTime, endTime, hours, shiftName, note } = req.body;
     const record = db.recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note });
+    
+    // Bắn thông báo Telegram (nếu bật)
+    try {
+      const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+      telegramService.notifyAttendance({ employee: emp, date, shiftName, startTime, endTime, hours: record.totalHours }).catch(() => {});
+    } catch (_) {}
+
     res.json({
       success: true,
       record,
@@ -369,6 +377,13 @@ app.post('/api/advances', (req, res) => {
   try {
     const { employeeId, date, amount, reason } = req.body;
     const record = db.requestSalaryAdvance({ employeeId, date, amount, reason });
+    
+    // Bắn thông báo Telegram tức thì về máy Quản lý
+    try {
+      const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+      telegramService.notifySalaryAdvance({ employee: emp, amount, date, reason }).catch(() => {});
+    } catch (_) {}
+
     res.json({
       success: true,
       record,
@@ -414,6 +429,13 @@ app.post('/api/leaves', (req, res) => {
   try {
     const { employeeId, date, endDate, shift, reason } = req.body;
     const record = db.requestLeave({ employeeId, date, endDate, shift, reason });
+    
+    // Bắn thông báo Telegram tức thì về máy Quản lý
+    try {
+      const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+      telegramService.notifyLeaveRequest({ employee: emp, date, endDate, shift, reason }).catch(() => {});
+    } catch (_) {}
+
     res.json({
       success: true,
       record,
@@ -684,6 +706,51 @@ app.post('/api/system/cloud-config', requireAdmin, (req, res) => {
   }
 });
 
+// 11. CẤU HÌNH THÔNG BÁO TELEGRAM (CHO QUẢN LÝ TẠI NGHỆ AN / ĐÀ NẴNG)
+app.get('/api/system/telegram-config', requireAdmin, (req, res) => {
+  try {
+    const config = telegramService.getTelegramConfig();
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/telegram-config', requireAdmin, (req, res) => {
+  try {
+    const { enabled, botToken, chatId, notifyAdvance, notifyLeave, notifyAttendance } = req.body || {};
+    const updated = db.updateSettings({
+      telegram: {
+        enabled: Boolean(enabled),
+        botToken: String(botToken || '').trim(),
+        chatId: String(chatId || '').trim(),
+        notifyAdvance: notifyAdvance !== false,
+        notifyLeave: notifyLeave !== false,
+        notifyAttendance: Boolean(notifyAttendance)
+      }
+    });
+    res.json({ success: true, message: 'Đã lưu cấu hình thông báo Telegram thành công!', config: updated.telegram });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/system/telegram-test', requireAdmin, async (req, res) => {
+  try {
+    const { botToken, chatId } = req.body || {};
+    const cfg = telegramService.getTelegramConfig();
+    const targetToken = botToken || cfg.botToken;
+    const targetChatId = chatId || cfg.chatId;
+    if (!targetToken || !targetChatId) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập Bot Token và Chat ID trước khi kiểm tra!' });
+    }
+    await telegramService.testTelegram(targetToken, targetChatId);
+    res.json({ success: true, message: '🎉 Đã gửi tin nhắn thử nghiệm thành công! Vui lòng kiểm tra ứng dụng Telegram của bạn.' });
+  } catch (err) {
+    res.status(400).json({ success: false, message: `Lỗi kết nối Telegram: ${err.message}` });
+  }
+});
+
 // Cho các route React SPA khi build production (ngăn chặn triệt để lỗi "Cannot GET /")
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();
@@ -745,17 +812,18 @@ if (require.main === module) {
     console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
     console.log(`=======================================================`);
 
-    // Cơ chế phụ trợ tự giữ nhịp 24/7 nếu được triển khai trên Cloud Render
-    const publicCloudUrl = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
+    // Cơ chế phụ trợ tự giữ nhịp 24/7 (Keep-Alive) cho Cloud Render
+    const publicCloudUrl = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://kyodo-food-attendance.onrender.com';
     if (publicCloudUrl && publicCloudUrl.startsWith('http')) {
-      console.log(`[Keep-Alive] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping`);
+      console.log(`[Keep-Alive 24/7] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping (mỗi 9 phút)`);
       const httpModule = publicCloudUrl.startsWith('https') ? require('https') : require('http');
       setInterval(() => {
         try {
           httpModule.get(`${publicCloudUrl}/api/ping`, (pingRes) => {
             pingRes.resume(); // Tiêu thụ stream để giải phóng socket
-          }).on('error', () => {
-            // Không làm gián đoạn server nếu mạng ngoài chập chờn
+            console.log(`[Keep-Alive 24/7] Ping thành công tới ${publicCloudUrl}/api/ping lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+          }).on('error', (err) => {
+            console.warn(`[Keep-Alive 24/7] Ping thử chưa phản hồi: ${err.message}`);
           });
         } catch (e) {
           // Bỏ qua lỗi
