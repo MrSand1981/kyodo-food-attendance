@@ -220,5 +220,16 @@ export const api = {
   updateCloudConfig: (data) => request('/system/cloud-config', {
     method: 'POST',
     body: JSON.stringify(data)
+  }),
+
+  // Cấu hình thông báo Telegram tức thì (Nghệ An - Đà Nẵng)
+  getTelegramConfig: () => request('/system/telegram-config'),
+  updateTelegramConfig: (data) => request('/system/telegram-config', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  testTelegram: (data) => request('/system/telegram-test', {
+    method: 'POST',
+    body: JSON.stringify(data)
   })
 };

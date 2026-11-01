@@ -530,7 +530,7 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
               <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </Badge>
-            <Badge variant="primary" className="text-xs">Bản v1.5.5</Badge>
+            <Badge variant="primary" className="text-xs">Bản v1.5.6</Badge>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
             Bảng Chấm Công & Quản Trị Nhân Sự
