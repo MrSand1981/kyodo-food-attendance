@@ -322,7 +322,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v1.5.4</span>
+          <span className="font-black text-amber-950">Bản v1.5.5</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -605,7 +605,8 @@ export default function LoginKiosk({
                 <input
                   type={showAdminPassword ? "text" : "password"}
                   required
-                  placeholder="20162020"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono tracking-widest text-center"
@@ -815,7 +816,7 @@ export default function LoginKiosk({
                 <input
                   type="password"
                   required
-                  placeholder="Nhập mật khẩu hiện tại (mặc định: 20162020)..."
+                  placeholder="Nhập mật khẩu quản trị hiện tại..."
                   value={oldAdminPwd}
                   onChange={(e) => setOldAdminPwd(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
@@ -1060,7 +1061,7 @@ export default function LoginKiosk({
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.4 • Kiểm Tra Cập Nhật')}</span>
+          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.5 • Kiểm Tra Cập Nhật')}</span>
         </button>
 
         {updateStatus?.hasUpdate && (

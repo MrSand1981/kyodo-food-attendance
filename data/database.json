@@ -19,8 +19,8 @@
       "bankName": "VietinBank",
       "bankAccount": "0796163630",
       "accountName": "HOANG THI LE",
-      "password": "1234",
-      "passwordChanged": false,
+      "password": "2008",
+      "passwordChanged": true,
       "active": true,
       "avatar": "/avatar-female.svg",
       "isDefaultPassword": true
@@ -100,9 +100,32 @@
     "logoUrl": "/logo-kyodo.png",
     "adminUsername": "Admin",
     "adminPassword": "$2a$10$X3NaK055M5QXxlX99SIYiOieisoK3aBskA2ePN1TiLIwtgDyiGp5.",
-    "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance"
+    "githubRepo": "https://github.com/MrSand1981/kyodo-food-attendance",
+    "adminName": "Chủ Cửa Hàng (Admin)",
+    "adminEmail": "mrkhangvo@gmail.com",
+    "adminPhone": "0916010168"
   },
-  "attendance": [],
+  "attendance": [
+    {
+      "id": "att-manual-1793494870776-652",
+      "employeeId": "emp-ut",
+      "employeeCode": "UTNVTNV",
+      "employeeName": "Út",
+      "branch": "Trưng Nữ Vương",
+      "date": "2026-11-01",
+      "checkIn": "2026-11-01T01:00:00.000Z",
+      "checkOut": "2026-11-01T10:00:00.000Z",
+      "totalHours": 9,
+      "shiftCode": "MANUAL",
+      "shiftName": "Ca Sáng",
+      "status": "completed",
+      "note": "Nhân viên tự nhập giờ làm",
+      "photo": null,
+      "isHoliday": false,
+      "holidayMultiplier": 1,
+      "holidayName": null
+    }
+  ],
   "salaryAdvances": [],
   "leaveRequests": [],
   "holidays": [

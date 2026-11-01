@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-10-31T18:29:07.536Z",
+  "lastUpdated": "2026-11-01T02:14:13.184Z",
   "protectionNotice": "Kho du lieu nhan su bat bien Kyodo Food - Khong the bi ghi de boi cap nhat!",
   "employees": [
     {
@@ -21,8 +21,8 @@
       "bankName": "VietinBank",
       "bankAccount": "0796163630",
       "accountName": "HOANG THI LE",
-      "password": "1234",
-      "passwordChanged": false,
+      "password": "2008",
+      "passwordChanged": true,
       "active": true,
       "avatar": "/avatar-female.svg",
       "isDefaultPassword": true
