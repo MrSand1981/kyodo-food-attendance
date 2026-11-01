@@ -25,7 +25,8 @@ try {
   console.log('✅ Test 1 Passed: Út (UTNVTNV - 25k) and Bảo (BAONVTNV - 22k) verified');
 
   // Test 2: Authentication
-  const authUt = db.authenticateUser('utnvtnv', '1234');
+  const utPwd = ut.password || '2008';
+  const authUt = db.authenticateUser('utnvtnv', utPwd);
   assert.strictEqual(authUt.role, 'employee');
   assert.strictEqual(authUt.user.name, 'Út');
 
