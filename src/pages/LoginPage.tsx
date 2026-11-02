@@ -85,7 +85,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
       if (res.hasUpdate) {
         setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
       } else {
-        setUpdateMsg(`Bản v${res.currentVersion || '1.4.9'} (Mới nhất)`);
+        setUpdateMsg(`Bản v${res.currentVersion || '2.0.0'} (Chính Thức)`);
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra cập nhật:', err.message);
@@ -308,7 +308,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
-          <span className="font-black text-brand-950">Bản v1.5.7</span>
+          <span className="font-black text-brand-950">Bản v2.0 (Chính Thức)</span>
         </div>
 
         {activeTab === 'employee' || appMode === 'employee' ? (
@@ -643,7 +643,7 @@ export default function LoginPage({ onLogin, appMode, onSwitchMode }: LoginPageP
             className="w-full sm:w-auto text-slate-600 hover:text-brand-700 flex items-center justify-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-brand-50/60 border border-slate-200/80 hover:border-brand-200 shadow-2xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-brand-600' : ''}`} />
-            <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.7 • Kiểm Tra Cập Nhật')}</span>
+            <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v2.0 (Chính Thức) • Kiểm Tra Cập Nhật')}</span>
           </Button>
 
           {updateStatus?.hasUpdate && (

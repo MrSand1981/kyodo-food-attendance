@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "Kyodo Food"
-#define MyAppVersion "1.5.7"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "Kyodo Food - Trung Nu Vuong"
 #define MyAppURL "https://github.com/MrSand1981/kyodo-food-attendance"
 
