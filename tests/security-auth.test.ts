@@ -36,12 +36,12 @@ describe('Security & Authentication Tests', () => {
   });
 
   it('should authenticate Admin, Út, and Bảo with valid credentials', () => {
-    const adminAuth = db.authenticateUser('admin', '20162020');
+    const adminAuth = db.authenticateUser('admin', 'Kyodo@DN2026');
     expect(adminAuth.role).toBe('admin');
     expect(adminAuth.user.username).toBe('Admin');
 
     const ut = db.getEmployees().find((e: any) => e.username === 'UTNVTNV' || e.code === 'UTNVTNV');
-    const utPwd = ut?.password || '2008';
+    const utPwd = ut?.password || 'Ut@Kyodo2026';
     const utAuth = db.authenticateUser('UTNVTNV', utPwd);
     expect(utAuth.role).toBe('employee');
     expect(utAuth.user.name).toBe('Út');
@@ -49,17 +49,19 @@ describe('Security & Authentication Tests', () => {
     const bao = db
       .getEmployees()
       .find((e: any) => e.username === 'BAONVTNV' || e.code === 'BAONVTNV');
-    const baoPwd = bao?.password || 'nhatbaodeptrai03';
+    const baoPwd = bao?.password || 'Bao@Kyodo2026';
     const baoAuth = db.authenticateUser('BAONVTNV', baoPwd);
     expect(baoAuth.role).toBe('employee');
     expect(baoAuth.user.name).toBe('Bảo');
   });
 
-  it('should reject invalid password for Admin and Employees', () => {
+  it('should reject invalid and rotated historical passwords for Admin and Employees', () => {
     expect(() => db.authenticateUser('admin', 'wrongpass')).toThrow();
+    expect(() => db.authenticateUser('admin', '20162020')).toThrow(); // Mật khẩu cũ đã lộ phải bị từ chối
     expect(() => db.authenticateUser('UTNVTNV', 'wrongpass')).toThrow();
+    expect(() => db.authenticateUser('UTNVTNV', '2008')).toThrow(); // Mật khẩu cũ đã lộ của Út phải bị từ chối
     expect(() => db.authenticateUser('BAONVTNV', '1234')).toThrow();
-    expect(() => db.authenticateUser('BAONVTNV', '1111')).toThrow(); // Mật khẩu cũ 1111 bắt buộc phải bị từ chối
+    expect(() => db.authenticateUser('BAONVTNV', 'nhatbaodeptrai03')).toThrow(); // Mật khẩu cũ đã lộ của Bảo phải bị từ chối
   });
 
   it('should generate and verify tamper-proof JWT tokens', () => {
@@ -280,6 +282,6 @@ describe('Security & Authentication Tests', () => {
     expect(reAuth.role).toBe('admin');
 
     // Restore standard password for subsequent tests
-    db.resetAdminPasswordDirect('20162020');
+    db.resetAdminPasswordDirect('Kyodo@DN2026');
   });
 });

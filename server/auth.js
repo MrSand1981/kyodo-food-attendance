@@ -1,14 +1,30 @@
 // server/auth.js
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
-// Bắt buộc sử dụng JWT_SECRET mạnh. Nếu môi trường chưa có, tự sinh chuỗi 256-bit ngẫu nhiên an toàn
+// Bắt buộc sử dụng JWT_SECRET mạnh và nhất quán qua các lần khởi động lại
 let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  // Sinh khóa ngẫu nhiên an toàn mật mã học
-  JWT_SECRET = crypto.randomBytes(32).toString('hex');
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('⚠️ CẢNH BÁO BẢO MẬT: Chưa thiết lập biến môi trường JWT_SECRET trên Production!');
+  const secretFile = path.join(__dirname, '..', '.jwt_secret');
+  if (fs.existsSync(secretFile)) {
+    try {
+      JWT_SECRET = fs.readFileSync(secretFile, 'utf8').trim();
+    } catch (_) {}
+  }
+
+  if (!JWT_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'BẮT BUỘC BẢO MẬT: Biến môi trường JWT_SECRET chưa được thiết lập trên Production! Vui lòng cấu hình biến này trên Render Dashboard.'
+      );
+    }
+    // Môi trường nội bộ / development: Tự sinh khóa 256-bit và lưu file để không mất phiên sau khi restart
+    JWT_SECRET = crypto.randomBytes(32).toString('hex');
+    try {
+      fs.writeFileSync(secretFile, JWT_SECRET, { encoding: 'utf8', mode: 0o600 });
+    } catch (_) {}
   }
 }
 
@@ -32,15 +48,14 @@ function verifyToken(token) {
   }
 }
 
-// Middleware giải mã token từ Authorization header, cookie hoặc query
+// Middleware giải mã token chỉ từ Authorization header (Bearer) hoặc HttpOnly cookie
+// ĐÃ BỎ HOÀN TOÀN NHẬN TOKEN QUA URL (?token=...) ĐỂ TRÁNH LỘ TRONG LOG VÀ BROWSER HISTORY
 function extractUserMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
   let token = null;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7).trim();
-  } else if (req.query && req.query.token) {
-    token = req.query.token;
   } else if (req.cookies && req.cookies.kyodo_token) {
     token = req.cookies.kyodo_token;
   }

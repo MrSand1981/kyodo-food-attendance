@@ -22,15 +22,48 @@ const PORT = process.env.PORT || 5000;
 // Bảo vệ Header bằng Helmet (chống clickjacking, XSS, MIME sniffing)
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'blob:',
+          'https://api.vietqr.io',
+          'https://img.vietqr.io',
+          'https://*.vietqr.io',
+          'https://images.unsplash.com',
+        ],
+        connectSrc: [
+          "'self'",
+          'https://api.vietqr.io',
+          'https://img.vietqr.io',
+          'https://*.vietqr.io',
+          'https://api.telegram.org',
+          'https://openapi.zalo.me',
+          'https://kyodo-food-attendance.onrender.com',
+          'https://kyodo-food-attendance-2.onrender.com',
+          'http://localhost:5000',
+          'http://localhost:5173',
+          'http://127.0.0.1:5000',
+          'http://127.0.0.1:5173',
+        ],
+        frameSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
     crossOriginEmbedderPolicy: false,
   })
 );
 
-// Giới hạn CORS an toàn
-const allowedOrigins = [
-  'https://kyodo-food-attendance-2.onrender.com',
+// Giới hạn CORS an toàn: Chỉ chấp nhận danh sách nguồn cấu hình của Kyodo Food (Bỏ hoàn toàn wildcard *.onrender.com)
+const defaultAllowedOrigins = [
   'https://kyodo-food-attendance.onrender.com',
+  'https://kyodo-food-attendance-2.onrender.com',
   'http://localhost:5000',
   'http://localhost:3000',
   'http://localhost:5173',
@@ -40,17 +73,18 @@ const allowedOrigins = [
   'capacitor://localhost',
   'ionic://localhost',
 ];
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+      .map((o) => o.trim())
+      .filter(Boolean)
+  : [];
+const allowedOrigins = [...defaultAllowedOrigins, ...envOrigins];
 
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.endsWith('.onrender.com') ||
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:')
-      ) {
+      if (allowedOrigins.indexOf(origin) !== -1) {
         return callback(null, true);
       }
       return callback(
@@ -68,7 +102,7 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Chặn tấn công dò mật khẩu: Nhập sai quá 15 lần trong 15 phút sẽ tạm khóa 15 phút
+// Chặn tấn công dò mật khẩu: Nhập sai quá 15 lần trong 15 phút sẽ tạm khóa 15 phút theo IP
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 15,
@@ -82,6 +116,42 @@ const loginLimiter = rateLimit({
       'Bạn đã nhập sai mật khẩu quá 15 lần! Vui lòng chờ 15 phút để thử lại hoặc liên hệ Quản lý.',
   },
 });
+
+// Khóa bảo vệ tài khoản cụ thể (Chặn tấn công dò mật khẩu từng tài khoản nhân viên / admin)
+const failedAttemptsByAccount = new Map();
+
+function trackFailedLogin(username) {
+  if (!username) return;
+  const key = String(username).toLowerCase().trim();
+  const now = Date.now();
+  const record = failedAttemptsByAccount.get(key) || { count: 0, lockedUntil: 0 };
+
+  if (record.lockedUntil > now) return;
+
+  record.count += 1;
+  if (record.count >= 5) {
+    record.lockedUntil = now + 15 * 60 * 1000; // Tạm khóa 15 phút sau 5 lần nhập sai liên tiếp
+    record.count = 0;
+  }
+  failedAttemptsByAccount.set(key, record);
+}
+
+function checkAccountLockout(username) {
+  if (!username) return null;
+  const key = String(username).toLowerCase().trim();
+  const record = failedAttemptsByAccount.get(key);
+  if (!record) return null;
+  if (record.lockedUntil > Date.now()) {
+    const remainingMinutes = Math.ceil((record.lockedUntil - Date.now()) / (60 * 1000));
+    return remainingMinutes;
+  }
+  return null;
+}
+
+function clearFailedLogin(username) {
+  if (!username) return;
+  failedAttemptsByAccount.delete(String(username).toLowerCase().trim());
+}
 
 // Giới hạn tần suất chung cho API
 const apiLimiter = rateLimit({
@@ -187,24 +257,38 @@ app.post('/api/settings/upload-logo', requireAdmin, upload.single('logo'), (req,
 app.post('/api/auth/login', loginLimiter, (req, res) => {
   try {
     const { username, password } = req.body;
-    const auth = db.authenticateUser(username, password);
-    const token = generateToken(auth.user, auth.role);
+    const lockMinutes = checkAccountLockout(username);
+    if (lockMinutes !== null) {
+      return res.status(429).json({
+        success: false,
+        message: `Tài khoản '${username}' đã bị tạm khóa do nhập sai mật khẩu quá 5 lần liên tiếp! Vui lòng chờ ${lockMinutes} phút hoặc liên hệ Quản lý.`,
+      });
+    }
 
-    // Thiết lập cookie HttpOnly an toàn chống XSS
-    res.cookie('kyodo_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
-    });
+    try {
+      const auth = db.authenticateUser(username, password);
+      clearFailedLogin(username);
+      const token = generateToken(auth.user, auth.role);
 
-    res.json({
-      success: true,
-      role: auth.role,
-      user: auth.user,
-      token,
-      activeShift: auth.activeShift || null,
-    });
+      // Thiết lập cookie HttpOnly an toàn chống XSS
+      res.cookie('kyodo_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
+      });
+
+      res.json({
+        success: true,
+        role: auth.role,
+        user: auth.user,
+        token,
+        activeShift: auth.activeShift || null,
+      });
+    } catch (authErr) {
+      trackFailedLogin(username);
+      throw authErr;
+    }
   } catch (err) {
     res.status(401).json({ success: false, message: err.message });
   }

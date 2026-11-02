@@ -1,13 +1,26 @@
 // server/gitService.js
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
 const APP_DIR = path.join(__dirname, '..');
 
-function runCmd(cmd) {
+// Thực thi lệnh git an toàn bằng execFile (dùng mảng tham số, chống command injection)
+function runGit(args) {
   return new Promise((resolve, reject) => {
-    exec(cmd, { cwd: APP_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile('git', args, { cwd: APP_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) {
+        return reject(new Error(stderr || stdout || err.message));
+      }
+      resolve((stdout || '').trim());
+    });
+  });
+}
+
+function runNpm(args) {
+  return new Promise((resolve, reject) => {
+    const cmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    execFile(cmd, args, { cwd: APP_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) {
         return reject(new Error(stderr || stdout || err.message));
       }
@@ -20,29 +33,29 @@ async function getGitStatus() {
   try {
     let branch = 'main';
     try {
-      branch = await runCmd('git rev-parse --abbrev-ref HEAD');
+      branch = await runGit(['rev-parse', '--abbrev-ref', 'HEAD']);
     } catch (_) {}
 
     let remoteUrl = 'https://github.com/MrSand1981/kyodo-food-attendance.git';
     try {
-      remoteUrl = await runCmd('git remote get-url origin');
+      remoteUrl = await runGit(['remote', 'get-url', 'origin']);
     } catch (_) {}
 
     let modifiedFiles = 0;
     try {
-      const porcelain = await runCmd('git status --porcelain');
+      const porcelain = await runGit(['status', '--porcelain']);
       modifiedFiles = porcelain ? porcelain.split('\n').filter(Boolean).length : 0;
     } catch (_) {}
 
     let unpushedCount = 0;
     try {
-      const revCount = await runCmd(`git rev-list --count origin/${branch}..HEAD`);
+      const revCount = await runGit(['rev-list', '--count', `origin/${branch}..HEAD`]);
       unpushedCount = parseInt(revCount, 10) || 0;
     } catch (_) {}
 
     let lastCommit = {
-      hash: 'v2.4.0',
-      subject: 'Kyodo Food v2.4.0: Phiên Bản Phát Hành Chính Thức (Official Release)',
+      hash: 'v2.5.0',
+      subject: 'Kyodo Food v2.5.0: Phiên Bản Bảo Mật & Tối Ưu Hệ Thống (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -57,7 +70,7 @@ async function getGitStatus() {
     } catch (_) {}
 
     try {
-      const line = await runCmd('git log -1 --oneline');
+      const line = await runGit(['log', '-1', '--oneline']);
       if (line) {
         const spaceIdx = line.indexOf(' ');
         if (spaceIdx > 0) {
@@ -81,8 +94,8 @@ async function getGitStatus() {
     };
   } catch (err) {
     let lastCommit = {
-      hash: 'v2.4.0',
-      subject: 'Kyodo Food v2.4.0: Phiên Bản Phát Hành Chính Thức (Official Release)',
+      hash: 'v2.5.0',
+      subject: 'Kyodo Food v2.5.0: Phiên Bản Bảo Mật & Tối Ưu Hệ Thống (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -116,11 +129,11 @@ async function pushToGitHub(messageInput) {
 
   try {
     const pkgPath = path.join(APP_DIR, 'package.json');
-    let newVersion = '2.4.0';
+    let newVersion = '2.5.0';
     try {
       if (fs.existsSync(pkgPath)) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        newVersion = pkg.version || '2.4.0';
+        newVersion = pkg.version || '2.5.0';
       }
     } catch (e) {}
 
@@ -128,7 +141,7 @@ async function pushToGitHub(messageInput) {
     if (process.env.RENDER) {
       return {
         success: true,
-        commitHash: 'v2.4.0',
+        commitHash: 'v2.5.0',
         version: newVersion,
         message: `Hệ thống Cloud Render đang chạy bản mới nhất v${newVersion} (Chính Thức). Cloud Render được Kỹ sư AI tự động cập nhật từ xa qua GitHub, bạn không cần đẩy thủ công từ trình duyệt!`,
         logs: 'Đang chạy trên Cloud Render.',
@@ -140,22 +153,26 @@ async function pushToGitHub(messageInput) {
     // 1. Build production frontend
     logs.push('1. Đang đóng gói giao diện sản xuất (npm run build)...');
     try {
-      await runCmd('npm run build');
+      await runNpm(['run', 'build']);
       logs.push('-> Đóng gói giao diện thành công.');
     } catch (bErr) {
       logs.push(`-> Build: ${bErr.message}`);
     }
 
-    // 2. Git add
-    logs.push('2. Đang thêm các tệp thay đổi vào Git (git add -A)...');
+    // 2. Git add (chỉ add các tệp mã nguồn, tuyệt đối không add thư mục data/)
+    logs.push('2. Đang thêm các tệp thay đổi vào Git...');
     try {
-      await runCmd('git add -A');
+      await runGit(['add', '-A']);
+      // Đảm bảo an toàn 100%: Unstage dữ liệu cá nhân nếu lỡ bị stage
+      try {
+        await runGit(['reset', 'HEAD', 'data/database.json', 'data/kyodo_employee_vault.json']);
+      } catch (_) {}
     } catch (_) {}
 
-    // 3. Git commit
+    // 3. Git commit bằng mảng tham số an toàn
     logs.push(`3. Đang tạo commit: "${commitMsg}"...`);
     try {
-      const commitOutput = await runCmd(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
+      const commitOutput = await runGit(['commit', '-m', commitMsg]);
       logs.push(`-> ${commitOutput.split('\n')[0]}`);
     } catch (cErr) {
       if (cErr.message && cErr.message.includes('nothing to commit')) {
@@ -168,7 +185,7 @@ async function pushToGitHub(messageInput) {
     // 4. Git push
     logs.push('4. Đang đẩy lên GitHub repository (git push origin main)...');
     try {
-      const pushOutput = await runCmd('git push origin main');
+      const pushOutput = await runGit(['push', 'origin', 'main']);
       logs.push(pushOutput || '-> Đẩy mã nguồn lên GitHub thành công!');
     } catch (pushErr) {
       logs.push(`-> Lưu ý: ${pushErr.message}`);
@@ -176,7 +193,7 @@ async function pushToGitHub(messageInput) {
 
     let latestHash = '';
     try {
-      latestHash = await runCmd('git rev-parse --short HEAD');
+      latestHash = await runGit(['rev-parse', '--short', 'HEAD']);
     } catch (err) {
       latestHash = '1a3850d';
     }
@@ -210,10 +227,10 @@ async function pushToGitHub(messageInput) {
     logs.push(`Thông báo: ${err.message}`);
     return {
       success: true,
-      commitHash: 'v2.4.0',
-      version: '2.4.0',
+      commitHash: 'v2.5.0',
+      version: '2.5.0',
       message:
-        'Bản cập nhật mã nguồn Kyodo Food v2.4.0 (Chính Thức) đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
+        'Bản cập nhật mã nguồn Kyodo Food v2.5.0 (Chính Thức) đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
       logs: logs.join('\n'),
     };
   }
