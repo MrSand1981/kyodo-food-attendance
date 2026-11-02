@@ -64,6 +64,7 @@ export default function StaffAttendance({
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const dateInputRef = useRef(null);
 
   // Modal đổi mật khẩu riêng biệt
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -798,65 +799,45 @@ export default function StaffAttendance({
         <form onSubmit={handleDailyEntrySubmit} className="text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 items-end">
             
-            {/* 1. Ngày Làm Việc (Mặc định hôm nay, có thể chọn ngày trước đó để chấm bù, chặn ngày tương lai) */}
+            {/* 1. Ngày Làm Việc (Mặc định hôm nay, bấm vào lịch chọn quá khứ, khóa tương lai) */}
             <div className="col-span-2 sm:col-span-1">
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                  1. Ngày Làm Việc: <span className="text-amber-800 font-mono">({formatDateVN(entryDate)})</span>
-                </label>
-                {/* Phím bấm chọn nhanh Hôm nay / Hôm qua (chấm bù) */}
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const today = getVietnamTodayYMD();
-                      setEntryDate(today);
-                      setErrorMsg("");
-                    }}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      entryDate === getVietnamTodayYMD()
-                        ? 'bg-amber-600 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    Hôm nay
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - 1);
-                      const yesterday = new Intl.DateTimeFormat('en-CA', {
-                        timeZone: 'Asia/Ho_Chi_Minh',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                      }).format(d);
-                      setEntryDate(yesterday);
-                      setErrorMsg("");
-                    }}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      entryDate !== getVietnamTodayYMD()
-                        ? 'bg-amber-600 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                    title="Bấm để chọn ngày hôm qua (chấm bù khi hôm qua quên hoặc mất điện)"
-                  >
-                    Hôm qua (Bù)
-                  </button>
-                </div>
-              </div>
-
-              <div className="relative cursor-pointer group">
-                <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 pointer-events-none z-10" />
+              <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                1. Ngày Làm Việc:
+              </label>
+              <div 
+                onClick={() => {
+                  try {
+                    if (dateInputRef.current) {
+                      if (typeof dateInputRef.current.showPicker === 'function') {
+                        dateInputRef.current.showPicker();
+                      } else {
+                        dateInputRef.current.focus();
+                      }
+                    }
+                  } catch (_) {}
+                }}
+                className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all cursor-pointer shadow-2xs group"
+              >
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try {
+                      if (dateInputRef.current?.showPicker) {
+                        dateInputRef.current.showPicker();
+                      } else {
+                        dateInputRef.current?.focus();
+                      }
+                    } catch (_) {}
+                  }}
+                  className="pl-3 pr-1 py-2 text-amber-600 hover:text-amber-700 cursor-pointer flex items-center justify-center shrink-0"
+                  title="Bấm vào biểu tượng lịch để chọn ngày làm việc"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
                 <input
-                  type="text"
-                  readOnly
-                  value={formatDateVN(entryDate) || 'DD/MM/YYYY'}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono font-black text-amber-900 text-xs shadow-2xs group-hover:border-amber-400 transition-colors pointer-events-none"
-                  placeholder="DD/MM/YYYY"
-                />
-                <input
+                  ref={dateInputRef}
                   type="date"
                   required
                   max={getVietnamTodayYMD()}
@@ -866,7 +847,7 @@ export default function StaffAttendance({
                     const today = getVietnamTodayYMD();
                     if (d) {
                       if (d > today) {
-                        setErrorMsg("⚠️ Không thể chấm công cho ngày trong tương lai! Bạn chỉ có thể chọn ngày hôm nay hoặc các ngày trước đó (để chấm bù khi quên hoặc mất điện).");
+                        setErrorMsg("⚠️ Không thể chấm công cho ngày trong tương lai! Chỉ được chọn ngày hôm nay hoặc các ngày trong quá khứ.");
                         setEntryDate(today);
                         return;
                       }
@@ -880,13 +861,10 @@ export default function StaffAttendance({
                       }
                     }
                   }}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
-                  title="Nhấn để chọn ngày làm việc (DD/MM/YYYY) - Tối đa là ngày hôm nay"
+                  className="w-full py-2 pr-3 bg-transparent font-mono font-bold text-slate-900 text-xs focus:outline-hidden cursor-pointer"
+                  title="Bấm để chọn ngày làm việc (chỉ chọn ngày hiện tại hoặc ngày trong quá khứ)"
                 />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 italic">
-                * Mặc định là ngày hôm nay. Có thể chọn ngày trước đó để chấm bù nếu quên hoặc mất điện (không thể chọn ngày tương lai).
-              </p>
             </div>
 
             {/* 2. Giờ Đến Cửa Hàng (Giờ Vào) */}
