@@ -15,7 +15,9 @@ import { AttendanceRecord } from './types';
 export function getSalaryMonthForAdvance(dateStr: string): string {
   if (!dateStr) return '';
   const s = String(dateStr).trim().split('T')[0];
-  let year = 0, month = 0, day = 0;
+  let year = 0,
+    month = 0,
+    day = 0;
 
   if (s.includes('-')) {
     const parts = s.split('-');
@@ -61,7 +63,7 @@ export function getVietnamTodayYMD(): string {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
+      day: '2-digit',
     }).format(new Date());
   } catch {
     const d = new Date(Date.now() + 7 * 3600 * 1000);
@@ -155,7 +157,7 @@ export function formatShortTime(isoString: string): string {
     timeZone: 'Asia/Ho_Chi_Minh',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
   }).format(d);
 }
 
@@ -200,9 +202,9 @@ export function getAdvanceCycleExplanation(dateStr: string): {
     salaryMonth: targetYM,
     formattedMonth: formatMonthVN(targetYM),
     isBeforeOrOn5th,
-    note: isBeforeOrOn5th 
+    note: isBeforeOrOn5th
       ? `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng trước ngày 05).`
-      : `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng từ ngày 06).`
+      : `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng từ ngày 06).`,
   };
 }
 
@@ -248,7 +250,7 @@ export function checkShiftOverlap(
   existingRecords: AttendanceRecord[]
 ): { hasOverlap: boolean; errorMessage?: string; conflictingRecord?: AttendanceRecord } {
   const dayRecords = existingRecords.filter(
-    r => r.date === newDate && r.status === 'completed' && r.checkIn && r.checkOut
+    (r) => r.date === newDate && r.status === 'completed' && r.checkIn && r.checkOut
   );
 
   const newStartMins = parseTimeToMinutes(newStartTime);
@@ -271,13 +273,13 @@ export function checkShiftOverlap(
         return {
           hasOverlap: true,
           errorMessage: `Trùng lặp thời gian! Bạn đã chấm công ca ${existStartStr} - ${existEndStr} (${rec.totalHours}h) trong ngày ${recDateVN} rồi. Không được khai báo lặp lại 2 lần để gian lận giờ làm!`,
-          conflictingRecord: rec
+          conflictingRecord: rec,
         };
       } else {
         return {
           hasOverlap: true,
           errorMessage: `Trùng thời gian làm việc! Khoảng giờ bạn nhập (${newStartTime} - ${newEndTime}) bị giao thoa/trùng đè với ca làm (${existStartStr} - ${existEndStr}) đã chấm ngày ${recDateVN}. Vui lòng nhập khoảng giờ khác!`,
-          conflictingRecord: rec
+          conflictingRecord: rec,
         };
       }
     }
@@ -294,7 +296,7 @@ export function calculateHours(startTime: string, endTime: string): number {
   const startMins = parseTimeToMinutes(startTime);
   let endMins = parseTimeToMinutes(endTime);
   if (endMins <= startMins) endMins += 24 * 60;
-  
+
   const diffMinutes = endMins - startMins;
   const roundedHours = Math.round(diffMinutes / 60);
   return Math.max(1, roundedHours);
@@ -304,10 +306,10 @@ export function calculateHours(startTime: string, endTime: string): number {
  * Tự động đặt tên ca làm việc dựa trên giờ
  */
 export function getShiftNameFromTime(startTime: string, endTime: string): string {
-  if (startTime === "08:00" && endTime === "17:00") {
-    return "Ca Sáng";
-  } else if (startTime === "17:00" && endTime === "22:00") {
-    return "Ca Chiều";
+  if (startTime === '08:00' && endTime === '17:00') {
+    return 'Ca Sáng';
+  } else if (startTime === '17:00' && endTime === '22:00') {
+    return 'Ca Chiều';
   } else {
     return `Ca ${startTime}-${endTime}`;
   }
@@ -316,22 +318,25 @@ export function getShiftNameFromTime(startTime: string, endTime: string): string
 /**
  * Đếm tổng số ngày nghỉ thực tế trong tháng (không trùng lặp)
  */
-export function countLeaveDaysInMonth(leaveList: Array<{ date: string; endDate?: string }>, yearMonth: string): number {
+export function countLeaveDaysInMonth(
+  leaveList: Array<{ date: string; endDate?: string }>,
+  yearMonth: string
+): number {
   if (!leaveList || !Array.isArray(leaveList)) return 0;
   const uniqueDates = new Set<string>();
-  
-  leaveList.forEach(l => {
+
+  leaveList.forEach((l) => {
     const startStr = l.date;
     const endStr = l.endDate || l.date;
     if (!startStr) return;
-    
+
     const dStart = new Date(startStr);
     const dEnd = new Date(endStr);
     if (isNaN(dStart.getTime())) return;
-    
+
     const cur = new Date(dStart);
     const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
-    
+
     let count = 0;
     while (cur <= stop && count <= 31) {
       const y = cur.getFullYear();
@@ -345,7 +350,7 @@ export function countLeaveDaysInMonth(leaveList: Array<{ date: string; endDate?:
       count++;
     }
   });
-  
+
   return uniqueDates.size;
 }
 

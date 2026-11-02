@@ -4,14 +4,16 @@ const db = require('./db');
 
 function getTelegramConfig() {
   const settings = db.getSettings();
-  return settings.telegram || {
-    enabled: false,
-    botToken: '',
-    chatId: '',
-    notifyAdvance: true,
-    notifyLeave: true,
-    notifyAttendance: false
-  };
+  return (
+    settings.telegram || {
+      enabled: false,
+      botToken: '',
+      chatId: '',
+      notifyAdvance: true,
+      notifyLeave: true,
+      notifyAttendance: false,
+    }
+  );
 }
 
 async function sendTelegramRaw(botToken, chatId, messageHtml) {
@@ -27,8 +29,8 @@ async function sendTelegramRaw(botToken, chatId, messageHtml) {
       chat_id: String(chatId).trim(),
       text: messageHtml,
       parse_mode: 'HTML',
-      disable_web_page_preview: true
-    })
+      disable_web_page_preview: true,
+    }),
   });
 
   const data = await response.json();
@@ -63,15 +65,14 @@ async function notifySalaryAdvance({ employee, amount, date, reason }) {
     minute: '2-digit',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   }).format(new Date());
 
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
   const formattedAmount = Number(amount || 0).toLocaleString('vi-VN');
 
-  const text = 
-`💸 <b>YÊU CẦU ỨNG TIỀN LƯƠNG MỚI!</b>
+  const text = `💸 <b>YÊU CẦU ỨNG TIỀN LƯƠNG MỚI!</b>
 ━━━━━━━━━━━━━━━━━━
 🏪 <b>Cơ sở:</b> Kyodo Food - Trưng Nữ Vương, Đà Nẵng
 👤 <b>Nhân viên:</b> <b>${empName}</b> (${empCode})
@@ -97,15 +98,14 @@ async function notifyLeaveRequest({ employee, date, endDate, shift, reason }) {
     minute: '2-digit',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   }).format(new Date());
 
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
   const dateRange = endDate && endDate !== date ? `${date} ➔ ${endDate}` : date;
 
-  const text = 
-`📅 <b>THÔNG BÁO XIN NGHỈ LÀM!</b>
+  const text = `📅 <b>THÔNG BÁO XIN NGHỈ LÀM!</b>
 ━━━━━━━━━━━━━━━━━━
 🏪 <b>Cơ sở:</b> Kyodo Food - Trưng Nữ Vương, Đà Nẵng
 👤 <b>Nhân viên:</b> <b>${empName}</b> (${empCode})
@@ -128,8 +128,7 @@ async function notifyAttendance({ employee, date, shiftName, startTime, endTime,
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
 
-  const text = 
-`🕒 <b>NHÂN VIÊN CHẤM CÔNG CA LÀM!</b>
+  const text = `🕒 <b>NHÂN VIÊN CHẤM CÔNG CA LÀM!</b>
 ━━━━━━━━━━━━━━━━━━
 🏪 <b>Cơ sở:</b> Kyodo Food - Trưng Nữ Vương, Đà Nẵng
 👤 <b>Nhân viên:</b> <b>${empName}</b> (${empCode})
@@ -150,11 +149,10 @@ async function testTelegram(botToken, chatId) {
     second: '2-digit',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   }).format(new Date());
 
-  const testMessage = 
-`🎉 <b>KẾT NỐI TELEGRAM BOT THÀNH CÔNG!</b>
+  const testMessage = `🎉 <b>KẾT NỐI TELEGRAM BOT THÀNH CÔNG!</b>
 ━━━━━━━━━━━━━━━━━━
 🍗 <b>Phần mềm:</b> Chấm công Kyodo Food
 🏪 <b>Cơ sở:</b> Trưng Nữ Vương, Đà Nẵng
@@ -172,5 +170,5 @@ module.exports = {
   notifySalaryAdvance,
   notifyLeaveRequest,
   notifyAttendance,
-  testTelegram
+  testTelegram,
 };

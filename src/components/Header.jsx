@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Shield, LogOut, MapPin, RefreshCw, Sparkles, ArrowDownCircle } from 'lucide-react';
 import { api } from '../utils/api';
 
-export default function Header({ 
-  currentUser, 
-  currentRole, 
-  onLogout, 
-  onAdminClick, 
+export default function Header({
+  currentUser,
+  currentRole,
+  onLogout,
+  onAdminClick,
   onBackToLogin,
   settings,
-  appMode = 'all' // 'all' | 'employee' | 'manager'
+  appMode = 'all', // 'all' | 'employee' | 'manager'
 }) {
   const [time, setTime] = useState(new Date());
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -31,7 +31,11 @@ export default function Header({
       setUpdateInfo(res);
       if (!silent) {
         if (res.hasUpdate) {
-          if (window.confirm(`🎉 Phần mềm đã có phiên bản mới (v${res.latestVersion})!\nBạn có muốn cập nhật ngay bây giờ để sử dụng các tính năng mới không? (Dữ liệu chấm công được bảo toàn 100%)`)) {
+          if (
+            window.confirm(
+              `🎉 Phần mềm đã có phiên bản mới (v${res.latestVersion})!\nBạn có muốn cập nhật ngay bây giờ để sử dụng các tính năng mới không? (Dữ liệu chấm công được bảo toàn 100%)`
+            )
+          ) {
             applyHeaderUpdate();
           }
         } else {
@@ -46,7 +50,8 @@ export default function Header({
   };
 
   const applyHeaderUpdate = async () => {
-    const isCloud = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const isCloud =
+      window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     if (isCloud) {
       alert('Máy chủ Cloud tự động cập nhật bản mới nhất từ GitHub. Đang làm mới giao diện...');
       window.location.reload();
@@ -98,18 +103,17 @@ export default function Header({
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print w-full">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 gap-2 sm:gap-4">
-          
           {/* Logo & Store Branding */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div 
+            <div
               className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group"
               onClick={onBackToLogin}
               title="Về màn hình đăng nhập"
             >
               <div className="relative w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 p-0.5 flex items-center justify-center overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
-                <img 
-                  src={logoUrl} 
-                  alt="Kyodo Food Logo" 
+                <img
+                  src={logoUrl}
+                  alt="Kyodo Food Logo"
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     e.target.style.display = 'none';
@@ -118,7 +122,7 @@ export default function Header({
                 />
                 <span className="hidden font-bold text-amber-600 text-sm">KF</span>
               </div>
-              
+
               <div>
                 <div className="flex items-center gap-1.5">
                   <h1 className="text-sm sm:text-base font-black tracking-tight text-slate-900 group-hover:text-amber-600 transition-colors whitespace-nowrap">
@@ -142,7 +146,9 @@ export default function Header({
               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 animate-pulse shrink-0" />
               <div className="flex items-baseline gap-0.5 font-mono whitespace-nowrap">
                 <span className="text-base sm:text-lg font-bold text-slate-900">{h}</span>
-                <span className="text-base sm:text-lg font-bold text-amber-500 animate-pulse">:</span>
+                <span className="text-base sm:text-lg font-bold text-amber-500 animate-pulse">
+                  :
+                </span>
                 <span className="text-base sm:text-lg font-bold text-slate-900">{m}</span>
                 <span className="text-xs font-semibold text-slate-500">:{s}</span>
               </div>
@@ -172,8 +178,12 @@ export default function Header({
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-xs font-extrabold text-amber-900 transition-all cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
                 title="Bấm để kiểm tra xem có bản cập nhật mới hay chưa"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-amber-700 ${isCheckingUpdate ? 'animate-spin text-amber-800' : ''}`} />
-                <span className="whitespace-nowrap">Bản v{updateInfo?.currentVersion || '1.5.0'}</span>
+                <RefreshCw
+                  className={`w-3.5 h-3.5 text-amber-700 ${isCheckingUpdate ? 'animate-spin text-amber-800' : ''}`}
+                />
+                <span className="whitespace-nowrap">
+                  Bản v{updateInfo?.currentVersion || '1.5.0'}
+                </span>
               </button>
             )}
           </div>
@@ -184,16 +194,20 @@ export default function Header({
               <div className="flex items-center gap-2 sm:gap-2.5">
                 <div className="text-right hidden sm:block">
                   <div className="text-xs font-black text-slate-900 whitespace-nowrap">
-                    {currentUser.shortName || currentUser.name} ({currentUser.username || currentUser.code})
+                    {currentUser.shortName || currentUser.name} (
+                    {currentUser.username || currentUser.code})
                   </div>
                   <div className="text-[10px] text-slate-500 font-semibold whitespace-nowrap">
                     Nhân viên • Trưng Nữ Vương
                   </div>
                 </div>
-                <img 
-                  src={currentUser.avatar || (currentUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')} 
-                  alt={currentUser.shortName || currentUser.name} 
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500 shrink-0 bg-slate-50" 
+                <img
+                  src={
+                    currentUser.avatar ||
+                    (currentUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')
+                  }
+                  alt={currentUser.shortName || currentUser.name}
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500 shrink-0 bg-slate-50"
                 />
                 <button
                   onClick={onLogout}
@@ -235,7 +249,6 @@ export default function Header({
               </div>
             )}
           </div>
-
         </div>
       </div>
     </header>

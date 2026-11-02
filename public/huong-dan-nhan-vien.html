@@ -1,588 +1,665 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Hướng Dẫn Sử Dụng Phần Mềm Chấm Công Kyodo Food</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hướng Dẫn Sử Dụng Phần Mềm Chấm Công Kyodo Food</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
 
-    @page {
-      size: A4 portrait;
-      margin: 12mm 15mm 12mm 15mm;
-    }
+      @page {
+        size: A4 portrait;
+        margin: 12mm 15mm 12mm 15mm;
+      }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    body {
-      font-family: 'Plus Jakarta Sans', Arial, -apple-system, sans-serif;
-      font-size: 11.5px;
-      line-height: 1.5;
-      color: #1e293b;
-      background: #ffffff;
-    }
+      body {
+        font-family:
+          'Plus Jakarta Sans',
+          Arial,
+          -apple-system,
+          sans-serif;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: #1e293b;
+        background: #ffffff;
+      }
 
-    .page {
-      page-break-after: always;
-      position: relative;
-      padding-bottom: 5px;
-    }
+      .page {
+        page-break-after: always;
+        position: relative;
+        padding-bottom: 5px;
+      }
 
-    .page:last-child {
-      page-break-after: auto;
-    }
+      .page:last-child {
+        page-break-after: auto;
+      }
 
-    /* HEADER */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2.5px solid #d97706;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
-    }
+      /* HEADER */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2.5px solid #d97706;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+      }
 
-    .brand-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+      .brand-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .logo-box {
-      width: 44px;
-      height: 44px;
-      background: #fef3c7;
-      border: 1.5px solid #f59e0b;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 18px;
-      color: #d97706;
-    }
+      .logo-box {
+        width: 44px;
+        height: 44px;
+        background: #fef3c7;
+        border: 1.5px solid #f59e0b;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 18px;
+        color: #d97706;
+      }
 
-    .brand-text h1 {
-      font-size: 17px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.3px;
-    }
+      .brand-text h1 {
+        font-size: 17px;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.3px;
+      }
 
-    .brand-text p {
-      font-size: 11px;
-      font-weight: 700;
-      color: #b45309;
-    }
+      .brand-text p {
+        font-size: 11px;
+        font-weight: 700;
+        color: #b45309;
+      }
 
-    .header-badges {
-      text-align: right;
-    }
+      .header-badges {
+        text-align: right;
+      }
 
-    .badge-version {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fde68a;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 800;
-      display: inline-block;
-    }
+      .badge-version {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        display: inline-block;
+      }
 
-    .header-subtitle {
-      font-size: 10px;
-      color: #64748b;
-      margin-top: 3px;
-    }
+      .header-subtitle {
+        font-size: 10px;
+        color: #64748b;
+        margin-top: 3px;
+      }
 
-    /* HERO BANNER */
-    .hero-banner {
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      border: 1.5px solid #fcd34d;
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
-    }
+      /* HERO BANNER */
+      .hero-banner {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1.5px solid #fcd34d;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 14px;
+      }
 
-    .hero-banner h2 {
-      font-size: 14px;
-      font-weight: 900;
-      color: #92400e;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-    }
+      .hero-banner h2 {
+        font-size: 14px;
+        font-weight: 900;
+        color: #92400e;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+      }
 
-    .hero-banner p {
-      font-size: 11px;
-      color: #78350f;
-      line-height: 1.5;
-    }
+      .hero-banner p {
+        font-size: 11px;
+        color: #78350f;
+        line-height: 1.5;
+      }
 
-    /* SECTION */
-    .section {
-      margin-bottom: 14px;
-    }
+      /* SECTION */
+      .section {
+        margin-bottom: 14px;
+      }
 
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12.5px;
-      font-weight: 800;
-      color: #0f172a;
-      background: #f8fafc;
-      border-left: 4px solid #d97706;
-      padding: 5px 10px;
-      border-radius: 0 6px 6px 0;
-      margin-bottom: 8px;
-    }
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        font-weight: 800;
+        color: #0f172a;
+        background: #f8fafc;
+        border-left: 4px solid #d97706;
+        padding: 5px 10px;
+        border-radius: 0 6px 6px 0;
+        margin-bottom: 8px;
+      }
 
-    .section-title .step-number {
-      background: #d97706;
-      color: #ffffff;
-      width: 19px;
-      height: 19px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 900;
-    }
+      .section-title .step-number {
+        background: #d97706;
+        color: #ffffff;
+        width: 19px;
+        height: 19px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 900;
+      }
 
-    /* CARDS & GRIDS */
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
+      /* CARDS & GRIDS */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
 
-    .grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
 
-    .info-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 9px 11px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-    }
+      .info-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 9px 11px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      }
 
-    .info-card.amber {
-      background: #fffbeb;
-      border-color: #fde68a;
-    }
+      .info-card.amber {
+        background: #fffbeb;
+        border-color: #fde68a;
+      }
 
-    .info-card.blue {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-    }
+      .info-card.blue {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+      }
 
-    .info-card.green {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
-    }
+      .info-card.green {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+      }
 
-    .card-title {
-      font-weight: 800;
-      font-size: 11px;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
+      .card-title {
+        font-weight: 800;
+        font-size: 11px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
 
-    .card-title.amber { color: #b45309; }
-    .card-title.blue { color: #1d4ed8; }
-    .card-title.green { color: #15803d; }
+      .card-title.amber {
+        color: #b45309;
+      }
+      .card-title.blue {
+        color: #1d4ed8;
+      }
+      .card-title.green {
+        color: #15803d;
+      }
 
-    /* STEP BOX */
-    .step-box {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 7px 11px;
-      margin-bottom: 6px;
-      font-size: 11px;
-    }
+      /* STEP BOX */
+      .step-box {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 7px 11px;
+        margin-bottom: 6px;
+        font-size: 11px;
+      }
 
-    .step-box strong {
-      color: #0f172a;
-    }
+      .step-box strong {
+        color: #0f172a;
+      }
 
-    .code-badge {
-      font-family: 'JetBrains Mono', monospace;
-      background: #f1f5f9;
-      color: #0f172a;
-      border: 1px solid #cbd5e1;
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-size: 10.5px;
-      font-weight: 700;
-    }
+      .code-badge {
+        font-family: 'JetBrains Mono', monospace;
+        background: #f1f5f9;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 10.5px;
+        font-weight: 700;
+      }
 
-    /* TIPS / NOTE BOX */
-    .tip-box {
-      background: #fefce8;
-      border-left: 3.5px solid #eab308;
-      border-radius: 6px;
-      padding: 7px 11px;
-      font-size: 10.5px;
-      color: #713f12;
-      margin-top: 6px;
-    }
+      /* TIPS / NOTE BOX */
+      .tip-box {
+        background: #fefce8;
+        border-left: 3.5px solid #eab308;
+        border-radius: 6px;
+        padding: 7px 11px;
+        font-size: 10.5px;
+        color: #713f12;
+        margin-top: 6px;
+      }
 
-    .alert-box {
-      background: #fef2f2;
-      border-left: 3.5px solid #ef4444;
-      border-radius: 6px;
-      padding: 7px 11px;
-      font-size: 10.5px;
-      color: #991b1b;
-      margin-top: 6px;
-    }
+      .alert-box {
+        background: #fef2f2;
+        border-left: 3.5px solid #ef4444;
+        border-radius: 6px;
+        padding: 7px 11px;
+        font-size: 10.5px;
+        color: #991b1b;
+        margin-top: 6px;
+      }
 
-    /* TABLE */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 6px;
-      margin-bottom: 8px;
-      font-size: 10.5px;
-    }
+      /* TABLE */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 6px;
+        margin-bottom: 8px;
+        font-size: 10.5px;
+      }
 
-    th {
-      background: #f8fafc;
-      color: #475569;
-      font-weight: 700;
-      text-align: left;
-      padding: 6px 8px;
-      border: 1px solid #e2e8f0;
-      text-transform: uppercase;
-      font-size: 9.5px;
-    }
+      th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        text-align: left;
+        padding: 6px 8px;
+        border: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        font-size: 9.5px;
+      }
 
-    td {
-      padding: 6px 8px;
-      border: 1px solid #e2e8f0;
-      color: #1e293b;
-    }
+      td {
+        padding: 6px 8px;
+        border: 1px solid #e2e8f0;
+        color: #1e293b;
+      }
 
-    tr:nth-child(even) td {
-      background: #fbfcfe;
-    }
+      tr:nth-child(even) td {
+        background: #fbfcfe;
+      }
 
-    /* FOOTER */
-    .footer {
-      border-top: 1px solid #e2e8f0;
-      padding-top: 6px;
-      margin-top: 14px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 9.5px;
-      color: #94a3b8;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- ==================== TRANG 1 ==================== -->
-  <div class="page">
-    <div class="header">
-      <div class="brand-group">
-        <div class="logo-box">KF</div>
-        <div class="brand-text">
-          <h1>CỬA HÀNG KYODO FOOD</h1>
-          <p>CƠ SỞ DUY NHẤT: TRƯNG NỮ VƯƠNG, ĐÀ NẴNG</p>
+      /* FOOTER */
+      .footer {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 6px;
+        margin-top: 14px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 9.5px;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ==================== TRANG 1 ==================== -->
+    <div class="page">
+      <div class="header">
+        <div class="brand-group">
+          <div class="logo-box">KF</div>
+          <div class="brand-text">
+            <h1>CỬA HÀNG KYODO FOOD</h1>
+            <p>CƠ SỞ DUY NHẤT: TRƯNG NỮ VƯƠNG, ĐÀ NẴNG</p>
+          </div>
         </div>
-      </div>
-      <div class="header-badges">
-        <div class="badge-version">Phiên Bản Gốc v1.5.0</div>
-        <div class="header-subtitle">Áp dụng chính thức từ: 01/11/2026</div>
-      </div>
-    </div>
-
-    <div class="hero-banner">
-      <h2>SỔ TAY HƯỚNG DẪN SỬ DỤNG PHẦN MỀM CHẤM CÔNG DÀNH CHO NHÂN VIÊN</h2>
-      <p>Tài liệu này hướng dẫn chi tiết các thao tác: <strong>Đăng nhập tài khoản</strong>, <strong>Nhập giờ làm mỗi ngày</strong>, <strong>Đăng ký tạm ứng tiền lương</strong>, <strong>Đăng ký ngày nghỉ</strong>, <strong>Cập nhật hồ sơ tài khoản nhận lương</strong> và <strong>Xem tổng kết giờ làm cuối tháng</strong>.</p>
-    </div>
-
-    <!-- PHẦN 1 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">1</span>
-        <span>MỞ PHẦN MỀM & ĐĂNG NHẬP TÀI KHOẢN CÁ NHÂN</span>
-      </div>
-
-      <div class="step-box">
-        <strong>Bước 1.1: Mở ứng dụng từ màn hình Desktop máy tính quán</strong><br>
-        Nhấp đúp chuột vào biểu tượng: <span class="code-badge">Kyodo Food - Nhan Vien Cham Cong</span> ngoài màn hình chính.
-      </div>
-
-      <div class="step-box">
-        <strong>Bước 1.2: Chọn tài khoản của bạn</strong><br>
-        Tại màn hình đăng nhập, bấm chuột trực tiếp vào <strong>Thẻ Tên / Biệt danh</strong> của mình:
-        <ul style="margin-left: 20px; margin-top: 3px;">
-          <li><strong>Nhân viên Út</strong>: Mã tài khoản đăng nhập là <span class="code-badge">UTNVTNV</span></li>
-          <li><strong>Nhân viên Bảo</strong>: Mã tài khoản đăng nhập là <span class="code-badge">BAONVTNV</span></li>
-        </ul>
-      </div>
-
-      <div class="step-box">
-        <strong>Bước 1.3: Nhập mật khẩu cá nhân</strong><br>
-        • Mật khẩu khởi tạo ban đầu cho toàn bộ nhân viên là: <span class="code-badge">1234</span>.<br>
-        • Nhập xong, bấm nút cam: <strong>"Đăng Nhập Chấm Công"</strong> để vào trang cá nhân.
-      </div>
-
-      <div class="tip-box">
-        💡 <strong>Khuyên dùng:</strong> Sau khi đăng nhập lần đầu, bạn hãy bấm vào nút <strong>"Đổi MK"</strong> (ở góc trên thanh thông tin) để đổi sang mật khẩu riêng nhằm bảo vệ số giờ làm và tài khoản của mình.
-      </div>
-    </div>
-
-    <!-- PHẦN 2 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">2</span>
-        <span>KIỂM TRA & CẬP NHẬT HỒ SƠ CÁ NHÂN (NHẬN LƯƠNG CHUYỂN KHOẢN)</span>
-      </div>
-
-      <p style="margin-bottom: 6px;">Để đảm bảo quyền lợi và Chủ cửa hàng chuyển khoản lương chính xác, mỗi nhân viên cần tự kiểm tra hồ sơ:</p>
-
-      <div class="grid-2">
-        <div class="info-card amber">
-          <div class="card-title amber">👤 Thông Tin Định Danh</div>
-          • <strong>Họ và tên đầy đủ</strong>: Viết đúng trên CCCD.<br>
-          • <strong>Ngày sinh & Số CCCD</strong>: Dùng để đối soát.<br>
-          • <strong>Số điện thoại</strong>: Số liên hệ chính thức.<br>
-          • <strong>Địa chỉ cư trú</strong>: Nơi đang sinh sống.
-        </div>
-
-        <div class="info-card green">
-          <div class="card-title green">💳 Tài Khoản Ngân Hàng (VietQR)</div>
-          • <strong>Chọn Ngân Hàng</strong>: Vietcombank, MB, VietinBank...<br>
-          • <strong>Số tài khoản ngân hàng</strong>: Nhập chính xác số TK.<br>
-          • <strong>Tên chủ tài khoản</strong>: Tự động in hoa khớp tên.<br>
-          • Hệ thống tự tạo <strong>Mã QR VietQR Napas 247</strong> để Chủ quán quét chuyển lương 1 chạm.
+        <div class="header-badges">
+          <div class="badge-version">Phiên Bản Gốc v1.5.0</div>
+          <div class="header-subtitle">Áp dụng chính thức từ: 01/11/2026</div>
         </div>
       </div>
 
-      <div class="step-box">
-        👉 <strong>Cách thực hiện:</strong> Tại đầu trang cá nhân, bấm vào nút <strong>"Sửa Thông Tin"</strong> &rarr; Cửa sổ cập nhật hiện ra &rarr; Nhập đầy đủ thông tin &rarr; Bấm <strong>"Lưu & Cập Nhật Hồ Sơ"</strong>. Dữ liệu sẽ được bảo vệ vĩnh viễn và đồng bộ ngay sang trang Quản lý.
-      </div>
-    </div>
-
-    <div class="footer">
-      <span>Phần mềm Kyodo Food v1.5.0 • Trang 1/3</span>
-      <span>Hỗ trợ kỹ thuật: Quản lý Cửa Hàng Trưng Nữ Vương</span>
-    </div>
-  </div>
-
-  <!-- ==================== TRANG 2 ==================== -->
-  <div class="page">
-    <div class="header">
-      <div class="brand-group">
-        <div class="logo-box">KF</div>
-        <div class="brand-text">
-          <h1>CỬA HÀNG KYODO FOOD</h1>
-          <p>CƠ SỞ DUY NHẤT: TRƯNG NỮ VƯƠNG, ĐÀ NẴNG</p>
-        </div>
-      </div>
-      <div class="header-badges">
-        <div class="badge-version">Quy Trình Chấm Công & Ứng Lương</div>
-      </div>
-    </div>
-
-    <!-- PHẦN 3 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">3</span>
-        <span>HƯỚNG DẪN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY</span>
+      <div class="hero-banner">
+        <h2>SỔ TAY HƯỚNG DẪN SỬ DỤNG PHẦN MỀM CHẤM CÔNG DÀNH CHO NHÂN VIÊN</h2>
+        <p>
+          Tài liệu này hướng dẫn chi tiết các thao tác: <strong>Đăng nhập tài khoản</strong>,
+          <strong>Nhập giờ làm mỗi ngày</strong>, <strong>Đăng ký tạm ứng tiền lương</strong>,
+          <strong>Đăng ký ngày nghỉ</strong>,
+          <strong>Cập nhật hồ sơ tài khoản nhận lương</strong> và
+          <strong>Xem tổng kết giờ làm cuối tháng</strong>.
+        </p>
       </div>
 
-      <p style="margin-bottom: 6px;">Mỗi ngày đi làm hoặc khi kết thúc ca, nhân viên tự ghi nhận giờ làm vào mục <strong>"Nhập Thời Gian Làm Việc Từng Ngày"</strong>:</p>
-
-      <div class="grid-2">
-        <div class="info-card amber">
-          <div class="card-title amber">⚡ Cách 1: Bấm Chọn Nhanh Ca Chuẩn</div>
-          • <strong>🌅 Ca Sáng</strong>: 08:00 - 17:00 (Hệ thống tự tính đủ 9 tiếng).<br>
-          • <strong>🌆 Ca Chiều/Tối</strong>: 17:00 - 22:00 (Hệ thống tự tính đủ 5 tiếng).<br>
-          <em>(Chỉ cần bấm 1 chạm, phần mềm tự điền giờ vào và giờ ra chuẩn).</em>
+      <!-- PHẦN 1 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">1</span>
+          <span>MỞ PHẦN MỀM & ĐĂNG NHẬP TÀI KHOẢN CÁ NHÂN</span>
         </div>
 
-        <div class="info-card blue">
-          <div class="card-title blue">⏱️ Cách 2: Tự Chỉnh Giờ Vào & Giờ Ra Thực Tế</div>
-          • Nếu đến sớm, về muộn hoặc đổi ca: bấm chọn giờ/phút tại bảng số <strong>Giờ Đến (Vào)</strong> và <strong>Ra Về (Ra)</strong>.<br>
-          • Hệ thống sẽ tự động tính chính xác tổng số giờ làm việc thực tế.
-        </div>
-      </div>
-
-      <div class="step-box">
-        <strong>Bước 3.1:</strong> Kiểm tra <strong>Ngày Làm Việc</strong> (mặc định là ngày hôm nay).<br>
-        <strong>Bước 3.2:</strong> Nhập <strong>Ghi chú</strong> (tùy chọn, ví dụ: <em>"Tăng ca 1 tiếng", "Đổi ca cho bạn Bảo"</em>...).<br>
-        <strong>Bước 3.3:</strong> Bấm nút cam lớn: <strong>"Xác Nhận Giờ Làm"</strong>. Ca làm việc sẽ xuất hiện ngay trong bảng tổng hợp phía dưới.
-      </div>
-    </div>
-
-    <!-- PHẦN 4 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">4</span>
-        <span>HƯỚNG DẪN TẠM ỨNG TIỀN LƯƠNG TRƯỚC</span>
-      </div>
-
-      <p style="margin-bottom: 6px;">Khi có nhu cầu chi tiêu trước ngày trả lương, nhân viên tự ghi nhận khoản tạm ứng tại khung <strong>"Ứng Tiền Lương Trước"</strong>:</p>
-
-      <div class="step-box">
-        <strong>Thao tác ghi nhận ứng lương:</strong><br>
-        1. Bấm vào nút màu nâu: <strong>"+ Ghi Nhận Ứng Lương"</strong>.<br>
-        2. Chọn <strong>Ngày ứng tiền</strong>.<br>
-        3. Nhập <strong>Số tiền muốn ứng</strong> (ví dụ: <span class="code-badge">500.000</span> hoặc <span class="code-badge">1.000.000</span> đ).<br>
-        4. Nhập <strong>Lý do ứng</strong> (ví dụ: <em>"Ứng tiền chi tiêu cá nhân"</em>).<br>
-        5. Bấm <strong>"Xác Nhận Ghi Nhận Ứng Lương"</strong>.
-      </div>
-
-      <div class="alert-box">
-        ⚠️ <strong>QUY TẮC KHẤU TRỪ ỨNG LƯƠNG (NGÀY TRẢ LƯƠNG LÀ NGÀY 05 HÀNG THÁNG):</strong><br>
-        • <strong>Ứng trước hoặc đúng ngày 05</strong>: Vẫn tính khấu trừ vào kỳ lương của tháng trước.<br>
-        • <strong>Ứng từ ngày 06 trở đi</strong>: Sẽ tính khấu trừ trực tiếp vào kỳ lương của tháng đang chấm công.<br>
-        • Khoản tạm ứng sẽ được trừ tự động vào cột <strong>Thực Lĩnh</strong> khi Chủ quán thanh toán tiền lương.
-      </div>
-    </div>
-
-    <!-- PHẦN 5 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">5</span>
-        <span>HƯỚNG DẪN ĐĂNG KÝ NGÀY NGHỈ / BÁO NGHỈ</span>
-      </div>
-
-      <div class="step-box">
-        1. Tại khung <strong>"Thông Báo Nghỉ Làm"</strong>, bấm nút xanh: <strong>"+ Đăng Ký Ngày Nghỉ"</strong>.<br>
-        2. Chọn ngày muốn nghỉ, ca nghỉ và lý do báo trước cho cửa hàng.<br>
-        3. Bấm <strong>"Xác Nhận Đăng Ký Nghỉ"</strong>. Hệ thống sẽ tự động cập nhật số ngày nghỉ trong tháng.
-      </div>
-    </div>
-
-    <div class="footer">
-      <span>Phần mềm Kyodo Food v1.5.0 • Trang 2/3</span>
-      <span>Hỗ trợ kỹ thuật: Quản lý Cửa Hàng Trưng Nữ Vương</span>
-    </div>
-  </div>
-
-  <!-- ==================== TRANG 3 ==================== -->
-  <div class="page">
-    <div class="header">
-      <div class="brand-group">
-        <div class="logo-box">KF</div>
-        <div class="brand-text">
-          <h1>CỬA HÀNG KYODO FOOD</h1>
-          <p>CƠ SỞ DUY NHẤT: TRƯNG NỮ VƯƠNG, ĐÀ NẴNG</p>
-        </div>
-      </div>
-      <div class="header-badges">
-        <div class="badge-version">Tổng Kết Cuối Tháng & Hỗ Trợ</div>
-      </div>
-    </div>
-
-    <!-- PHẦN 6 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">6</span>
-        <span>XEM KẾT QUẢ TỔNG GIỜ LÀM & IN PHIẾU CÔNG CUỐI THÁNG</span>
-      </div>
-
-      <p style="margin-bottom: 6px;">Vào cuối mỗi tháng, nhân viên mở mục <strong>"Kết Quả Tổng Giờ Làm Việc Của Bạn"</strong> để đối soát kết quả công việc:</p>
-
-      <div class="grid-3">
-        <div class="info-card amber" style="text-align: center;">
-          <div style="font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase;">Tổng Giờ Làm</div>
-          <div style="font-size: 17px; font-weight: 900; color: #b45309; margin: 3px 0;">Tổng số giờ</div>
-          <div style="font-size: 9.5px; color: #78350f;">Tổng số giờ đã làm trong tháng</div>
+        <div class="step-box">
+          <strong>Bước 1.1: Mở ứng dụng từ màn hình Desktop máy tính quán</strong><br />
+          Nhấp đúp chuột vào biểu tượng:
+          <span class="code-badge">Kyodo Food - Nhan Vien Cham Cong</span> ngoài màn hình chính.
         </div>
 
-        <div class="info-card blue" style="text-align: center;">
-          <div style="font-size: 10px; font-weight: 700; color: #1e40af; text-transform: uppercase;">Số Ca Làm Việc</div>
-          <div style="font-size: 17px; font-weight: 900; color: #1d4ed8; margin: 3px 0;">Số ca</div>
-          <div style="font-size: 9.5px; color: #1e3a8a;">Ca làm đã hoàn thành</div>
+        <div class="step-box">
+          <strong>Bước 1.2: Chọn tài khoản của bạn</strong><br />
+          Tại màn hình đăng nhập, bấm chuột trực tiếp vào <strong>Thẻ Tên / Biệt danh</strong> của
+          mình:
+          <ul style="margin-left: 20px; margin-top: 3px">
+            <li>
+              <strong>Nhân viên Út</strong>: Mã tài khoản đăng nhập là
+              <span class="code-badge">UTNVTNV</span>
+            </li>
+            <li>
+              <strong>Nhân viên Bảo</strong>: Mã tài khoản đăng nhập là
+              <span class="code-badge">BAONVTNV</span>
+            </li>
+          </ul>
         </div>
 
-        <div class="info-card green" style="text-align: center;">
-          <div style="font-size: 10px; font-weight: 700; color: #166534; text-transform: uppercase;">Số Ngày Đã Nghỉ</div>
-          <div style="font-size: 17px; font-weight: 900; color: #15803d; margin: 3px 0;">Số ngày</div>
-          <div style="font-size: 9.5px; color: #14532d;">Tổng ngày nghỉ trong tháng</div>
+        <div class="step-box">
+          <strong>Bước 1.3: Nhập mật khẩu cá nhân</strong><br />
+          • Mật khẩu khởi tạo ban đầu cho toàn bộ nhân viên là:
+          <span class="code-badge">1234</span>.<br />
+          • Nhập xong, bấm nút cam: <strong>"Đăng Nhập Chấm Công"</strong> để vào trang cá nhân.
+        </div>
+
+        <div class="tip-box">
+          💡 <strong>Khuyên dùng:</strong> Sau khi đăng nhập lần đầu, bạn hãy bấm vào nút
+          <strong>"Đổi MK"</strong> (ở góc trên thanh thông tin) để đổi sang mật khẩu riêng nhằm bảo
+          vệ số giờ làm và tài khoản của mình.
         </div>
       </div>
 
-      <div class="step-box">
-        <strong>In Phiếu Công hoặc Lưu File PDF:</strong><br>
-        Bấm vào nút <strong>"In Phiếu Công"</strong> ở góc trên bên phải bảng tổng hợp để in ra giấy hoặc lưu thành file PDF gửi cho Quản lý đối soát lương.
+      <!-- PHẦN 2 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">2</span>
+          <span>KIỂM TRA & CẬP NHẬT HỒ SƠ CÁ NHÂN (NHẬN LƯƠNG CHUYỂN KHOẢN)</span>
+        </div>
+
+        <p style="margin-bottom: 6px">
+          Để đảm bảo quyền lợi và Chủ cửa hàng chuyển khoản lương chính xác, mỗi nhân viên cần tự
+          kiểm tra hồ sơ:
+        </p>
+
+        <div class="grid-2">
+          <div class="info-card amber">
+            <div class="card-title amber">👤 Thông Tin Định Danh</div>
+            • <strong>Họ và tên đầy đủ</strong>: Viết đúng trên CCCD.<br />
+            • <strong>Ngày sinh & Số CCCD</strong>: Dùng để đối soát.<br />
+            • <strong>Số điện thoại</strong>: Số liên hệ chính thức.<br />
+            • <strong>Địa chỉ cư trú</strong>: Nơi đang sinh sống.
+          </div>
+
+          <div class="info-card green">
+            <div class="card-title green">💳 Tài Khoản Ngân Hàng (VietQR)</div>
+            • <strong>Chọn Ngân Hàng</strong>: Vietcombank, MB, VietinBank...<br />
+            • <strong>Số tài khoản ngân hàng</strong>: Nhập chính xác số TK.<br />
+            • <strong>Tên chủ tài khoản</strong>: Tự động in hoa khớp tên.<br />
+            • Hệ thống tự tạo <strong>Mã QR VietQR Napas 247</strong> để Chủ quán quét chuyển lương
+            1 chạm.
+          </div>
+        </div>
+
+        <div class="step-box">
+          👉 <strong>Cách thực hiện:</strong> Tại đầu trang cá nhân, bấm vào nút
+          <strong>"Sửa Thông Tin"</strong> &rarr; Cửa sổ cập nhật hiện ra &rarr; Nhập đầy đủ thông
+          tin &rarr; Bấm <strong>"Lưu & Cập Nhật Hồ Sơ"</strong>. Dữ liệu sẽ được bảo vệ vĩnh viễn
+          và đồng bộ ngay sang trang Quản lý.
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>Phần mềm Kyodo Food v1.5.0 • Trang 1/3</span>
+        <span>Hỗ trợ kỹ thuật: Quản lý Cửa Hàng Trưng Nữ Vương</span>
       </div>
     </div>
 
-    <!-- PHẦN 7 -->
-    <div class="section">
-      <div class="section-title">
-        <span class="step-number">7</span>
-        <span>BẢNG TÓM TẮT TÀI KHOẢN & QUY TẮC BẢO MẬT</span>
+    <!-- ==================== TRANG 2 ==================== -->
+    <div class="page">
+      <div class="header">
+        <div class="brand-group">
+          <div class="logo-box">KF</div>
+          <div class="brand-text">
+            <h1>CỬA HÀNG KYODO FOOD</h1>
+            <p>CƠ SỞ DUY NHẤT: TRƯNG NỮ VƯƠNG, ĐÀ NẴNG</p>
+          </div>
+        </div>
+        <div class="header-badges">
+          <div class="badge-version">Quy Trình Chấm Công & Ứng Lương</div>
+        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Tên Nhân Viên</th>
-            <th>Mã Đăng Nhập</th>
-            <th>Mật Khẩu Mặc Định</th>
-            <th>Quyền Hạn & Chức Năng</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Út</strong> (Hoàng Thị Lệ)</td>
-            <td><span class="code-badge">UTNVTNV</span></td>
-            <td><code>1234</code> <em>(hoặc MK riêng đã đổi)</em></td>
-            <td>Chấm công ca, ứng lương, sửa hồ sơ cá nhân</td>
-          </tr>
-          <tr>
-            <td><strong>Bảo</strong></td>
-            <td><span class="code-badge">BAONVTNV</span></td>
-            <td><code>1234</code> <em>(hoặc MK riêng đã đổi)</em></td>
-            <td>Chấm công ca, ứng lương, sửa hồ sơ cá nhân</td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- PHẦN 3 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">3</span>
+          <span>HƯỚNG DẪN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY</span>
+        </div>
 
-      <div class="tip-box">
-        🔒 <strong>Quy tắc bảo mật quan trọng:</strong><br>
-        • Mỗi tài khoản <strong>chỉ có DUY NHẤT 1 mật khẩu đăng nhập</strong> (khi bạn đổi mật khẩu mới, mật khẩu cũ 1234 sẽ mất hiệu lực).<br>
-        • Luôn bấm nút <strong>"Đăng Xuất"</strong> sau khi ghi nhận giờ làm để tránh người khác chấm nhầm vào tài khoản của mình.<br>
-        • Trường hợp quên mật khẩu, hãy báo ngay cho <strong>Chủ cửa hàng (Admin)</strong> để được hỗ trợ cấp lại mật khẩu mới.
+        <p style="margin-bottom: 6px">
+          Mỗi ngày đi làm hoặc khi kết thúc ca, nhân viên tự ghi nhận giờ làm vào mục
+          <strong>"Nhập Thời Gian Làm Việc Từng Ngày"</strong>:
+        </p>
+
+        <div class="grid-2">
+          <div class="info-card amber">
+            <div class="card-title amber">⚡ Cách 1: Bấm Chọn Nhanh Ca Chuẩn</div>
+            • <strong>🌅 Ca Sáng</strong>: 08:00 - 17:00 (Hệ thống tự tính đủ 9 tiếng).<br />
+            • <strong>🌆 Ca Chiều/Tối</strong>: 17:00 - 22:00 (Hệ thống tự tính đủ 5 tiếng).<br />
+            <em>(Chỉ cần bấm 1 chạm, phần mềm tự điền giờ vào và giờ ra chuẩn).</em>
+          </div>
+
+          <div class="info-card blue">
+            <div class="card-title blue">⏱️ Cách 2: Tự Chỉnh Giờ Vào & Giờ Ra Thực Tế</div>
+            • Nếu đến sớm, về muộn hoặc đổi ca: bấm chọn giờ/phút tại bảng số
+            <strong>Giờ Đến (Vào)</strong> và <strong>Ra Về (Ra)</strong>.<br />
+            • Hệ thống sẽ tự động tính chính xác tổng số giờ làm việc thực tế.
+          </div>
+        </div>
+
+        <div class="step-box">
+          <strong>Bước 3.1:</strong> Kiểm tra <strong>Ngày Làm Việc</strong> (mặc định là ngày hôm
+          nay).<br />
+          <strong>Bước 3.2:</strong> Nhập <strong>Ghi chú</strong> (tùy chọn, ví dụ:
+          <em>"Tăng ca 1 tiếng", "Đổi ca cho bạn Bảo"</em>...).<br />
+          <strong>Bước 3.3:</strong> Bấm nút cam lớn: <strong>"Xác Nhận Giờ Làm"</strong>. Ca làm
+          việc sẽ xuất hiện ngay trong bảng tổng hợp phía dưới.
+        </div>
+      </div>
+
+      <!-- PHẦN 4 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">4</span>
+          <span>HƯỚNG DẪN TẠM ỨNG TIỀN LƯƠNG TRƯỚC</span>
+        </div>
+
+        <p style="margin-bottom: 6px">
+          Khi có nhu cầu chi tiêu trước ngày trả lương, nhân viên tự ghi nhận khoản tạm ứng tại
+          khung <strong>"Ứng Tiền Lương Trước"</strong>:
+        </p>
+
+        <div class="step-box">
+          <strong>Thao tác ghi nhận ứng lương:</strong><br />
+          1. Bấm vào nút màu nâu: <strong>"+ Ghi Nhận Ứng Lương"</strong>.<br />
+          2. Chọn <strong>Ngày ứng tiền</strong>.<br />
+          3. Nhập <strong>Số tiền muốn ứng</strong> (ví dụ:
+          <span class="code-badge">500.000</span> hoặc
+          <span class="code-badge">1.000.000</span> đ).<br />
+          4. Nhập <strong>Lý do ứng</strong> (ví dụ: <em>"Ứng tiền chi tiêu cá nhân"</em>).<br />
+          5. Bấm <strong>"Xác Nhận Ghi Nhận Ứng Lương"</strong>.
+        </div>
+
+        <div class="alert-box">
+          ⚠️ <strong>QUY TẮC KHẤU TRỪ ỨNG LƯƠNG (NGÀY TRẢ LƯƠNG LÀ NGÀY 05 HÀNG THÁNG):</strong
+          ><br />
+          • <strong>Ứng trước hoặc đúng ngày 05</strong>: Vẫn tính khấu trừ vào kỳ lương của tháng
+          trước.<br />
+          • <strong>Ứng từ ngày 06 trở đi</strong>: Sẽ tính khấu trừ trực tiếp vào kỳ lương của
+          tháng đang chấm công.<br />
+          • Khoản tạm ứng sẽ được trừ tự động vào cột <strong>Thực Lĩnh</strong> khi Chủ quán thanh
+          toán tiền lương.
+        </div>
+      </div>
+
+      <!-- PHẦN 5 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">5</span>
+          <span>HƯỚNG DẪN ĐĂNG KÝ NGÀY NGHỈ / BÁO NGHỈ</span>
+        </div>
+
+        <div class="step-box">
+          1. Tại khung <strong>"Thông Báo Nghỉ Làm"</strong>, bấm nút xanh:
+          <strong>"+ Đăng Ký Ngày Nghỉ"</strong>.<br />
+          2. Chọn ngày muốn nghỉ, ca nghỉ và lý do báo trước cho cửa hàng.<br />
+          3. Bấm <strong>"Xác Nhận Đăng Ký Nghỉ"</strong>. Hệ thống sẽ tự động cập nhật số ngày nghỉ
+          trong tháng.
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>Phần mềm Kyodo Food v1.5.0 • Trang 2/3</span>
+        <span>Hỗ trợ kỹ thuật: Quản lý Cửa Hàng Trưng Nữ Vương</span>
       </div>
     </div>
 
-    <!-- THÔNG TIN LIÊN HỆ -->
-    <div class="info-card amber" style="margin-top: 8px;">
-      <div class="card-title amber">📞 KÊNH HỖ TRỢ & BÁO CÁO CỬA HÀNG</div>
-      <p style="font-size: 10.5px;">
-        • <strong>Đơn vị</strong>: Cửa hàng Kyodo Food - Cơ sở Trưng Nữ Vương, Đà Nẵng.<br>
-        • <strong>Chủ cửa hàng / Quản lý</strong>: Phụ trách duyệt bảng công, giải quyết ứng lương và quyết toán lương ngày 05 hàng tháng.<br>
-        • <strong>Bản quyền phần mềm</strong>: Kyodo Food Attendance System v1.5.0 (Cơ sở Trưng Nữ Vương).
-      </p>
-    </div>
+    <!-- ==================== TRANG 3 ==================== -->
+    <div class="page">
+      <div class="header">
+        <div class="brand-group">
+          <div class="logo-box">KF</div>
+          <div class="brand-text">
+            <h1>CỬA HÀNG KYODO FOOD</h1>
+            <p>CƠ SỞ DUY NHẤT: TRƯNG NỮ VƯƠNG, ĐÀ NẴNG</p>
+          </div>
+        </div>
+        <div class="header-badges">
+          <div class="badge-version">Tổng Kết Cuối Tháng & Hỗ Trợ</div>
+        </div>
+      </div>
 
-    <div class="footer">
-      <span>Phần mềm Kyodo Food v1.5.0 • Trang 3/3</span>
-      <span>Chúc các bạn làm việc hiệu quả và nhiều niềm vui tại Kyodo Food!</span>
-    </div>
-  </div>
+      <!-- PHẦN 6 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">6</span>
+          <span>XEM KẾT QUẢ TỔNG GIỜ LÀM & IN PHIẾU CÔNG CUỐI THÁNG</span>
+        </div>
 
-</body>
+        <p style="margin-bottom: 6px">
+          Vào cuối mỗi tháng, nhân viên mở mục
+          <strong>"Kết Quả Tổng Giờ Làm Việc Của Bạn"</strong> để đối soát kết quả công việc:
+        </p>
+
+        <div class="grid-3">
+          <div class="info-card amber" style="text-align: center">
+            <div
+              style="font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase"
+            >
+              Tổng Giờ Làm
+            </div>
+            <div style="font-size: 17px; font-weight: 900; color: #b45309; margin: 3px 0">
+              Tổng số giờ
+            </div>
+            <div style="font-size: 9.5px; color: #78350f">Tổng số giờ đã làm trong tháng</div>
+          </div>
+
+          <div class="info-card blue" style="text-align: center">
+            <div
+              style="font-size: 10px; font-weight: 700; color: #1e40af; text-transform: uppercase"
+            >
+              Số Ca Làm Việc
+            </div>
+            <div style="font-size: 17px; font-weight: 900; color: #1d4ed8; margin: 3px 0">
+              Số ca
+            </div>
+            <div style="font-size: 9.5px; color: #1e3a8a">Ca làm đã hoàn thành</div>
+          </div>
+
+          <div class="info-card green" style="text-align: center">
+            <div
+              style="font-size: 10px; font-weight: 700; color: #166534; text-transform: uppercase"
+            >
+              Số Ngày Đã Nghỉ
+            </div>
+            <div style="font-size: 17px; font-weight: 900; color: #15803d; margin: 3px 0">
+              Số ngày
+            </div>
+            <div style="font-size: 9.5px; color: #14532d">Tổng ngày nghỉ trong tháng</div>
+          </div>
+        </div>
+
+        <div class="step-box">
+          <strong>In Phiếu Công hoặc Lưu File PDF:</strong><br />
+          Bấm vào nút <strong>"In Phiếu Công"</strong> ở góc trên bên phải bảng tổng hợp để in ra
+          giấy hoặc lưu thành file PDF gửi cho Quản lý đối soát lương.
+        </div>
+      </div>
+
+      <!-- PHẦN 7 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="step-number">7</span>
+          <span>BẢNG TÓM TẮT TÀI KHOẢN & QUY TẮC BẢO MẬT</span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tên Nhân Viên</th>
+              <th>Mã Đăng Nhập</th>
+              <th>Mật Khẩu Mặc Định</th>
+              <th>Quyền Hạn & Chức Năng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Út</strong> (Hoàng Thị Lệ)</td>
+              <td><span class="code-badge">UTNVTNV</span></td>
+              <td><code>1234</code> <em>(hoặc MK riêng đã đổi)</em></td>
+              <td>Chấm công ca, ứng lương, sửa hồ sơ cá nhân</td>
+            </tr>
+            <tr>
+              <td><strong>Bảo</strong></td>
+              <td><span class="code-badge">BAONVTNV</span></td>
+              <td><code>1234</code> <em>(hoặc MK riêng đã đổi)</em></td>
+              <td>Chấm công ca, ứng lương, sửa hồ sơ cá nhân</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="tip-box">
+          🔒 <strong>Quy tắc bảo mật quan trọng:</strong><br />
+          • Mỗi tài khoản <strong>chỉ có DUY NHẤT 1 mật khẩu đăng nhập</strong> (khi bạn đổi mật
+          khẩu mới, mật khẩu cũ 1234 sẽ mất hiệu lực).<br />
+          • Luôn bấm nút <strong>"Đăng Xuất"</strong> sau khi ghi nhận giờ làm để tránh người khác
+          chấm nhầm vào tài khoản của mình.<br />
+          • Trường hợp quên mật khẩu, hãy báo ngay cho <strong>Chủ cửa hàng (Admin)</strong> để được
+          hỗ trợ cấp lại mật khẩu mới.
+        </div>
+      </div>
+
+      <!-- THÔNG TIN LIÊN HỆ -->
+      <div class="info-card amber" style="margin-top: 8px">
+        <div class="card-title amber">📞 KÊNH HỖ TRỢ & BÁO CÁO CỬA HÀNG</div>
+        <p style="font-size: 10.5px">
+          • <strong>Đơn vị</strong>: Cửa hàng Kyodo Food - Cơ sở Trưng Nữ Vương, Đà Nẵng.<br />
+          • <strong>Chủ cửa hàng / Quản lý</strong>: Phụ trách duyệt bảng công, giải quyết ứng lương
+          và quyết toán lương ngày 05 hàng tháng.<br />
+          • <strong>Bản quyền phần mềm</strong>: Kyodo Food Attendance System v1.5.0 (Cơ sở Trưng Nữ
+          Vương).
+        </p>
+      </div>
+
+      <div class="footer">
+        <span>Phần mềm Kyodo Food v1.5.0 • Trang 3/3</span>
+        <span>Chúc các bạn làm việc hiệu quả và nhiều niềm vui tại Kyodo Food!</span>
+      </div>
+    </div>
+  </body>
 </html>

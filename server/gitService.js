@@ -22,7 +22,7 @@ async function getGitStatus() {
     try {
       branch = await runCmd('git rev-parse --abbrev-ref HEAD');
     } catch (_) {}
-    
+
     let remoteUrl = 'https://github.com/MrSand1981/kyodo-food-attendance.git';
     try {
       remoteUrl = await runCmd('git remote get-url origin');
@@ -41,14 +41,18 @@ async function getGitStatus() {
     } catch (_) {}
 
     let lastCommit = {
-      hash: 'v2.0.0',
-      subject: 'Kyodo Food v2.0.0: Phiên Bản Phát Hành Chính Thức (Official Release)'
+      hash: 'v2.1.0',
+      subject: 'Kyodo Food v2.1.0: Phiên Bản Phát Hành Chính Thức (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
       if (fs.existsSync(commitInfoPath)) {
         const info = JSON.parse(fs.readFileSync(commitInfoPath, 'utf8'));
-        if (info.hash) lastCommit = { hash: info.hash, subject: info.subject || 'Cập nhật tính năng Kyodo Food' };
+        if (info.hash)
+          lastCommit = {
+            hash: info.hash,
+            subject: info.subject || 'Cập nhật tính năng Kyodo Food',
+          };
       }
     } catch (_) {}
 
@@ -59,7 +63,7 @@ async function getGitStatus() {
         if (spaceIdx > 0) {
           lastCommit = {
             hash: line.substring(0, spaceIdx).trim(),
-            subject: line.substring(spaceIdx + 1).trim()
+            subject: line.substring(spaceIdx + 1).trim(),
           };
         }
       }
@@ -73,18 +77,22 @@ async function getGitStatus() {
       modifiedFiles,
       unpushedCount,
       hasChanges: modifiedFiles > 0 || unpushedCount > 0,
-      lastCommit
+      lastCommit,
     };
   } catch (err) {
     let lastCommit = {
-      hash: 'v2.0.0',
-      subject: 'Kyodo Food v2.0.0: Phiên Bản Phát Hành Chính Thức (Official Release)'
+      hash: 'v2.1.0',
+      subject: 'Kyodo Food v2.1.0: Phiên Bản Phát Hành Chính Thức (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
       if (fs.existsSync(commitInfoPath)) {
         const info = JSON.parse(fs.readFileSync(commitInfoPath, 'utf8'));
-        if (info.hash) lastCommit = { hash: info.hash, subject: info.subject || 'Cập nhật tính năng Kyodo Food' };
+        if (info.hash)
+          lastCommit = {
+            hash: info.hash,
+            subject: info.subject || 'Cập nhật tính năng Kyodo Food',
+          };
       }
     } catch (_) {}
 
@@ -96,7 +104,7 @@ async function getGitStatus() {
       modifiedFiles: 0,
       unpushedCount: 0,
       hasChanges: false,
-      lastCommit
+      lastCommit,
     };
   }
 }
@@ -108,11 +116,11 @@ async function pushToGitHub(messageInput) {
 
   try {
     const pkgPath = path.join(APP_DIR, 'package.json');
-    let newVersion = '2.0.0';
+    let newVersion = '2.1.0';
     try {
       if (fs.existsSync(pkgPath)) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        newVersion = pkg.version || '2.0.0';
+        newVersion = pkg.version || '2.1.0';
       }
     } catch (e) {}
 
@@ -120,10 +128,10 @@ async function pushToGitHub(messageInput) {
     if (process.env.RENDER) {
       return {
         success: true,
-        commitHash: 'v2.0.0',
+        commitHash: 'v2.1.0',
         version: newVersion,
         message: `Hệ thống Cloud Render đang chạy bản mới nhất v${newVersion} (Chính Thức). Cloud Render được Kỹ sư AI tự động cập nhật từ xa qua GitHub, bạn không cần đẩy thủ công từ trình duyệt!`,
-        logs: 'Đang chạy trên Cloud Render.'
+        logs: 'Đang chạy trên Cloud Render.',
       };
     }
 
@@ -175,12 +183,20 @@ async function pushToGitHub(messageInput) {
 
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
-      fs.writeFileSync(commitInfoPath, JSON.stringify({
-        hash: latestHash || '1a3850d',
-        subject: commitMsg,
-        version: newVersion,
-        date: dateStr
-      }, null, 2), 'utf8');
+      fs.writeFileSync(
+        commitInfoPath,
+        JSON.stringify(
+          {
+            hash: latestHash || '1a3850d',
+            subject: commitMsg,
+            version: newVersion,
+            date: dateStr,
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
     } catch (_) {}
 
     return {
@@ -188,21 +204,22 @@ async function pushToGitHub(messageInput) {
       commitHash: latestHash || '1a3850d',
       version: newVersion,
       message: `Đã đóng gói và cập nhật bản mới (v${newVersion}) lên kho lưu trữ thành công! (Commit: ${latestHash || '1a3850d'})`,
-      logs: logs.join('\n')
+      logs: logs.join('\n'),
     };
   } catch (err) {
     logs.push(`Thông báo: ${err.message}`);
     return {
       success: true,
-      commitHash: 'v2.0.0',
-      version: '2.0.0',
-      message: 'Bản cập nhật mã nguồn Kyodo Food v2.0.0 (Chính Thức) đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
-      logs: logs.join('\n')
+      commitHash: 'v2.1.0',
+      version: '2.1.0',
+      message:
+        'Bản cập nhật mã nguồn Kyodo Food v2.1.0 (Chính Thức) đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
+      logs: logs.join('\n'),
     };
   }
 }
 
 module.exports = {
   getGitStatus,
-  pushToGitHub
+  pushToGitHub,
 };

@@ -61,7 +61,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0-android
-          name: "Kyodo Food Android App v1.0.0"
+          name: 'Kyodo Food Android App v1.0.0'
           draft: false
           prerelease: false
           body: |

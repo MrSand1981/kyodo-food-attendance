@@ -6,12 +6,13 @@ async function request(endpoint, options = {}, retries = 2) {
   const url = `${BASE_URL}${endpoint}`;
   const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : null;
   const config = {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...options.headers
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
     },
-    ...options
+    ...options,
   };
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -32,7 +33,7 @@ async function request(endpoint, options = {}, retries = 2) {
         throw error;
       }
       // Đợi ngắn rồi thử lại (rất hữu ích khi mạng chập chờn hoặc máy chủ Cloud đang nạp)
-      await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
     }
   }
 }
@@ -48,9 +49,9 @@ export const api = {
     const res = await fetch(`${BASE_URL}/settings/upload-logo`, {
       method: 'POST',
       headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: formData
+      body: formData,
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Lỗi tải ảnh logo');
@@ -61,49 +62,58 @@ export const api = {
   login: async ({ username, password }) => {
     const res = await request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
     });
     if (res.success && res.token && typeof window !== 'undefined') {
       localStorage.setItem('kyodo_token', res.token);
     }
     return res;
   },
-  logout: () => {
+  logout: async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('kyodo_token');
     }
+    try {
+      await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch (_) {}
   },
 
   // Quản lý tài khoản Admin & Khôi phục mật khẩu
   getAdminProfileStatus: () => request('/admin/profile-status'),
-  updateAdminProfile: (data) => request('/admin/profile', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  changeAdminPassword: (data) => request('/admin/change-password', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  forgotAdminPassword: (identifier) => request('/admin/forgot-password', {
-    method: 'POST',
-    body: JSON.stringify({ identifier })
-  }),
+  updateAdminProfile: (data) =>
+    request('/admin/profile', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  changeAdminPassword: (data) =>
+    request('/admin/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  forgotAdminPassword: (identifier) =>
+    request('/admin/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ identifier }),
+    }),
 
   // Nhân viên (Server tự động phân quyền theo Token)
   getEmployees: () => request('/employees'),
   addEmployee: (data) => request('/employees', { method: 'POST', body: JSON.stringify(data) }),
-  updateEmployee: (id, data) => request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateEmployee: (id, data) =>
+    request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEmployee: (id) => request(`/employees/${id}`, { method: 'DELETE' }),
-  resetEmployeePassword: (id, password = '1234') => request(`/employees/${id}/reset-password`, {
-    method: 'POST',
-    body: JSON.stringify({ password })
-  }),
+  resetEmployeePassword: (id, password = '1234') =>
+    request(`/employees/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
 
   // Cập nhật Avatar cá nhân
-  updateAvatar: ({ employeeId, avatar }) => request('/employees/avatar', {
-    method: 'POST',
-    body: JSON.stringify({ employeeId, avatar })
-  }),
+  updateAvatar: ({ employeeId, avatar }) =>
+    request('/employees/avatar', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, avatar }),
+    }),
 
   // Ứng tiền lương trước (Salary Advances)
   getSalaryAdvances: (employeeId = '', month = '') => {
@@ -113,14 +123,16 @@ export const api = {
     const qs = params.toString() ? `?${params.toString()}` : '';
     return request(`/advances${qs}`);
   },
-  requestSalaryAdvance: ({ employeeId, date, amount, reason }) => request('/advances', {
-    method: 'POST',
-    body: JSON.stringify({ employeeId, date, amount, reason })
-  }),
-  updateSalaryAdvance: (id, { amount, date, reason }) => request(`/advances/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ amount, date, reason })
-  }),
+  requestSalaryAdvance: ({ employeeId, date, amount, reason }) =>
+    request('/advances', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, date, amount, reason }),
+    }),
+  updateSalaryAdvance: (id, { amount, date, reason }) =>
+    request(`/advances/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount, date, reason }),
+    }),
   deleteSalaryAdvance: (id) => request(`/advances/${id}`, { method: 'DELETE' }),
 
   // Xin ngày nghỉ (Leave Requests)
@@ -131,28 +143,32 @@ export const api = {
     const qs = params.toString() ? `?${params.toString()}` : '';
     return request(`/leaves${qs}`);
   },
-  requestLeave: ({ employeeId, date, endDate, shift, reason }) => request('/leaves', {
-    method: 'POST',
-    body: JSON.stringify({ employeeId, date, endDate, shift, reason })
-  }),
+  requestLeave: ({ employeeId, date, endDate, shift, reason }) =>
+    request('/leaves', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, date, endDate, shift, reason }),
+    }),
   deleteLeaveRequest: (id) => request(`/leaves/${id}`, { method: 'DELETE' }),
 
   // Chấm công trực tiếp (Vào ca / Ra ca)
   getActiveShift: (employeeId) => request(`/attendance/active/${employeeId}`),
-  checkIn: ({ employeeId, shiftCode, note }) => request('/attendance/check-in', {
-    method: 'POST',
-    body: JSON.stringify({ employeeId, shiftCode, note })
-  }),
-  checkOut: ({ employeeId, attendanceId, note }) => request('/attendance/check-out', {
-    method: 'POST',
-    body: JSON.stringify({ employeeId, attendanceId, note })
-  }),
+  checkIn: ({ employeeId, shiftCode, note }) =>
+    request('/attendance/check-in', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, shiftCode, note }),
+    }),
+  checkOut: ({ employeeId, attendanceId, note }) =>
+    request('/attendance/check-out', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, attendanceId, note }),
+    }),
 
   // Nhân viên tự nhập thời gian làm việc từng ngày
-  recordDailyWork: (data) => request('/attendance/daily-entry', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  recordDailyWork: (data) =>
+    request('/attendance/daily-entry', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Tổng kết cho nhân viên (cuối tháng nhận kết quả tổng số giờ làm việc)
   getMySummary: (employeeId, month) => {
@@ -167,14 +183,15 @@ export const api = {
   },
 
   // Điều chỉnh bản ghi chấm công (Admin)
-  adjustAttendance: (data) => request('/attendance/adjust', { method: 'POST', body: JSON.stringify(data) }),
+  adjustAttendance: (data) =>
+    request('/attendance/adjust', { method: 'POST', body: JSON.stringify(data) }),
   deleteAttendance: (id) => request(`/attendance/${id}`, { method: 'DELETE' }),
 
   // Nhân viên tự đổi mật khẩu riêng biệt
   changePassword: async ({ employeeId, oldPassword, newPassword }) => {
     const res = await request('/employees/change-password', {
       method: 'POST',
-      body: JSON.stringify({ employeeId, oldPassword, newPassword })
+      body: JSON.stringify({ employeeId, oldPassword, newPassword }),
     });
     if (res.success && res.token && typeof window !== 'undefined') {
       localStorage.setItem('kyodo_token', res.token);
@@ -192,17 +209,20 @@ export const api = {
 
   // Quản lý Ngày Lễ (Lương x2)
   getHolidays: (year) => request(year ? `/holidays?year=${year}` : '/holidays'),
-  addHoliday: (data) => request('/holidays', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  updateHoliday: (id, data) => request(`/holidays/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data)
-  }),
-  deleteHoliday: (id) => request(`/holidays/${id}`, {
-    method: 'DELETE'
-  }),
+  addHoliday: (data) =>
+    request('/holidays', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateHoliday: (id, data) =>
+    request(`/holidays/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteHoliday: (id) =>
+    request(`/holidays/${id}`, {
+      method: 'DELETE',
+    }),
 
   // Cập nhật phần mềm từ GitHub
   checkUpdate: () => request('/system/check-update'),
@@ -210,37 +230,43 @@ export const api = {
 
   // Đẩy bản cập nhật mới lên GitHub (Dành cho Chủ cửa hàng)
   getGitStatus: () => request('/system/git-status'),
-  pushToGitHub: (message) => request('/system/git-push', {
-    method: 'POST',
-    body: JSON.stringify({ message })
-  }),
+  pushToGitHub: (message) =>
+    request('/system/git-push', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
 
   // Cấu hình đồng bộ Cloud (Đà Nẵng - Nghệ An)
   getCloudConfig: () => request('/system/cloud-config'),
-  updateCloudConfig: (data) => request('/system/cloud-config', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  updateCloudConfig: (data) =>
+    request('/system/cloud-config', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Cấu hình thông báo Telegram tức thì (Nghệ An - Đà Nẵng)
   getTelegramConfig: () => request('/system/telegram-config'),
-  updateTelegramConfig: (data) => request('/system/telegram-config', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  testTelegram: (data) => request('/system/telegram-test', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  updateTelegramConfig: (data) =>
+    request('/system/telegram-config', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  testTelegram: (data) =>
+    request('/system/telegram-test', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Cấu hình thông báo Zalo tức thì (Nghệ An - Đà Nẵng)
   getZaloConfig: () => request('/system/zalo-config'),
-  updateZaloConfig: (data) => request('/system/zalo-config', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  testZalo: (data) => request('/system/zalo-test', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  })
+  updateZaloConfig: (data) =>
+    request('/system/zalo-config', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  testZalo: (data) =>
+    request('/system/zalo-test', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };

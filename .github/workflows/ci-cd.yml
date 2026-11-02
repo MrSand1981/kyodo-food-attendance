@@ -46,7 +46,7 @@ jobs:
         run: npm run typecheck
 
       - name: Run Prettier check
-        run: npm run format:check || true
+        run: npm run format:check
 
   # =============================================================================
   # Unit & Integration Tests

@@ -4,16 +4,18 @@ const db = require('./db');
 
 function getZaloConfig() {
   const settings = db.getSettings();
-  return settings.zalo || {
-    enabled: false,
-    mode: 'webhook', // 'webhook' | 'oa'
-    webhookUrl: '',
-    oaAccessToken: '',
-    oaUserId: '',
-    notifyAdvance: true,
-    notifyLeave: true,
-    notifyAttendance: false
-  };
+  return (
+    settings.zalo || {
+      enabled: false,
+      mode: 'webhook', // 'webhook' | 'oa'
+      webhookUrl: '',
+      oaAccessToken: '',
+      oaUserId: '',
+      notifyAdvance: true,
+      notifyLeave: true,
+      notifyAttendance: false,
+    }
+  );
 }
 
 // 1. Gửi qua Zalo Webhook (Tương thích Make, Pancake, Botcake, n8n, Zapier hoặc Custom Bridge)
@@ -21,7 +23,7 @@ async function sendViaWebhook(webhookUrl, payload) {
   const response = await fetch(webhookUrl.trim(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -38,16 +40,16 @@ async function sendViaZaloOA(accessToken, userId, messageText) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'access_token': accessToken.trim()
+      access_token: accessToken.trim(),
     },
     body: JSON.stringify({
       recipient: {
-        user_id: String(userId).trim()
+        user_id: String(userId).trim(),
       },
       message: {
-        text: messageText
-      }
-    })
+        text: messageText,
+      },
+    }),
   });
 
   const data = await response.json();
@@ -69,7 +71,7 @@ async function sendZaloNotification(messageText, rawData = {}) {
         store: 'Trưng Nữ Vương, Đà Nẵng',
         message: messageText,
         ...rawData,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return { sent: true, mode: 'webhook' };
     }
@@ -97,15 +99,14 @@ async function notifySalaryAdvance({ employee, amount, date, reason }) {
     minute: '2-digit',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   }).format(new Date());
 
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
   const formattedAmount = Number(amount || 0).toLocaleString('vi-VN');
 
-  const text = 
-`[KYODO FOOD] YÊU CẦU ỨNG LƯƠNG MỚI!
+  const text = `[KYODO FOOD] YÊU CẦU ỨNG LƯƠNG MỚI!
 ------------------------------
 Cơ sở: Trưng Nữ Vương, Đà Nẵng
 Nhân viên: ${empName} (${empCode})
@@ -121,7 +122,7 @@ Quản lý vui lòng đăng nhập web để đối chiếu và duyệt chi.`;
     employee: { name: empName, code: empCode },
     amount,
     date,
-    reason
+    reason,
   });
 }
 
@@ -136,15 +137,14 @@ async function notifyLeaveRequest({ employee, date, endDate, shift, reason }) {
     minute: '2-digit',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   }).format(new Date());
 
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
   const dateRange = endDate && endDate !== date ? `${date} đến ${endDate}` : date;
 
-  const text = 
-`[KYODO FOOD] THÔNG BÁO XIN NGHỈ LÀM!
+  const text = `[KYODO FOOD] THÔNG BÁO XIN NGHỈ LÀM!
 ------------------------------
 Cơ sở: Trưng Nữ Vương, Đà Nẵng
 Nhân viên: ${empName} (${empCode})
@@ -160,7 +160,7 @@ Quản lý vui lòng kiểm tra lịch ca và sắp xếp nhân sự thay thế.
     employee: { name: empName, code: empCode },
     date: dateRange,
     shift,
-    reason
+    reason,
   });
 }
 
@@ -172,8 +172,7 @@ async function notifyAttendance({ employee, date, shiftName, startTime, endTime,
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
 
-  const text = 
-`[KYODO FOOD] CHẤM CÔNG CA LÀM
+  const text = `[KYODO FOOD] CHẤM CÔNG CA LÀM
 ------------------------------
 Cơ sở: Trưng Nữ Vương, Đà Nẵng
 Nhân viên: ${empName} (${empCode})
@@ -185,7 +184,7 @@ Tổng giờ: ${hours} tiếng`;
     event: 'DAILY_ATTENDANCE',
     employee: { name: empName, code: empCode },
     date,
-    hours
+    hours,
   });
 }
 
@@ -198,11 +197,10 @@ async function testZalo(testConfig) {
     second: '2-digit',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   }).format(new Date());
 
-  const testMessage = 
-`[KYODO FOOD] THỬ NGHIỆM KẾT NỐI ZALO THÀNH CÔNG!
+  const testMessage = `[KYODO FOOD] THỬ NGHIỆM KẾT NỐI ZALO THÀNH CÔNG!
 ------------------------------
 Phần mềm: Chấm công & Quản lý Kyodo Food
 Cơ sở: Trưng Nữ Vương, Đà Nẵng
@@ -214,7 +212,7 @@ Hệ thống đã sẵn sàng tự động gửi tin nhắn mỗi khi nhân viê
     return sendViaWebhook(testConfig.webhookUrl, {
       event: 'TEST_CONNECTION',
       message: testMessage,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -236,5 +234,5 @@ module.exports = {
   notifySalaryAdvance,
   notifyLeaveRequest,
   notifyAttendance,
-  testZalo
+  testZalo,
 };

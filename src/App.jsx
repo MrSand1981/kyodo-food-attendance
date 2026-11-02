@@ -1,10 +1,12 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Header from './components/Header';
 import LoginKiosk from './pages/LoginKiosk';
-import StaffAttendance from './pages/StaffAttendance';
-import ManagerDashboard from './pages/ManagerDashboard';
 import { api } from './utils/api';
+
+// Tách nhỏ bundle (Code Splitting & Lazy Loading) giúp tải trang ban đầu cực nhanh
+const StaffAttendance = lazy(() => import('./pages/StaffAttendance'));
+const ManagerDashboard = lazy(() => import('./pages/ManagerDashboard'));
 
 function getInitialAppMode() {
   const path = window.location.pathname.toLowerCase();
@@ -34,13 +36,13 @@ export default function App() {
       setRetryCountdown(null);
       const [settingsRes, employeesRes] = await Promise.all([
         api.getSettings(),
-        api.getEmployees(false) // Che giấu tuyệt đối lương khi khởi tạo
+        api.getEmployees(false), // Che giấu tuyệt đối lương khi khởi tạo
       ]);
       setSettings(settingsRes.settings);
       setShifts(settingsRes.shifts || []);
       setEmployees(employeesRes.employees || []);
     } catch (err) {
-      console.error("Lỗi khởi tạo hệ thống:", err);
+      console.error('Lỗi khởi tạo hệ thống:', err);
       setInitError(err.message || 'Không thể kết nối đến máy chủ');
     } finally {
       setLoading(false);
@@ -78,7 +80,7 @@ export default function App() {
     if (res.success) {
       // Nếu đang ở phiên bản nhân viên thì không cho phép đăng nhập admin
       if (appMode === 'employee' && res.role === 'admin') {
-        throw new Error("Phiên bản Nhân Viên chỉ dành cho nhân viên chấm công!");
+        throw new Error('Phiên bản Nhân Viên chỉ dành cho nhân viên chấm công!');
       }
       setCurrentRole(res.role);
       setCurrentUser(res.user);
@@ -109,9 +111,13 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600 shadow-sm animate-pulse">
-          <div className="w-8 h-8 rounded-full border-2 border-amber-600 flex items-center justify-center font-bold text-lg">!</div>
+          <div className="w-8 h-8 rounded-full border-2 border-amber-600 flex items-center justify-center font-bold text-lg">
+            !
+          </div>
         </div>
-        <h3 className="text-xl font-black text-slate-800 mb-2">Đang kết nối máy chủ Kyodo Food Cloud</h3>
+        <h3 className="text-xl font-black text-slate-800 mb-2">
+          Đang kết nối máy chủ Kyodo Food Cloud
+        </h3>
         <p className="text-sm text-slate-500 max-w-md mb-4 leading-relaxed">
           {initError}. Đang duy trì kết nối đám mây giữa Đà Nẵng và Nghệ An...
         </p>
@@ -153,7 +159,9 @@ export default function App() {
       />
 
       {/* Main Viewport */}
-      <main className={`flex-1 flex flex-col ${!currentRole ? 'items-center pt-3 sm:pt-5 pb-8' : 'pb-16'}`}>
+      <main
+        className={`flex-1 flex flex-col ${!currentRole ? 'items-center pt-3 sm:pt-5 pb-8' : 'pb-16'}`}
+      >
         {/* 1. MÀN HÌNH ĐĂNG NHẬP */}
         {!currentRole && (
           <LoginKiosk
@@ -165,34 +173,46 @@ export default function App() {
           />
         )}
 
-        {/* 2. MÀN HÌNH NHÂN VIÊN: NHẬP GIỜ LÀM TỪNG NGÀY & XEM TỔNG CÔNG CUỐI THÁNG (BẢO MẬT LƯƠNG) */}
-        {currentRole === 'employee' && currentUser && (
-          <StaffAttendance
-            employee={currentUser}
-            onUpdateEmployee={(updated) => {
-              setCurrentUser(prev => ({ ...prev, ...updated }));
-              // Cập nhật cả trong danh sách employees
-              setEmployees(prev => prev.map(e => e.id === updated.id ? { ...e, ...updated } : e));
-            }}
-            onLogout={handleLogout}
-            settings={settings}
-            shifts={shifts}
-          />
-        )}
+        {/* 2. MÀN HÌNH NHÂN VIÊN & 3. MÀN HÌNH QUẢN LÝ (LAZY LOADED) */}
+        <Suspense
+          fallback={
+            <div className="flex-1 flex flex-col items-center justify-center py-20">
+              <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-sm font-medium text-slate-600">Đang tải mô-đun ứng dụng...</p>
+            </div>
+          }
+        >
+          {currentRole === 'employee' && currentUser && (
+            <StaffAttendance
+              employee={currentUser}
+              onUpdateEmployee={(updated) => {
+                setCurrentUser((prev) => ({ ...prev, ...updated }));
+                // Cập nhật cả trong danh sách employees
+                setEmployees((prev) =>
+                  prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e))
+                );
+              }}
+              onLogout={handleLogout}
+              settings={settings}
+              shifts={shifts}
+            />
+          )}
 
-        {/* 3. MÀN HÌNH QUẢN LÝ / CHỦ CỬA HÀNG: XEM BẢNG LƯƠNG, BẢNG CÔNG, TẠO TÀI KHOẢN, XUẤT EXCEL */}
-        {currentRole === 'admin' && (
-          <ManagerDashboard
-            settings={settings}
-            onSettingsChange={loadInitialData}
-            shifts={shifts}
-          />
-        )}
+          {currentRole === 'admin' && (
+            <ManagerDashboard
+              settings={settings}
+              onSettingsChange={loadInitialData}
+              shifts={shifts}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* Footer */}
       <footer className="py-4 border-t border-slate-200 text-center text-xs text-slate-500 no-print">
-        <p>© 2026 <strong>Kyodo Food</strong> • Cơ sở Trưng Nữ Vương, Đà Nẵng</p>
+        <p>
+          © 2026 <strong>Kyodo Food</strong> • Cơ sở Trưng Nữ Vương, Đà Nẵng
+        </p>
       </footer>
     </div>
   );

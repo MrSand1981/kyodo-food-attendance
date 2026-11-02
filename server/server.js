@@ -6,6 +6,7 @@ const fs = require('fs');
 const multer = require('multer');
 const XLSX = require('xlsx');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 
 const db = require('./db');
@@ -19,10 +20,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Bảo vệ Header bằng Helmet (chống clickjacking, XSS, MIME sniffing)
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 // Giới hạn CORS an toàn
 const allowedOrigins = [
@@ -31,20 +34,36 @@ const allowedOrigins = [
   'http://localhost:5000',
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://127.0.0.1:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
   'capacitor://localhost',
-  'ionic://localhost'
+  'ionic://localhost',
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.onrender.com') || origin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.endsWith('.onrender.com') ||
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('http://127.0.0.1:')
+      ) {
+        return callback(null, true);
+      }
+      return callback(
+        new Error(
+          'Chặn bởi chính sách CORS bảo mật của Kyodo Food: Nguồn ' + origin + ' không được phép!'
+        )
+      );
+    },
+    credentials: true,
+  })
+);
+
+app.use(cookieParser());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -59,8 +78,9 @@ const loginLimiter = rateLimit({
   statusCode: 429,
   message: {
     success: false,
-    message: 'Bạn đã nhập sai mật khẩu quá 15 lần! Vui lòng chờ 15 phút để thử lại hoặc liên hệ Quản lý.'
-  }
+    message:
+      'Bạn đã nhập sai mật khẩu quá 15 lần! Vui lòng chờ 15 phút để thử lại hoặc liên hệ Quản lý.',
+  },
 });
 
 // Giới hạn tần suất chung cho API
@@ -68,7 +88,7 @@ const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 600,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 app.use('/api', apiLimiter);
 
@@ -92,7 +112,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
     cb(null, `custom-logo${ext}`);
-  }
+  },
 });
 const upload = multer({
   storage: storage,
@@ -104,7 +124,7 @@ const upload = multer({
     } else {
       cb(new Error('Chỉ chấp nhận tệp hình ảnh hợp lệ (PNG, JPEG, WEBP, SVG)!'));
     }
-  }
+  },
 });
 
 // ================= API ROUTES =================
@@ -117,14 +137,15 @@ app.get('/api/ping', (req, res) => {
     store: 'Trưng Nữ Vương, Đà Nẵng',
     time: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
-    message: 'Máy chủ Kyodo Food đang hoạt động 24/7'
+    message: 'Máy chủ Kyodo Food đang hoạt động 24/7',
   });
 });
 
-app.get('/api/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
   res.status(200).json({
     status: 'healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
   });
 });
 
@@ -161,22 +182,41 @@ app.post('/api/settings/upload-logo', requireAdmin, upload.single('logo'), (req,
   }
 });
 
-// 2. AUTHENTICATION & LOGIN (CẤP JWT TOKEN AN TOÀN)
+// 2. AUTHENTICATION & LOGIN (CẤP JWT TOKEN AN TOÀN & HTTPONLY COOKIE)
 app.post('/api/auth/login', loginLimiter, (req, res) => {
   try {
     const { username, password } = req.body;
     const auth = db.authenticateUser(username, password);
     const token = generateToken(auth.user, auth.role);
+
+    // Thiết lập cookie HttpOnly an toàn chống XSS
+    res.cookie('kyodo_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
+    });
+
     res.json({
       success: true,
       role: auth.role,
       user: auth.user,
       token,
-      activeShift: auth.activeShift || null
+      activeShift: auth.activeShift || null,
     });
   } catch (err) {
     res.status(401).json({ success: false, message: err.message });
   }
+});
+
+// Endpoint đăng xuất an toàn xóa HttpOnly Cookie
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('kyodo_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  res.json({ success: true, message: 'Đã đăng xuất an toàn' });
 });
 
 // 2.1. ADMIN PROFILE & PASSWORD RECOVERY (ĐĂNG KÝ, ĐỔI MẬT KHẨU & QUÊN MẬT KHẨU ADMIN)
@@ -221,20 +261,43 @@ app.post('/api/admin/forgot-password', loginLimiter, (req, res) => {
 // 3. EMPLOYEES CRUD (XÁC THỰC PHÂN QUYỀN RBAC)
 app.get('/api/employees', (req, res) => {
   try {
-    // Luôn trả về danh sách đầy đủ hồ sơ nhân viên (SĐT, Ngân hàng, CCCD, Lương) cho trang Quản lý
     const employees = db.getEmployees(true);
-    res.json({ success: true, employees });
+    // Nếu là Quản trị viên (Admin), trả về toàn bộ dữ liệu (lương, tài khoản ngân hàng, CCCD, mật khẩu)
+    if (req.user && req.user.role === 'admin') {
+      return res.json({ success: true, employees });
+    }
+    // Đối với Kiosk công cộng / Chưa đăng nhập, chỉ trả về thông tin hiển thị cơ bản (che giấu hoàn toàn dữ liệu nhạy cảm)
+    const sanitized = employees.map((emp) => ({
+      id: emp.id,
+      name: emp.name || emp.fullName || emp.shortName,
+      fullName: emp.fullName || emp.name,
+      shortName: emp.shortName || emp.name,
+      username: emp.username,
+      code: emp.code,
+      role: emp.role || 'employee',
+      branch: emp.branch || 'Trưng Nữ Vương, Đà Nẵng',
+      position: emp.position || 'Nhân viên',
+      avatar: emp.avatar || '',
+      gender: emp.gender || 'Nam',
+      active: emp.active !== false,
+    }));
+    res.json({ success: true, employees: sanitized });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-app.post('/api/employees/change-password', (req, res) => {
+app.post('/api/employees/change-password', requireAuth, (req, res) => {
   try {
     const { employeeId, oldPassword, newPassword } = req.body;
-    // Nếu có token đăng nhập và không phải admin thì kiểm tra đúng tài khoản
-    if (req.user && req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
-      return res.status(403).json({ success: false, message: 'Bạn không có quyền đổi mật khẩu của tài khoản khác!' });
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không có quyền đổi mật khẩu của tài khoản khác!' });
     }
     const result = db.changeEmployeePassword(employeeId, oldPassword, newPassword);
 
@@ -243,6 +306,12 @@ app.post('/api/employees/change-password', (req, res) => {
     let token = null;
     if (emp) {
       token = generateToken(emp, 'employee');
+      res.cookie('kyodo_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
     }
     res.json({ ...result, token });
   } catch (err) {
@@ -251,7 +320,7 @@ app.post('/api/employees/change-password', (req, res) => {
 });
 
 // Admin đặt lại mật khẩu nhân viên về 1234 khi nhân viên quên mật khẩu
-app.post('/api/employees/:id/reset-password', (req, res) => {
+app.post('/api/employees/:id/reset-password', requireAdmin, (req, res) => {
   try {
     const result = db.resetEmployeePassword(req.params.id, req.body?.password || '1234');
     res.json(result);
@@ -261,14 +330,22 @@ app.post('/api/employees/:id/reset-password', (req, res) => {
 });
 
 // Cập nhật Avatar cá nhân cho nhân viên
-app.post('/api/employees/avatar', (req, res) => {
+app.post('/api/employees/avatar', requireAuth, (req, res) => {
   try {
     const { employeeId, avatar } = req.body;
     if (!employeeId || !avatar) {
-      return res.status(400).json({ success: false, message: 'Thiếu thông tin employeeId hoặc ảnh avatar!' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Thiếu thông tin employeeId hoặc ảnh avatar!' });
     }
-    if (req.user && req.user.role !== 'admin' && req.user.id !== employeeId && req.user.username !== employeeId) {
-      return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa ảnh của tài khoản khác!' });
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không có quyền sửa ảnh của tài khoản khác!' });
     }
     const result = db.updateEmployeeAvatar(employeeId, avatar);
     res.json(result);
@@ -280,7 +357,11 @@ app.post('/api/employees/avatar', (req, res) => {
 app.post('/api/employees', requireAdmin, (req, res) => {
   try {
     const newEmp = db.addEmployee(req.body);
-    res.json({ success: true, employee: newEmp, message: `Đã tạo tài khoản "${newEmp.username}" thành công!` });
+    res.json({
+      success: true,
+      employee: newEmp,
+      message: `Đã tạo tài khoản "${newEmp.username}" thành công!`,
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -289,7 +370,8 @@ app.post('/api/employees', requireAdmin, (req, res) => {
 app.put('/api/employees/:id', requireAdmin, (req, res) => {
   try {
     const updated = db.updateEmployee(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ success: false, message: 'Không tìm thấy nhân viên' });
+    if (!updated)
+      return res.status(404).json({ success: false, message: 'Không tìm thấy nhân viên' });
     res.json({ success: true, employee: updated });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -306,9 +388,15 @@ app.delete('/api/employees/:id', requireAdmin, (req, res) => {
 });
 
 // 4. ATTENDANCE & CHẤM CÔNG HÀNG NGÀY
-app.get('/api/attendance/active/:employeeId', (req, res) => {
+app.get('/api/attendance/active/:employeeId', requireAuth, (req, res) => {
   try {
-    const active = db.getActiveShift(req.params.employeeId);
+    const targetId = req.params.employeeId;
+    if (req.user.role !== 'admin' && req.user.id !== targetId && req.user.username !== targetId) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không có quyền xem trạng thái của nhân viên khác!' });
+    }
+    const active = db.getActiveShift(targetId);
     res.json({ success: true, activeShift: active });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -316,9 +404,18 @@ app.get('/api/attendance/active/:employeeId', (req, res) => {
 });
 
 // Vào ca trực tiếp
-app.post('/api/attendance/check-in', (req, res) => {
+app.post('/api/attendance/check-in', requireAuth, (req, res) => {
   try {
     const { employeeId, shiftCode, note } = req.body;
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không thể vào ca thay cho nhân viên khác!' });
+    }
     const record = db.checkIn({ employeeId, shiftCode, note });
     res.json({ success: true, record, message: 'Vào ca thành công!' });
   } catch (err) {
@@ -327,14 +424,23 @@ app.post('/api/attendance/check-in', (req, res) => {
 });
 
 // Ra ca trực tiếp
-app.post('/api/attendance/check-out', (req, res) => {
+app.post('/api/attendance/check-out', requireAuth, (req, res) => {
   try {
     const { employeeId, attendanceId, note } = req.body;
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không thể ra ca thay cho nhân viên khác!' });
+    }
     const record = db.checkOut({ employeeId, attendanceId, note });
     res.json({
       success: true,
       record,
-      message: `Ra ca thành công! Ca này bạn đã làm được ${record.totalHours} giờ.`
+      message: `Ra ca thành công! Ca này bạn đã làm được ${record.totalHours} giờ.`,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -342,22 +448,59 @@ app.post('/api/attendance/check-out', (req, res) => {
 });
 
 // NHÂN VIÊN TỰ NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY
-app.post('/api/attendance/daily-entry', (req, res) => {
+app.post('/api/attendance/daily-entry', requireAuth, (req, res) => {
   try {
     const { employeeId, date, startTime, endTime, hours, shiftName, note } = req.body;
-    const record = db.recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note });
-    
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không thể chấm công thay cho nhân viên khác!' });
+    }
+    const record = db.recordDailyWork({
+      employeeId,
+      date,
+      startTime,
+      endTime,
+      hours,
+      shiftName,
+      note,
+    });
+
     // Bắn thông báo Telegram & Zalo (nếu bật)
     try {
-      const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
-      telegramService.notifyAttendance({ employee: emp, date, shiftName, startTime, endTime, hours: record.totalHours }).catch(() => {});
-      zaloService.notifyAttendance({ employee: emp, date, shiftName, startTime, endTime, hours: record.totalHours }).catch(() => {});
+      const emp = db
+        .getEmployees(true)
+        .find((e) => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+      telegramService
+        .notifyAttendance({
+          employee: emp,
+          date,
+          shiftName,
+          startTime,
+          endTime,
+          hours: record.totalHours,
+        })
+        .catch(() => {});
+      zaloService
+        .notifyAttendance({
+          employee: emp,
+          date,
+          shiftName,
+          startTime,
+          endTime,
+          hours: record.totalHours,
+        })
+        .catch(() => {});
     } catch (_) {}
 
     res.json({
       success: true,
       record,
-      message: `Đã lưu thời gian làm việc ngày ${date} (${record.totalHours} giờ) thành công!`
+      message: `Đã lưu thời gian làm việc ngày ${date} (${record.totalHours} giờ) thành công!`,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -365,9 +508,12 @@ app.post('/api/attendance/daily-entry', (req, res) => {
 });
 
 // 4b. ỨNG TIỀN LƯƠNG TRƯỚC (SALARY ADVANCES)
-app.get('/api/advances', (req, res) => {
+app.get('/api/advances', requireAuth, (req, res) => {
   try {
-    const { employeeId, month } = req.query;
+    let { employeeId, month } = req.query;
+    if (req.user.role !== 'admin') {
+      employeeId = req.user.id || req.user.username;
+    }
     const result = db.getSalaryAdvances(employeeId, month);
     res.json({ success: true, ...result });
   } catch (err) {
@@ -375,14 +521,25 @@ app.get('/api/advances', (req, res) => {
   }
 });
 
-app.post('/api/advances', (req, res) => {
+app.post('/api/advances', requireAuth, (req, res) => {
   try {
     const { employeeId, date, amount, reason } = req.body;
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không thể yêu cầu ứng lương cho nhân viên khác!' });
+    }
     const record = db.requestSalaryAdvance({ employeeId, date, amount, reason });
-    
+
     // Bắn thông báo Telegram & Zalo tức thì về máy Quản lý
     try {
-      const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+      const emp = db
+        .getEmployees(true)
+        .find((e) => e.id === employeeId || e.username === employeeId || e.code === employeeId);
       telegramService.notifySalaryAdvance({ employee: emp, amount, date, reason }).catch(() => {});
       zaloService.notifySalaryAdvance({ employee: emp, amount, date, reason }).catch(() => {});
     } catch (_) {}
@@ -390,25 +547,30 @@ app.post('/api/advances', (req, res) => {
     res.json({
       success: true,
       record,
-      message: `Đã lưu bản ghi ứng lương ${Number(amount).toLocaleString('vi-VN')} đ thành công!`
+      message: `Đã lưu bản ghi ứng lương ${Number(amount).toLocaleString('vi-VN')} đ thành công!`,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 });
 
-app.put('/api/advances/:id', (req, res) => {
+app.put('/api/advances/:id', requireAdmin, (req, res) => {
   try {
     const { amount, date, reason } = req.body;
     const updated = db.updateSalaryAdvance(req.params.id, { amount, date, reason });
-    if (!updated) return res.status(404).json({ success: false, message: 'Không tìm thấy khoản tạm ứng' });
-    res.json({ success: true, record: updated, message: 'Đã cập nhật khoản tạm ứng lương thành công!' });
+    if (!updated)
+      return res.status(404).json({ success: false, message: 'Không tìm thấy khoản tạm ứng' });
+    res.json({
+      success: true,
+      record: updated,
+      message: 'Đã cập nhật khoản tạm ứng lương thành công!',
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-app.delete('/api/advances/:id', (req, res) => {
+app.delete('/api/advances/:id', requireAdmin, (req, res) => {
   try {
     const ok = db.deleteSalaryAdvance(req.params.id);
     res.json({ success: ok, message: 'Đã xóa bản ghi tạm ứng lương' });
@@ -418,9 +580,12 @@ app.delete('/api/advances/:id', (req, res) => {
 });
 
 // 4c. XIN NGÀY NGHỈ (LEAVE REQUESTS)
-app.get('/api/leaves', (req, res) => {
+app.get('/api/leaves', requireAuth, (req, res) => {
   try {
-    const { employeeId, month } = req.query;
+    let { employeeId, month } = req.query;
+    if (req.user.role !== 'admin') {
+      employeeId = req.user.id || req.user.username;
+    }
     const result = db.getLeaveRequests(employeeId, month);
     res.json({ success: true, records: result });
   } catch (err) {
@@ -428,29 +593,44 @@ app.get('/api/leaves', (req, res) => {
   }
 });
 
-app.post('/api/leaves', (req, res) => {
+app.post('/api/leaves', requireAuth, (req, res) => {
   try {
     const { employeeId, date, endDate, shift, reason } = req.body;
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== employeeId &&
+      req.user.username !== employeeId
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không thể xin nghỉ thay cho nhân viên khác!' });
+    }
     const record = db.requestLeave({ employeeId, date, endDate, shift, reason });
-    
+
     // Bắn thông báo Telegram & Zalo tức thì về máy Quản lý
     try {
-      const emp = db.getEmployees(true).find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
-      telegramService.notifyLeaveRequest({ employee: emp, date, endDate, shift, reason }).catch(() => {});
-      zaloService.notifyLeaveRequest({ employee: emp, date, endDate, shift, reason }).catch(() => {});
+      const emp = db
+        .getEmployees(true)
+        .find((e) => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+      telegramService
+        .notifyLeaveRequest({ employee: emp, date, endDate, shift, reason })
+        .catch(() => {});
+      zaloService
+        .notifyLeaveRequest({ employee: emp, date, endDate, shift, reason })
+        .catch(() => {});
     } catch (_) {}
 
     res.json({
       success: true,
       record,
-      message: `Đã lưu thông báo nghỉ làm ngày ${date} thành công!`
+      message: `Đã lưu thông báo nghỉ làm ngày ${date} thành công!`,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 });
 
-app.delete('/api/leaves/:id', (req, res) => {
+app.delete('/api/leaves/:id', requireAdmin, (req, res) => {
   try {
     const ok = db.deleteLeaveRequest(req.params.id);
     res.json({ success: ok, message: 'Đã xóa đơn xin nghỉ' });
@@ -472,7 +652,7 @@ app.get('/api/holidays', (req, res) => {
 app.post('/api/holidays', requireAdmin, (req, res) => {
   try {
     const newHol = db.addHoliday(req.body);
-    res.json({ success: true, holiday: newHol, message: "Đã thêm ngày lễ thành công!" });
+    res.json({ success: true, holiday: newHol, message: 'Đã thêm ngày lễ thành công!' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -481,7 +661,7 @@ app.post('/api/holidays', requireAdmin, (req, res) => {
 app.put('/api/holidays/:id', requireAdmin, (req, res) => {
   try {
     const updated = db.updateHoliday(req.params.id, req.body);
-    res.json({ success: true, holiday: updated, message: "Đã cập nhật ngày lễ thành công!" });
+    res.json({ success: true, holiday: updated, message: 'Đã cập nhật ngày lễ thành công!' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -497,11 +677,17 @@ app.delete('/api/holidays/:id', requireAdmin, (req, res) => {
 });
 
 // 5. TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN KẾT QUẢ TỔNG GIỜ LÀM - BẢO MẬT LƯƠNG)
-app.get('/api/attendance/my-summary/:employeeId', (req, res) => {
+app.get('/api/attendance/my-summary/:employeeId', requireAuth, (req, res) => {
   try {
+    const targetId = req.params.employeeId;
+    if (req.user.role !== 'admin' && req.user.id !== targetId && req.user.username !== targetId) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không có quyền xem tổng kết của nhân viên khác!' });
+    }
     const { month } = req.query; // YYYY-MM
-    const isAdmin = req.user && req.user.role === 'admin';
-    const summary = db.getEmployeeMonthlySummary(req.params.employeeId, month, isAdmin);
+    const isAdmin = req.user.role === 'admin';
+    const summary = db.getEmployeeMonthlySummary(targetId, month, isAdmin);
     res.json({ success: true, data: summary });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -526,13 +712,17 @@ app.get('/api/attendance/export-excel', requireAdmin, (req, res) => {
     const report = db.getMasterMonthlyReport(month);
 
     const [y, m] = (report.yearMonth || '').split('-');
-    const formattedMonth = (y && m) ? `${m}/${y}` : report.yearMonth;
-    const titleRow = [`BẢNG CHẤM CÔNG THEO GIỜ KYODO FOODS - CƠ SỞ TRƯNG NỮ VƯƠNG (THÁNG ${formattedMonth})`];
+    const formattedMonth = y && m ? `${m}/${y}` : report.yearMonth;
+    const titleRow = [
+      `BẢNG CHẤM CÔNG THEO GIỜ KYODO FOODS - CƠ SỞ TRƯNG NỮ VƯƠNG (THÁNG ${formattedMonth})`,
+    ];
     const headerRow1 = ['Tài khoản', 'Tên nhân viên', 'Cơ sở'];
     const headerRow2 = ['', '', ''];
 
-    report.days.forEach(d => {
-      const headerTitle = d.isHoliday ? `${d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`} (LỄ)` : (d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`);
+    report.days.forEach((d) => {
+      const headerTitle = d.isHoliday
+        ? `${d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`} (LỄ)`
+        : d.dateVN || `${String(d.day).padStart(2, '0')}/${m}/${y}`;
       const daySub = d.isHoliday ? `${d.dayOfWeek} (x${d.holidayMultiplier || 2})` : d.dayOfWeek;
       headerRow1.push(headerTitle);
       headerRow2.push(daySub);
@@ -551,21 +741,12 @@ app.get('/api/attendance/export-excel', requireAdmin, (req, res) => {
     );
     headerRow2.push('', '', '', '', '', '', '', '', '');
 
-    const excelRows = [
-      titleRow,
-      [],
-      headerRow1,
-      headerRow2
-    ];
+    const excelRows = [titleRow, [], headerRow1, headerRow2];
 
-    report.rows.forEach(r => {
-      const row = [
-        r.employee.username || r.employee.code,
-        r.employee.name,
-        'Trưng Nữ Vương'
-      ];
+    report.rows.forEach((r) => {
+      const row = [r.employee.username || r.employee.code, r.employee.name, 'Trưng Nữ Vương'];
 
-      report.days.forEach(d => {
+      report.days.forEach((d) => {
         const dData = r.dailyData[d.day];
         if (dData && dData.hours > 0) {
           const suffix = dData.isHoliday ? ` (x${dData.holidayMultiplier || 2})` : '';
@@ -609,8 +790,14 @@ app.get('/api/attendance/export-excel', requireAdmin, (req, res) => {
     XLSX.utils.book_append_sheet(wb, ws, `Kyodo_TNV_${report.yearMonth}`);
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    res.setHeader('Content-Disposition', `attachment; filename="Bang_Cham_Cong_Kyodo_Trung_Nu_Vuong_${report.yearMonth}.xlsx"`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Bang_Cham_Cong_Kyodo_Trung_Nu_Vuong_${report.yearMonth}.xlsx"`
+    );
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
     res.send(buffer);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -701,7 +888,7 @@ app.post('/api/system/cloud-config', requireAdmin, (req, res) => {
     const config = {
       cloudUrl: cloudUrl ? cloudUrl.trim().replace(/\/+$/, '') : '',
       activeMode: activeMode || 'cloud',
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     fs.writeFileSync(CLOUD_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
     res.json({ success: true, config, message: 'Đã lưu cấu hình kết nối Cloud thành công!' });
@@ -722,7 +909,8 @@ app.get('/api/system/telegram-config', requireAdmin, (req, res) => {
 
 app.post('/api/system/telegram-config', requireAdmin, (req, res) => {
   try {
-    const { enabled, botToken, chatId, notifyAdvance, notifyLeave, notifyAttendance } = req.body || {};
+    const { enabled, botToken, chatId, notifyAdvance, notifyLeave, notifyAttendance } =
+      req.body || {};
     const updated = db.updateSettings({
       telegram: {
         enabled: Boolean(enabled),
@@ -730,10 +918,14 @@ app.post('/api/system/telegram-config', requireAdmin, (req, res) => {
         chatId: String(chatId || '').trim(),
         notifyAdvance: notifyAdvance !== false,
         notifyLeave: notifyLeave !== false,
-        notifyAttendance: Boolean(notifyAttendance)
-      }
+        notifyAttendance: Boolean(notifyAttendance),
+      },
     });
-    res.json({ success: true, message: 'Đã lưu cấu hình thông báo Telegram thành công!', config: updated.telegram });
+    res.json({
+      success: true,
+      message: 'Đã lưu cấu hình thông báo Telegram thành công!',
+      config: updated.telegram,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -746,10 +938,17 @@ app.post('/api/system/telegram-test', requireAdmin, async (req, res) => {
     const targetToken = botToken || cfg.botToken;
     const targetChatId = chatId || cfg.chatId;
     if (!targetToken || !targetChatId) {
-      return res.status(400).json({ success: false, message: 'Vui lòng nhập Bot Token và Chat ID trước khi kiểm tra!' });
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập Bot Token và Chat ID trước khi kiểm tra!',
+      });
     }
     await telegramService.testTelegram(targetToken, targetChatId);
-    res.json({ success: true, message: '🎉 Đã gửi tin nhắn thử nghiệm thành công! Vui lòng kiểm tra ứng dụng Telegram của bạn.' });
+    res.json({
+      success: true,
+      message:
+        '🎉 Đã gửi tin nhắn thử nghiệm thành công! Vui lòng kiểm tra ứng dụng Telegram của bạn.',
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: `Lỗi kết nối Telegram: ${err.message}` });
   }
@@ -767,7 +966,16 @@ app.get('/api/system/zalo-config', requireAdmin, (req, res) => {
 
 app.post('/api/system/zalo-config', requireAdmin, (req, res) => {
   try {
-    const { enabled, mode, webhookUrl, oaAccessToken, oaUserId, notifyAdvance, notifyLeave, notifyAttendance } = req.body || {};
+    const {
+      enabled,
+      mode,
+      webhookUrl,
+      oaAccessToken,
+      oaUserId,
+      notifyAdvance,
+      notifyLeave,
+      notifyAttendance,
+    } = req.body || {};
     const updated = db.updateSettings({
       zalo: {
         enabled: Boolean(enabled),
@@ -777,10 +985,14 @@ app.post('/api/system/zalo-config', requireAdmin, (req, res) => {
         oaUserId: String(oaUserId || '').trim(),
         notifyAdvance: notifyAdvance !== false,
         notifyLeave: notifyLeave !== false,
-        notifyAttendance: Boolean(notifyAttendance)
-      }
+        notifyAttendance: Boolean(notifyAttendance),
+      },
     });
-    res.json({ success: true, message: 'Đã lưu cấu hình thông báo Zalo thành công!', config: updated.zalo });
+    res.json({
+      success: true,
+      message: 'Đã lưu cấu hình thông báo Zalo thành công!',
+      config: updated.zalo,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -790,7 +1002,11 @@ app.post('/api/system/zalo-test', requireAdmin, async (req, res) => {
   try {
     const testConfig = req.body || {};
     await zaloService.testZalo(testConfig);
-    res.json({ success: true, message: '🎉 Đã gửi tin nhắn thử nghiệm Zalo thành công! Vui lòng kiểm tra ứng dụng Zalo của bạn.' });
+    res.json({
+      success: true,
+      message:
+        '🎉 Đã gửi tin nhắn thử nghiệm Zalo thành công! Vui lòng kiểm tra ứng dụng Zalo của bạn.',
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: `Lỗi kết nối Zalo: ${err.message}` });
   }
@@ -807,7 +1023,7 @@ app.use((req, res, next) => {
     path.join(publicDir, 'index.html'),
     path.join(__dirname, '..', 'index.html'),
     path.resolve('dist', 'index.html'),
-    path.resolve('public', 'index.html')
+    path.resolve('public', 'index.html'),
   ];
 
   for (const candidate of candidates) {
@@ -858,33 +1074,47 @@ if (require.main === module) {
     console.log(`=======================================================`);
 
     // Cơ chế phụ trợ tự giữ nhịp 24/7 (Keep-Alive) cho Cloud Render
-    const publicCloudUrl = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://kyodo-food-attendance.onrender.com';
+    const publicCloudUrl =
+      process.env.RENDER_EXTERNAL_URL ||
+      process.env.APP_URL ||
+      'https://kyodo-food-attendance.onrender.com';
     if (publicCloudUrl && publicCloudUrl.startsWith('http')) {
-      console.log(`[Keep-Alive 24/7] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping (mỗi 9 phút)`);
+      console.log(
+        `[Keep-Alive 24/7] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping (mỗi 9 phút)`
+      );
       const httpModule = publicCloudUrl.startsWith('https') ? require('https') : require('http');
-      setInterval(() => {
-        try {
-          httpModule.get(`${publicCloudUrl}/api/ping`, (pingRes) => {
-            pingRes.resume(); // Tiêu thụ stream để giải phóng socket
-            console.log(`[Keep-Alive 24/7] Ping thành công tới ${publicCloudUrl}/api/ping lúc ${new Date().toLocaleTimeString('vi-VN')}`);
-          }).on('error', (err) => {
-            console.warn(`[Keep-Alive 24/7] Ping thử chưa phản hồi: ${err.message}`);
-          });
-        } catch (e) {
-          // Bỏ qua lỗi
-        }
-      }, 9 * 60 * 1000); // 9 phút một lần (dưới ngưỡng 15 phút của Render)
+      setInterval(
+        () => {
+          try {
+            httpModule
+              .get(`${publicCloudUrl}/api/ping`, (pingRes) => {
+                pingRes.resume(); // Tiêu thụ stream để giải phóng socket
+                console.log(
+                  `[Keep-Alive 24/7] Ping thành công tới ${publicCloudUrl}/api/ping lúc ${new Date().toLocaleTimeString('vi-VN')}`
+                );
+              })
+              .on('error', (err) => {
+                console.warn(`[Keep-Alive 24/7] Ping thử chưa phản hồi: ${err.message}`);
+              });
+          } catch (e) {
+            // Bỏ qua lỗi
+          }
+        },
+        9 * 60 * 1000
+      ); // 9 phút một lần (dưới ngưỡng 15 phút của Render)
     }
   });
 }
-
 
 // 12. EXPORT & RESTORE DATABASE (CHỐNG MẤT DỮ LIỆU - YÊU CẦU QUYỀN ADMIN)
 app.get('/api/system/export-db', requireAdmin, (req, res) => {
   try {
     const data = db.ensureDbFile();
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="kyodo_backup_${new Date().toISOString().slice(0,10)}.json"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="kyodo_backup_${new Date().toISOString().slice(0, 10)}.json"`
+    );
     res.send(JSON.stringify(data, null, 2));
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
