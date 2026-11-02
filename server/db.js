@@ -696,6 +696,13 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
   if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
 
   if (!date) throw new Error("Vui lòng chọn ngày làm việc!");
+
+  // Không cho phép chấm công cho ngày trong tương lai (cho phép hôm nay hoặc các ngày trước đó)
+  const todayYMD = getVietnamTodayYMD();
+  if (date > todayYMD) {
+    throw new Error("Không thể chấm công cho ngày trong tương lai! Vui lòng chọn ngày hôm nay hoặc các ngày trước đó.");
+  }
+
   if (!startTime || !endTime) throw new Error("Vui lòng chọn đầy đủ giờ vào ca và giờ ra ca!");
 
   if (startTime === endTime) {

@@ -377,6 +377,11 @@ export default function StaffAttendance({
       setErrorMsg("Vui lòng chọn ngày làm việc!");
       return;
     }
+    const todayYMD = getVietnamTodayYMD();
+    if (entryDate > todayYMD) {
+      setErrorMsg("⚠️ Không thể chấm công cho ngày trong tương lai! Bạn chỉ có thể chọn ngày hôm nay hoặc các ngày trước đó (để chấm bù khi quên hoặc mất điện).");
+      return;
+    }
     if (entryStart === entryEnd) {
       setErrorMsg("Giờ vào ca và giờ ra ca không được trùng nhau! Vui lòng chọn thời gian hợp lệ.");
       return;
@@ -793,11 +798,55 @@ export default function StaffAttendance({
         <form onSubmit={handleDailyEntrySubmit} className="text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 items-end">
             
-            {/* 1. Ngày Làm Việc */}
+            {/* 1. Ngày Làm Việc (Mặc định hôm nay, có thể chọn ngày trước đó để chấm bù, chặn ngày tương lai) */}
             <div className="col-span-2 sm:col-span-1">
-              <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                1. Ngày Làm Việc: <span className="text-amber-800 font-mono">({formatDateVN(entryDate)})</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-slate-700 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                  1. Ngày Làm Việc: <span className="text-amber-800 font-mono">({formatDateVN(entryDate)})</span>
+                </label>
+                {/* Phím bấm chọn nhanh Hôm nay / Hôm qua (chấm bù) */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = getVietnamTodayYMD();
+                      setEntryDate(today);
+                      setErrorMsg("");
+                    }}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      entryDate === getVietnamTodayYMD()
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Hôm nay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - 1);
+                      const yesterday = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      }).format(d);
+                      setEntryDate(yesterday);
+                      setErrorMsg("");
+                    }}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      entryDate !== getVietnamTodayYMD()
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                    title="Bấm để chọn ngày hôm qua (chấm bù khi hôm qua quên hoặc mất điện)"
+                  >
+                    Hôm qua (Bù)
+                  </button>
+                </div>
+              </div>
+
               <div className="relative cursor-pointer group">
                 <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 pointer-events-none z-10" />
                 <input
@@ -810,10 +859,18 @@ export default function StaffAttendance({
                 <input
                   type="date"
                   required
+                  max={getVietnamTodayYMD()}
                   value={entryDate}
                   onChange={(e) => {
                     const d = e.target.value;
+                    const today = getVietnamTodayYMD();
                     if (d) {
+                      if (d > today) {
+                        setErrorMsg("⚠️ Không thể chấm công cho ngày trong tương lai! Bạn chỉ có thể chọn ngày hôm nay hoặc các ngày trước đó (để chấm bù khi quên hoặc mất điện).");
+                        setEntryDate(today);
+                        return;
+                      }
+                      setErrorMsg("");
                       setEntryDate(d);
                       if (d.length >= 7) {
                         const ym = d.substring(0, 7);
@@ -824,9 +881,12 @@ export default function StaffAttendance({
                     }
                   }}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
-                  title="Nhấn để chọn ngày làm việc (DD/MM/YYYY)"
+                  title="Nhấn để chọn ngày làm việc (DD/MM/YYYY) - Tối đa là ngày hôm nay"
                 />
               </div>
+              <p className="text-[10px] text-slate-400 mt-1 italic">
+                * Mặc định là ngày hôm nay. Có thể chọn ngày trước đó để chấm bù nếu quên hoặc mất điện (không thể chọn ngày tương lai).
+              </p>
             </div>
 
             {/* 2. Giờ Đến Cửa Hàng (Giờ Vào) */}
