@@ -1,6 +1,6 @@
 ; Script Inno Setup 6 cho Phien Ban Quan Ly & Bang Luong - Kyodo Food
 #define MyAppName "Kyodo Food - Quan Ly & Bang Luong"
-#define MyAppVersion "1.5.7"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "Kyodo Food"
 #define MyAppURL "https://kyodofood.vn"
 

@@ -124,6 +124,25 @@
       "isHoliday": false,
       "holidayMultiplier": 1,
       "holidayName": null
+    },
+    {
+      "id": "att-manual-1793527461614-716",
+      "employeeId": "emp-bao",
+      "employeeCode": "BAONVTNV",
+      "employeeName": "Bảo",
+      "branch": "Trưng Nữ Vương",
+      "date": "2026-11-01",
+      "checkIn": "2026-11-01T10:00:00.000Z",
+      "checkOut": "2026-11-01T15:00:00.000Z",
+      "totalHours": 5,
+      "shiftCode": "MANUAL",
+      "shiftName": "Ca Chiều",
+      "status": "completed",
+      "note": "Nhân viên tự nhập giờ làm",
+      "photo": null,
+      "isHoliday": false,
+      "holidayMultiplier": 1,
+      "holidayName": null
     }
   ],
   "salaryAdvances": [],

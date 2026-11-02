@@ -88,7 +88,7 @@ export default function LoginKiosk({
       if (res.hasUpdate) {
         setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
       } else {
-        setUpdateMsg(`Bản v${res.currentVersion || '1.5.0'} (Mới nhất)`);
+        setUpdateMsg(`Bản v${res.currentVersion || '2.0.0'} (Chính Thức)`);
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra cập nhật:', err.message);
@@ -322,7 +322,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v1.5.7</span>
+          <span className="font-black text-amber-950">Bản v2.0 (Chính Thức)</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -1061,7 +1061,7 @@ export default function LoginKiosk({
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v1.5.7 • Kiểm Tra Cập Nhật')}</span>
+          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v2.0 (Chính Thức) • Kiểm Tra Cập Nhật')}</span>
         </button>
 
         {updateStatus?.hasUpdate && (
