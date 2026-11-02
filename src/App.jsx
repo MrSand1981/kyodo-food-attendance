@@ -1,5 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Shield, Users, Eye, Sparkles } from 'lucide-react';
 import Header from './components/Header';
 import LoginKiosk from './pages/LoginKiosk';
 import { api } from './utils/api';
@@ -22,6 +23,13 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState(null); // null | 'employee' | 'admin'
   const [currentUser, setCurrentUser] = useState(null);
   const [employees, setEmployees] = useState([]);
+
+  // Chế độ 2 trong 1 dành riêng cho Bản Quản Lý (Admin)
+  const [adminActiveTab, setAdminActiveTab] = useState('manager'); // 'manager' | 'staff-view'
+  const [inspectedEmployeeId, setInspectedEmployeeId] = useState(null);
+
+  const isManagerEdition = appMode !== 'employee';
+  const inspectedEmployee = employees.find((e) => e.id === inspectedEmployeeId) || employees[0];
   const [settings, setSettings] = useState(null);
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +100,8 @@ export default function App() {
     api.logout();
     setCurrentRole(null);
     setCurrentUser(null);
+    setAdminActiveTab('manager');
+    setInspectedEmployeeId(null);
     loadInitialData();
   };
 
@@ -158,6 +168,92 @@ export default function App() {
         appMode={appMode}
       />
 
+      {/* ================= THANH ĐIỀU HƯỚNG 2 TRONG 1 DÀNH RIÊNG CHO BẢN QUẢN LÝ (ADMIN) ================= */}
+      {currentRole === 'admin' && isManagerEdition && (
+        <div className="bg-white border-b border-amber-200/90 shadow-xs sticky top-14 z-30 no-print">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            {/* 2 Tabs chuyển đổi chính */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setAdminActiveTab('manager')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                  adminActiveTab === 'manager'
+                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span>🏢 Bảng Quản Lý Cửa Hàng (Admin)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!inspectedEmployeeId && employees.length > 0) {
+                    setInspectedEmployeeId(employees[0].id);
+                  }
+                  setAdminActiveTab('staff-view');
+                }}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                  adminActiveTab === 'staff-view'
+                    ? 'bg-linear-to-r from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-600/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                }`}
+              >
+                <Users className="w-4 h-4 text-emerald-400" />
+                <span>👤 Góc Nhìn Nhân Viên (2 Trong 1)</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-amber-400 text-amber-950 text-[10px] font-black uppercase">
+                  Mới
+                </span>
+              </button>
+            </div>
+
+            {/* Khi đang ở Góc Nhìn Nhân Viên: Cho phép đổi nhanh giữa Út, Bảo,... */}
+            {adminActiveTab === 'staff-view' && (
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end animate-in fade-in slide-in-from-right-4">
+                <div className="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-300 shadow-2xs">
+                  <span className="text-xs font-bold text-amber-950 whitespace-nowrap flex items-center gap-1">
+                    <Eye className="w-3.5 h-3.5 text-amber-600" />
+                    Đang xem màn hình:
+                  </span>
+                  <select
+                    value={inspectedEmployee?.id || ''}
+                    onChange={(e) => setInspectedEmployeeId(e.target.value)}
+                    className="bg-white px-2.5 py-1 rounded-lg border border-amber-300 text-xs font-black text-slate-800 shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                  >
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.shortName || emp.name} ({emp.username || emp.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAdminActiveTab('manager')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  ← Về Quản Lý
+                </button>
+              </div>
+            )}
+
+            {/* Tiện ích gợi ý khi đang ở Bảng Quản Lý */}
+            {adminActiveTab === 'manager' && (
+              <div className="hidden lg:flex items-center gap-2 text-xs text-slate-500 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>
+                  Hệ thống 2 trong 1: Bấm "Góc Nhìn Nhân Viên" để xem màn hình chấm công của từng
+                  bạn
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main Viewport */}
       <main
         className={`flex-1 flex flex-col ${!currentRole ? 'items-center pt-3 sm:pt-5 pb-8' : 'pb-16'}`}
@@ -182,12 +278,12 @@ export default function App() {
             </div>
           }
         >
+          {/* Nhân viên đăng nhập thông thường (chỉ xem màn hình của chính mình) */}
           {currentRole === 'employee' && currentUser && (
             <StaffAttendance
               employee={currentUser}
               onUpdateEmployee={(updated) => {
                 setCurrentUser((prev) => ({ ...prev, ...updated }));
-                // Cập nhật cả trong danh sách employees
                 setEmployees((prev) =>
                   prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e))
                 );
@@ -198,12 +294,35 @@ export default function App() {
             />
           )}
 
+          {/* Quản lý đăng nhập (Bản Admin 2 trong 1: Chuyển đổi giữa Quản trị và Góc nhìn nhân viên) */}
           {currentRole === 'admin' && (
-            <ManagerDashboard
-              settings={settings}
-              onSettingsChange={loadInitialData}
-              shifts={shifts}
-            />
+            <>
+              {adminActiveTab === 'manager' ? (
+                <ManagerDashboard
+                  settings={settings}
+                  onSettingsChange={loadInitialData}
+                  shifts={shifts}
+                  onInspectEmployee={(emp) => {
+                    setInspectedEmployeeId(emp.id);
+                    setAdminActiveTab('staff-view');
+                  }}
+                />
+              ) : (
+                <StaffAttendance
+                  employee={inspectedEmployee}
+                  onUpdateEmployee={(updated) => {
+                    setEmployees((prev) =>
+                      prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e))
+                    );
+                  }}
+                  onLogout={handleLogout}
+                  settings={settings}
+                  shifts={shifts}
+                  isAdminInspect={true}
+                  onBackToAdmin={() => setAdminActiveTab('manager')}
+                />
+              )}
+            </>
           )}
         </Suspense>
       </main>
