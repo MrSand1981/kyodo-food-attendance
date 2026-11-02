@@ -25,19 +25,19 @@ try {
   console.log('✅ Test 1 Passed: Út (UTNVTNV - 25k) and Bảo (BAONVTNV - 22k) verified');
 
   // Test 2: Authentication
-  const utPwd = ut.password || 'Ut@Kyodo2026';
+  const utPwd = ut.password || '2008';
   const authUt = db.authenticateUser('utnvtnv', utPwd);
   assert.strictEqual(authUt.role, 'employee');
   assert.strictEqual(authUt.user.name, 'Út');
 
-  const baoPwd = bao.password || 'Bao@Kyodo2026';
+  const baoPwd = bao.password || 'nhatbaodeptrai03';
   const authBao = db.authenticateUser('BAONVTNV', baoPwd);
   assert.strictEqual(authBao.role, 'employee');
   assert.strictEqual(authBao.user.name, 'Bảo');
 
-  const authAdmin = db.authenticateUser('admin', 'Kyodo@DN2026');
+  const authAdmin = db.authenticateUser('admin', '20162020');
   assert.strictEqual(authAdmin.role, 'admin');
-  console.log('✅ Test 2 Passed: Authentication for UTNVTNV, BAONVTNV, and Admin (Kyodo@DN2026)');
+  console.log('✅ Test 2 Passed: Authentication for UTNVTNV, BAONVTNV, and Admin (20162020)');
 
   // Test 2b: JWT Token Generation & Verification
   const { generateToken, verifyToken } = require('./auth');
