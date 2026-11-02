@@ -676,7 +676,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v2.1 (Chính Thức)
+                  Bản v2.2 (Chính Thức)
                 </span>
               </div>
 
