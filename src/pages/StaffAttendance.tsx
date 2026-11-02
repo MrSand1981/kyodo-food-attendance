@@ -710,10 +710,19 @@ export default function StaffAttendance({
                   value={entryDate}
                   onChange={(e) => {
                     const d = e.target.value;
-                    setEntryDate(d);
-                    if (d && d.length >= 7) {
-                      const ym = d.substring(0, 7);
-                      if (ym !== selectedMonth) setSelectedMonth(ym);
+                    const today = getVietnamTodayYMD();
+                    if (d) {
+                      if (d > today) {
+                        setErrorMsg("⚠️ Không thể chấm công cho ngày trong tương lai! Chỉ được chọn ngày hôm nay hoặc các ngày trong quá khứ.");
+                        setEntryDate(today);
+                        return;
+                      }
+                      setErrorMsg("");
+                      setEntryDate(d);
+                      if (d.length >= 7) {
+                        const ym = d.substring(0, 7);
+                        if (ym !== selectedMonth) setSelectedMonth(ym);
+                      }
                     }
                   }}
                   fullWidth
