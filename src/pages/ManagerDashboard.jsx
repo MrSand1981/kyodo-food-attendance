@@ -912,7 +912,7 @@ export default function ManagerDashboard({
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v2.7 (Chính Thức)
+              Bản v2.8 (Chính Thức)
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">

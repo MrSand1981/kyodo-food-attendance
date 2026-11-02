@@ -1,6 +1,6 @@
 {
-  "hash": "v2.7.0",
-  "subject": "Kyodo Food v2.7.0: Tối ưu thanh điều hướng Cài Đặt Cửa Hàng chống tràn, luôn hiển thị đủ dù mở full hay không",
-  "version": "2.7.0",
+  "hash": "v2.8.0",
+  "subject": "Kyodo Food v2.8.0: Fix sập container Render khi chưa cấu hình JWT_SECRET và tự động tạo khóa bảo mật 256-bit",
+  "version": "2.8.0",
   "date": "02/11/2026"
 }
