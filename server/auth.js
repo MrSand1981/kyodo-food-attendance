@@ -42,8 +42,8 @@ function generateToken(user, role) {
     role: role || 'employee',
     name: user.name || user.fullName || user.shortName || user.username,
   };
-  // Admin được duy trì 30 ngày để chủ quán quản lý từ xa tiện lợi; Nhân viên chỉ 12 giờ cho 1 ca làm việc để bảo mật máy dùng chung
-  const expiry = (role || 'employee') === 'admin' ? '30d' : '12h';
+  // Admin được duy trì 30 ngày để chủ quán quản lý từ xa tiện lợi; Nhân viên chỉ 5 giờ cho 1 ca làm việc để bảo mật máy dùng chung
+  const expiry = (role || 'employee') === 'admin' ? '30d' : '5h';
   return jwt.sign(payload, JWT_SECRET, { expiresIn: expiry });
 }
 

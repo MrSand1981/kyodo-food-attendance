@@ -66,30 +66,7 @@ export default function StaffAttendance({
   const [errorMsg, setErrorMsg] = useState('');
   const [showPersonalQrModal, setShowPersonalQrModal] = useState(false);
 
-  // Trạng thái đếm ngược tự động đăng xuất sau khi chấm công hoặc khi rảnh rỗi (Bảo mật máy dùng chung ở quán)
-  const [autoLogoutModal, setAutoLogoutModal] = useState(null);
-
-  // Xử lý đếm ngược tự động đăng xuất sau khi bấm Vào ca hoặc Kết thúc ca
-  useEffect(() => {
-    let timer;
-    if (autoLogoutModal && autoLogoutModal.countdown > 0) {
-      timer = setTimeout(() => {
-        setAutoLogoutModal((prev) => {
-          if (!prev) return null;
-          if (prev.countdown <= 1) {
-            if (onLogout) onLogout();
-            return null;
-          }
-          return { ...prev, countdown: prev.countdown - 1 };
-        });
-      }, 1000);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [autoLogoutModal, onLogout]);
-
-  // Tự động đăng xuất sau 60 giây không có thao tác nếu nhân viên quên đăng xuất trên máy tính dùng chung
+  // Tự động đăng xuất sau 900s (15 phút) không có thao tác nếu nhân viên quên đăng xuất trên máy tính dùng chung
   useEffect(() => {
     if (isAdminInspect) return;
 
@@ -98,7 +75,7 @@ export default function StaffAttendance({
       if (inactivityTimer) clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
         if (onLogout) onLogout();
-      }, 60000);
+      }, 900000); // 900 giây (15 phút) rảnh rỗi tự khóa
     };
 
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
@@ -571,20 +548,6 @@ export default function StaffAttendance({
       confetti({ particleCount: 70, spread: 60 });
       setFeedbackMsg('🎉 Bạn đã VÀO CA trực tiếp thành công!');
       await loadData();
-      if (!isAdminInspect && onLogout) {
-        const timeStr = new Date().toLocaleTimeString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        setAutoLogoutModal({
-          title: '🎉 ' + (localEmp.shortName || localEmp.name) + ' Đã Vào Ca Thành Công!',
-          message:
-            'Hệ thống đã ghi nhận giờ vào ca lúc ' +
-            timeStr +
-            '. Để bảo vệ quyền riêng tư trên máy tính dùng chung, hệ thống sẽ tự động đăng xuất sau:',
-          countdown: 4,
-        });
-      }
     } catch (err) {
       setErrorMsg(err.message || 'Lỗi khi vào ca!');
     } finally {
@@ -606,20 +569,6 @@ export default function StaffAttendance({
       confetti({ particleCount: 90, spread: 80 });
       setFeedbackMsg(`👏 ${res.message}`);
       await loadData();
-      if (!isAdminInspect && onLogout) {
-        const timeStr = new Date().toLocaleTimeString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        setAutoLogoutModal({
-          title: '👏 ' + (localEmp.shortName || localEmp.name) + ' Đã Kết Thúc Ca!',
-          message:
-            'Hệ thống đã ghi nhận kết thúc ca lúc ' +
-            timeStr +
-            '. Để bảo vệ thông tin cá nhân, hệ thống sẽ tự động đăng xuất sau:',
-          countdown: 4,
-        });
-      }
     } catch (err) {
       setErrorMsg(err.message || 'Lỗi khi kết thúc ca!');
     } finally {
@@ -751,7 +700,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v2.9 (Chính Thức)
+                  Bản v2.10 (Chính Thức)
                 </span>
               </div>
 
@@ -2400,51 +2349,6 @@ export default function StaffAttendance({
       )}
 
       {/* Modal / Popup Đếm Ngược Tự Động Đăng Xuất Sau Khi Chấm Công (Bảo Mật Máy Dùng Chung) */}
-      {autoLogoutModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-amber-200 text-center animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner font-bold">
-              ✓
-            </div>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
-              {autoLogoutModal.title}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
-              {autoLogoutModal.message}
-            </p>
-
-            {/* Vòng đếm ngược */}
-            <div className="mb-6 flex flex-col items-center justify-center">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/30 animate-pulse">
-                {autoLogoutModal.countdown}s
-              </div>
-              <p className="text-[11px] text-amber-800 font-bold mt-2">
-                🔒 Tự động khóa & quay về màn hình chọn nhân viên
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  if (onLogout) onLogout();
-                }}
-                className="flex-1 py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Đăng Xuất Ngay</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAutoLogoutModal(null)}
-                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all border border-slate-200 cursor-pointer"
-              >
-                Ở Lại Xem Bảng Công
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

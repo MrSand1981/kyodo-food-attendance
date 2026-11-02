@@ -1,6 +1,6 @@
 {
-  "hash": "v2.9.0",
-  "subject": "Kyodo Food v2.9.0: Bảo vệ quyền riêng tư nhân viên trên máy dùng chung - Tự động khóa & đăng xuất sau khi vào/ra ca và sau 60s không thao tác",
-  "version": "2.9.0",
+  "hash": "v2.10.0",
+  "subject": "Kyodo Food v2.10.0: Bo dem nguoc 4s khi cham cong, de nhan vien tu dang xuat; thoi gian tu khoa 900s (15p); token nhan vien 5h",
+  "version": "2.10.0",
   "date": "02/11/2026"
 }
