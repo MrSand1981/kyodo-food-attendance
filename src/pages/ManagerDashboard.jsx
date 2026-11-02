@@ -900,9 +900,9 @@ export default function ManagerDashboard({
   return (
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-3 mb-3 border-b border-slate-200 gap-3 no-print">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-3.5 mb-4 border-b border-slate-200 gap-3.5 no-print">
+        <div className="shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap">
               <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>Cổng Quản Trị Cửa Hàng</span>
@@ -912,22 +912,23 @@ export default function ManagerDashboard({
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v2.6 (Chính Thức)
+              Bản v2.7 (Chính Thức)
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 whitespace-nowrap">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
             Bảng Chấm Công & Quản Trị Nhân Sự
           </h2>
         </div>
 
-        {/* Action Tabs */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl overflow-x-auto shrink-0">
+        {/* Action Tabs: Thiết kế chống tràn, co giãn mượt mà luôn hiển thị đủ dù mở full màn hình hay thu nhỏ */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-slate-100 p-1.5 rounded-2xl w-full xl:w-auto">
           <button
+            type="button"
             onClick={() => setActiveTab('timesheet')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'timesheet'
-                ? 'bg-white text-amber-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-amber-200/80 font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
@@ -935,11 +936,12 @@ export default function ManagerDashboard({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('employees')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'employees'
-                ? 'bg-white text-amber-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-amber-200/80 font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <Users className="w-3.5 h-3.5 shrink-0" />
@@ -947,40 +949,52 @@ export default function ManagerDashboard({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('advances-leaves')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'advances-leaves'
-                ? 'bg-white text-amber-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-amber-200/80 font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <DollarSign className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span className="whitespace-nowrap">
-              Tạm Ứng & Đăng Ký Nghỉ ({allAdvances.length + allLeaves.length})
+              <span className="hidden sm:inline">Tạm Ứng & Nghỉ Phép</span>
+              <span className="sm:hidden">Tạm Ứng & Nghỉ</span> (
+              {allAdvances.length + allLeaves.length})
             </span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('holidays')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'holidays'
-                ? 'bg-white text-amber-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-amber-200/80 font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span className="whitespace-nowrap">Cài Đặt Ngày Lễ (x2) ({holidaysList.length})</span>
+            <span className="whitespace-nowrap">
+              <span className="hidden sm:inline">Cài Đặt Ngày Lễ</span>
+              <span className="sm:hidden">Ngày Lễ</span> (x2) ({holidaysList.length})
+            </span>
           </button>
 
+          {/* Tab Cài Đặt Cửa Hàng - Nổi bật & Luôn luôn hiển thị đầy đủ dù mở full màn hình hay thu nhỏ */}
           <button
+            type="button"
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'settings'
-                ? 'bg-white text-amber-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-linear-to-r from-amber-600 to-amber-700 text-white shadow-sm shadow-amber-600/30'
+                : 'bg-amber-100/70 hover:bg-amber-200/80 text-amber-900 border border-amber-300/80 hover:shadow-2xs'
             }`}
+            title="Bấm để cấu hình kết nối Cloud Đà Nẵng - Nghệ An và thông báo Zalo / Telegram"
           >
-            <Settings className="w-4 h-4 shrink-0" />
+            <Settings
+              className={`w-4 h-4 shrink-0 ${activeTab === 'settings' ? 'text-amber-100' : 'text-amber-700'}`}
+            />
             <span className="whitespace-nowrap">Cài Đặt Cửa Hàng</span>
           </button>
         </div>

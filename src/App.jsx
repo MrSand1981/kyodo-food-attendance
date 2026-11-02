@@ -173,7 +173,7 @@ export default function App() {
         <div className="bg-white border-b border-amber-200/90 shadow-xs sticky top-14 z-30 no-print">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
             {/* 2 Tabs chuyển đổi chính */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-2xl w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setAdminActiveTab('manager')}
