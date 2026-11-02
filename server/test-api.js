@@ -63,7 +63,26 @@ try {
   });
   assert.strictEqual(manualLog.totalHours, 4.5);
   assert.strictEqual(manualLog.date, '2026-10-31');
-  console.log('✅ Test 3 Passed: Employee daily work entry recorded');
+  console.log('✅ Test 3 Passed: Employee daily work entry recorded for past/current date');
+
+  // Test 3b: Chặn không cho chấm công cho ngày trong tương lai
+  let futureErrorCaught = false;
+  try {
+    db.recordDailyWork({
+      employeeId: ut.id,
+      date: '2029-12-31',
+      startTime: '08:00',
+      endTime: '17:00',
+      hours: 9,
+      note: 'Thử chấm ngày tương lai'
+    });
+  } catch (err) {
+    if (err.message.includes('tương lai')) {
+      futureErrorCaught = true;
+    }
+  }
+  assert.strictEqual(futureErrorCaught, true, 'Hệ thống phải chặn không cho chấm công ngày trong tương lai!');
+  console.log('✅ Test 3b Passed: Chặn không cho chấm công ngày tương lai thành công');
 
   // Test 4: Admin creates a new employee account
   const newStaff = db.addEmployee({

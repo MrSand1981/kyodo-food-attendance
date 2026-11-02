@@ -382,6 +382,11 @@ export default function StaffAttendance({
       setErrorMsg("Vui lòng chọn ngày làm việc!");
       return;
     }
+    const todayYMD = getVietnamTodayYMD();
+    if (entryDate > todayYMD) {
+      setErrorMsg("⚠️ Không thể chấm công cho ngày trong tương lai! Bạn chỉ có thể chọn ngày hôm nay hoặc các ngày trước đó (để chấm bù khi quên hoặc mất điện).");
+      return;
+    }
     if (entryStart === entryEnd) {
       setErrorMsg("Giờ vào ca và giờ ra ca không được trùng nhau! Vui lòng chọn thời gian hợp lệ.");
       return;
@@ -701,6 +706,7 @@ export default function StaffAttendance({
                 <Input
                   type="date"
                   required
+                  max={getVietnamTodayYMD()}
                   value={entryDate}
                   onChange={(e) => {
                     const d = e.target.value;
