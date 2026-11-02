@@ -1,7 +1,17 @@
 // server/auth.js
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kyodo-food-secret-key-trung-nu-vuong-da-nang-2026';
+// Bắt buộc sử dụng JWT_SECRET mạnh. Nếu môi trường chưa có, tự sinh chuỗi 256-bit ngẫu nhiên an toàn
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  // Sinh khóa ngẫu nhiên an toàn mật mã học
+  JWT_SECRET = crypto.randomBytes(32).toString('hex');
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ CẢNH BÁO BẢO MẬT: Chưa thiết lập biến môi trường JWT_SECRET trên Production!');
+  }
+}
+
 const TOKEN_EXPIRY = '30d'; // 30 ngày để nhân viên trên điện thoại không bị đăng xuất liên tục
 
 function generateToken(user, role) {
@@ -9,7 +19,7 @@ function generateToken(user, role) {
     id: user.id || user.username,
     username: user.username,
     role: role || 'employee',
-    name: user.name || user.fullName || user.shortName || user.username
+    name: user.name || user.fullName || user.shortName || user.username,
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
 }
@@ -22,7 +32,7 @@ function verifyToken(token) {
   }
 }
 
-// Middleware giải mã token (nếu có)
+// Middleware giải mã token từ Authorization header, cookie hoặc query
 function extractUserMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
   let token = null;
@@ -50,27 +60,44 @@ function requireAuth(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Phiên làm việc đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại!'
+      message: 'Phiên làm việc đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại!',
     });
   }
   next();
 }
 
-// Middleware bắt buộc phải là Quản Trị Viên (Admin)
+// Middleware bắt buộc phải là Quản Trị Viên (Admin) - ĐÃ BỎ BACKDOOR 20162020
 function requireAdmin(req, res, next) {
   if (req.user && req.user.role === 'admin') {
     return next();
   }
-  // Cho phép fallback nếu có admin key / header để tương thích các phiên làm việc hiện tại
-  const adminKey = req.headers['x-admin-key'] || (req.query && (req.query.adminKey || req.query.key));
-  if (adminKey === '20162020') {
-    req.user = { role: 'admin', username: 'Admin' };
-    return next();
-  }
   return res.status(403).json({
     success: false,
-    message: 'Bạn không có quyền thực hiện thao tác Quản trị viên này!'
+    message: 'Bạn không có quyền thực hiện thao tác Quản trị viên này!',
   });
+}
+
+// Middleware kiểm tra quyền: Chỉ cho phép Admin HOẶC chính chủ tài khoản đó thao tác
+function requireSelfOrAdmin(idKey = 'employeeId') {
+  return function (req, res, next) {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Phiên làm việc đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại!',
+      });
+    }
+    if (req.user.role === 'admin') {
+      return next();
+    }
+    const target = req.params[idKey] || req.body[idKey] || req.query[idKey];
+    if (target && (req.user.id === target || req.user.username === target)) {
+      return next();
+    }
+    return res.status(403).json({
+      success: false,
+      message: 'Bạn không có quyền thao tác trên tài khoản của người khác!',
+    });
+  };
 }
 
 module.exports = {
@@ -79,5 +106,6 @@ module.exports = {
   verifyToken,
   extractUserMiddleware,
   requireAuth,
-  requireAdmin
+  requireAdmin,
+  requireSelfOrAdmin,
 };

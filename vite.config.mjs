@@ -4,18 +4,18 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss()
-  ],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
     host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
-        changeOrigin: true
-      }
-    }
-  }
+        changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 600,
+  },
 });

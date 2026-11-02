@@ -22,13 +22,6 @@
       "@shared/*": ["src/shared/*"]
     }
   },
-  "include": [
-    "src/shared/business-rules.ts",
-    "src/shared/types.ts",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/shared/business-rules.ts", "src/shared/types.ts", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

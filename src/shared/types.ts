@@ -147,7 +147,11 @@ export interface MonthlySummary {
 }
 
 export interface MasterReportRow {
-  employee: EmployeePublic & { password: string; passwordChanged: boolean; isDefaultPassword: boolean };
+  employee: EmployeePublic & {
+    password: string;
+    passwordChanged: boolean;
+    isDefaultPassword: boolean;
+  };
   dailyData: Record<number, { hours: number; logs: AttendanceRecord[] }>;
   totalHours: number;
   daysWorked: number;

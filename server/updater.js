@@ -12,7 +12,10 @@ const VERSION_FILE = path.join(APP_DIR, 'package.json');
 
 function isNewerVersion(remoteVer, currentVer) {
   if (!remoteVer || !currentVer) return false;
-  const parse = v => String(v).split('.').map(n => parseInt(n, 10) || 0);
+  const parse = (v) =>
+    String(v)
+      .split('.')
+      .map((n) => parseInt(n, 10) || 0);
   const r = parse(remoteVer);
   const c = parse(currentVer);
   for (let i = 0; i < Math.max(r.length, c.length); i++) {
@@ -35,12 +38,13 @@ function getCurrentVersion() {
 
 function parseGithubRepo(inputUrlOrSlug) {
   if (!inputUrlOrSlug) return null;
-  const cleaned = inputUrlOrSlug.trim()
+  const cleaned = inputUrlOrSlug
+    .trim()
     .replace(/^https?:\/\/github\.com\//i, '')
     .replace(/\.git$/i, '')
     .replace(/^\//, '')
     .replace(/\/$/, '');
-  
+
   const parts = cleaned.split('/');
   if (parts.length >= 2) {
     return `${parts[0]}/${parts[1]}`;
@@ -57,7 +61,7 @@ async function checkUpdate(githubRepoInput) {
       configured: false,
       hasUpdate: false,
       currentVersion,
-      message: 'Chưa cấu hình đường link GitHub Repository'
+      message: 'Chưa cấu hình đường link GitHub Repository',
     };
   }
 
@@ -67,12 +71,15 @@ async function checkUpdate(githubRepoInput) {
 
     // 1. Ưu tiên kiểm tra trực tiếp qua GitHub Contents API (không bị cache CDN Fastly)
     try {
-      const apiRes = await fetch(`https://api.github.com/repos/${repoSlug}/contents/package.json?ref=main`, {
-        headers: { 
-          'User-Agent': 'KyodoFood-App-Updater',
-          'Accept': 'application/vnd.github.v3+json'
+      const apiRes = await fetch(
+        `https://api.github.com/repos/${repoSlug}/contents/package.json?ref=main`,
+        {
+          headers: {
+            'User-Agent': 'KyodoFood-App-Updater',
+            Accept: 'application/vnd.github.v3+json',
+          },
         }
-      });
+      );
       if (apiRes.ok) {
         const apiData = await apiRes.json();
         if (apiData.content) {
@@ -88,13 +95,13 @@ async function checkUpdate(githubRepoInput) {
     if (!remoteVer) {
       const rawUrl = `https://raw.githubusercontent.com/${repoSlug}/main/package.json?t=${Date.now()}`;
       let res = await fetch(rawUrl, {
-        headers: { 'User-Agent': 'KyodoFood-App-Updater', 'Cache-Control': 'no-cache' }
+        headers: { 'User-Agent': 'KyodoFood-App-Updater', 'Cache-Control': 'no-cache' },
       });
 
       if (!res.ok) {
         const masterUrl = `https://raw.githubusercontent.com/${repoSlug}/master/package.json?t=${Date.now()}`;
         res = await fetch(masterUrl, {
-          headers: { 'User-Agent': 'KyodoFood-App-Updater', 'Cache-Control': 'no-cache' }
+          headers: { 'User-Agent': 'KyodoFood-App-Updater', 'Cache-Control': 'no-cache' },
         });
         branch = 'master';
       }
@@ -106,11 +113,14 @@ async function checkUpdate(githubRepoInput) {
     }
 
     if (!remoteVer) {
-      throw new Error(`Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`);
+      throw new Error(
+        `Không thể tìm thấy package.json trên GitHub (${repoSlug}). Vui lòng kiểm tra lại repository.`
+      );
     }
 
     // Trên máy chủ Cloud (Render / Docker), mã nguồn được cập nhật tự động khi có commit trên GitHub
-    const isCloudHost = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || process.platform === 'linux';
+    const isCloudHost =
+      !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || process.platform === 'linux';
     if (isCloudHost) {
       return {
         configured: true,
@@ -119,7 +129,7 @@ async function checkUpdate(githubRepoInput) {
         hasUpdate: false,
         currentVersion,
         latestVersion: currentVersion,
-        message: `Hệ thống Cloud đang chạy phiên bản mới nhất (v${currentVersion}).`
+        message: `Hệ thống Cloud đang chạy phiên bản mới nhất (v${currentVersion}).`,
       };
     }
 
@@ -133,9 +143,9 @@ async function checkUpdate(githubRepoInput) {
       hasUpdate,
       currentVersion,
       latestVersion: displayLatest,
-      message: hasUpdate 
-        ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!` 
-        : `Phần mềm đang ở phiên bản mới nhất (v${currentVersion}).`
+      message: hasUpdate
+        ? `Đã có bản cập nhật mới (v${remoteVer}) trên GitHub!`
+        : `Phần mềm đang ở phiên bản mới nhất (v${currentVersion}).`,
     };
   } catch (err) {
     return {
@@ -144,19 +154,21 @@ async function checkUpdate(githubRepoInput) {
       hasUpdate: false,
       currentVersion,
       error: true,
-      message: `Lỗi kết nối GitHub: ${err.message}`
+      message: `Lỗi kết nối GitHub: ${err.message}`,
     };
   }
 }
 
 async function applyUpdate(githubRepoInput) {
   // Nếu máy chủ đang chạy trên Cloud (Render, Docker, Linux container)
-  const isCloudHost = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || process.platform === 'linux';
+  const isCloudHost =
+    !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || process.platform === 'linux';
   if (isCloudHost) {
     return {
       success: true,
       isCloud: true,
-      message: 'Máy chủ Cloud đã được tự động triển khai từ GitHub. Vui lòng làm mới trang (F5) để nạp giao diện mới nhất!'
+      message:
+        'Máy chủ Cloud đã được tự động triển khai từ GitHub. Vui lòng làm mới trang (F5) để nạp giao diện mới nhất!',
     };
   }
 
@@ -191,14 +203,14 @@ async function applyUpdate(githubRepoInput) {
   // Bước 2: Tải zip từ GitHub
   let zipUrl = `https://github.com/${repoSlug}/archive/refs/heads/main.zip`;
   let zipRes = await fetch(zipUrl, {
-    headers: { 'User-Agent': 'KyodoFood-App-Updater' }
+    headers: { 'User-Agent': 'KyodoFood-App-Updater' },
   });
 
   if (!zipRes.ok) {
     // Thử nhánh master
     zipUrl = `https://github.com/${repoSlug}/archive/refs/heads/master.zip`;
     zipRes = await fetch(zipUrl, {
-      headers: { 'User-Agent': 'KyodoFood-App-Updater' }
+      headers: { 'User-Agent': 'KyodoFood-App-Updater' },
     });
     if (!zipRes.ok) {
       throw new Error(`Không thể tải bản cập nhật từ GitHub (${zipRes.statusText})`);
@@ -214,22 +226,22 @@ async function applyUpdate(githubRepoInput) {
     // Bước 3: Giải nén và ghi đè mã nguồn mới
     const zip = new AdmZip(tempZipPath);
     const zipEntries = zip.getEntries();
-    
+
     // Tìm tiền tố thư mục gốc trong zip của GitHub (ví dụ: kyodo-food-attendance-main/)
     const rootDirName = zipEntries[0].entryName.split('/')[0];
 
-    zipEntries.forEach(entry => {
+    zipEntries.forEach((entry) => {
       if (entry.isDirectory) return;
-      
+
       // Bỏ qua thư mục gốc của GitHub
       const relPath = entry.entryName.substring(rootDirName.length + 1);
       if (!relPath) return;
 
       // TUYỆT ĐỐI KHÔNG GHI ĐÈ FILE DỮ LIỆU CHẤM CÔNG VÀ KHO NHÂN SỰ CỦA CỬA HÀNG
       if (
-        relPath.startsWith('data/database.json') || 
-        relPath.startsWith('data/kyodo_employee_vault.json') || 
-        relPath.startsWith('data/backups') || 
+        relPath.startsWith('data/database.json') ||
+        relPath.startsWith('data/kyodo_employee_vault.json') ||
+        relPath.startsWith('data/backups') ||
         relPath.startsWith('bin/')
       ) {
         return;
@@ -269,7 +281,7 @@ async function applyUpdate(githubRepoInput) {
 
   return {
     success: true,
-    message: 'Cập nhật phần mềm thành công! Dữ liệu chấm công đã được bảo toàn nguyên vẹn.'
+    message: 'Cập nhật phần mềm thành công! Dữ liệu chấm công đã được bảo toàn nguyên vẹn.',
   };
 }
 
@@ -277,5 +289,5 @@ module.exports = {
   getCurrentVersion,
   checkUpdate,
   applyUpdate,
-  parseGithubRepo
+  parseGithubRepo,
 };

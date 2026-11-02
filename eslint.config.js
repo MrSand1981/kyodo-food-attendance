@@ -20,8 +20,8 @@ export default [
       'bin/**',
       'src/**/*.tsx',
       'src/**/*.ts',
-      'tests/**/*.ts'
-    ]
+      'tests/**/*.ts',
+    ],
   },
   js.configs.recommended,
   {
@@ -32,17 +32,17 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.es2021
+        ...globals.es2021,
       },
       parserOptions: {
         ecmaFeatures: {
-          jsx: true
-        }
-      }
+          jsx: true,
+        },
+      },
     },
     plugins: {
       'react-hooks': reactHooksPlugin,
-      'react-refresh': reactRefreshPlugin
+      'react-refresh': reactRefreshPlugin,
     },
     rules: {
       'no-unused-vars': 'off',
@@ -52,7 +52,7 @@ export default [
       'no-useless-escape': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'off',
-      'react-refresh/only-export-components': 'off'
-    }
-  }
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ];

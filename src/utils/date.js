@@ -11,7 +11,7 @@ export function getVietnamTodayYMD() {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
+      day: '2-digit',
     }).format(new Date());
   } catch (e) {
     const d = new Date(Date.now() + 7 * 3600 * 1000);
@@ -36,7 +36,7 @@ export function formatDateVN(dateInput) {
     return `${d}/${m}/${y}`;
   }
   const s = String(dateInput).trim();
-  
+
   // Trường hợp ISO string có T: 2026-10-30T...
   const dateOnly = s.includes('T') ? s.split('T')[0] : s;
 
@@ -122,7 +122,7 @@ export function formatShortTime(isoString) {
     timeZone: 'Asia/Ho_Chi_Minh',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
   }).format(d);
 }
 
@@ -136,7 +136,9 @@ export function formatShortTime(isoString) {
 export function getSalaryMonthForAdvance(dateStr) {
   if (!dateStr) return '';
   const s = String(dateStr).trim().split('T')[0];
-  let year = 0, month = 0, day = 0;
+  let year = 0,
+    month = 0,
+    day = 0;
 
   if (s.includes('-')) {
     const parts = s.split('-');
@@ -208,8 +210,8 @@ export function getAdvanceCycleExplanation(dateStr) {
     salaryMonth: targetYM,
     formattedMonth: formatMonthVN(targetYM),
     isBeforeOrOn5th,
-    note: isBeforeOrOn5th 
+    note: isBeforeOrOn5th
       ? `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng trước ngày 05).`
-      : `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng từ ngày 06).`
+      : `Khấu trừ vào lương ${formatMonthVN(targetYM)} (ứng từ ngày 06).`,
   };
 }

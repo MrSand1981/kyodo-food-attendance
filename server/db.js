@@ -30,33 +30,208 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
 const VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
 const BACKUP_DIR = path.join(__dirname, '..', 'data', 'backups');
 
-
 const DEFAULT_HOLIDAYS = [
   // Năm 2026
-  { id: 'hol-2026-01-01', name: 'Tết Dương Lịch 2026', date: '2026-01-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)' },
-  { id: 'hol-2026-02-16', name: '29 Tết Bính Ngọ', date: '2026-02-16', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2026-02-17', name: 'Mùng 1 Tết Bính Ngọ', date: '2026-02-17', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2026-02-18', name: 'Mùng 2 Tết Bính Ngọ', date: '2026-02-18', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2026-02-19', name: 'Mùng 3 Tết Bính Ngọ', date: '2026-02-19', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2026-02-20', name: 'Mùng 4 Tết Bính Ngọ', date: '2026-02-20', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2026-04-26', name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)', date: '2026-04-26', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)' },
-  { id: 'hol-2026-04-30', name: 'Ngày Chiến Thắng 30/4', date: '2026-04-30', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)' },
-  { id: 'hol-2026-05-01', name: 'Ngày Quốc Tế Lao Động 1/5', date: '2026-05-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)' },
-  { id: 'hol-2026-09-02', name: 'Quốc Khánh 2/9', date: '2026-09-02', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)' },
-  { id: 'hol-2026-09-03', name: 'Nghỉ liền kề Quốc Khánh', date: '2026-09-03', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)' },
+  {
+    id: 'hol-2026-01-01',
+    name: 'Tết Dương Lịch 2026',
+    date: '2026-01-01',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-02-16',
+    name: '29 Tết Bính Ngọ',
+    date: '2026-02-16',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-02-17',
+    name: 'Mùng 1 Tết Bính Ngọ',
+    date: '2026-02-17',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-02-18',
+    name: 'Mùng 2 Tết Bính Ngọ',
+    date: '2026-02-18',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-02-19',
+    name: 'Mùng 3 Tết Bính Ngọ',
+    date: '2026-02-19',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-02-20',
+    name: 'Mùng 4 Tết Bính Ngọ',
+    date: '2026-02-20',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-04-26',
+    name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)',
+    date: '2026-04-26',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-04-30',
+    name: 'Ngày Chiến Thắng 30/4',
+    date: '2026-04-30',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-05-01',
+    name: 'Ngày Quốc Tế Lao Động 1/5',
+    date: '2026-05-01',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-09-02',
+    name: 'Quốc Khánh 2/9',
+    date: '2026-09-02',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2026-09-03',
+    name: 'Nghỉ liền kề Quốc Khánh',
+    date: '2026-09-03',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)',
+  },
 
   // Năm 2027
-  { id: 'hol-2027-01-01', name: 'Tết Dương Lịch 2027', date: '2027-01-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)' },
-  { id: 'hol-2027-02-05', name: '29 Tết Đinh Mùi', date: '2027-02-05', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2027-02-06', name: 'Mùng 1 Tết Đinh Mùi', date: '2027-02-06', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2027-02-07', name: 'Mùng 2 Tết Đinh Mùi', date: '2027-02-07', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2027-02-08', name: 'Mùng 3 Tết Đinh Mùi', date: '2027-02-08', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2027-02-09', name: 'Mùng 4 Tết Đinh Mùi', date: '2027-02-09', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)' },
-  { id: 'hol-2027-04-16', name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)', date: '2027-04-16', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)' },
-  { id: 'hol-2027-04-30', name: 'Ngày Chiến Thắng 30/4', date: '2027-04-30', multiplier: 2, active: true, isDefault: true, description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)' },
-  { id: 'hol-2027-05-01', name: 'Ngày Quốc Tế Lao Động 1/5', date: '2027-05-01', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)' },
-  { id: 'hol-2027-09-02', name: 'Quốc Khánh 2/9', date: '2027-09-02', multiplier: 2, active: true, isDefault: true, description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)' },
-  { id: 'hol-2027-09-03', name: 'Nghỉ liền kề Quốc Khánh', date: '2027-09-03', multiplier: 2, active: true, isDefault: true, description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)' }
+  {
+    id: 'hol-2027-01-01',
+    name: 'Tết Dương Lịch 2027',
+    date: '2027-01-01',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-02-05',
+    name: '29 Tết Đinh Mùi',
+    date: '2027-02-05',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-02-06',
+    name: 'Mùng 1 Tết Đinh Mùi',
+    date: '2027-02-06',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-02-07',
+    name: 'Mùng 2 Tết Đinh Mùi',
+    date: '2027-02-07',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-02-08',
+    name: 'Mùng 3 Tết Đinh Mùi',
+    date: '2027-02-08',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-02-09',
+    name: 'Mùng 4 Tết Đinh Mùi',
+    date: '2027-02-09',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-04-16',
+    name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)',
+    date: '2027-04-16',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-04-30',
+    name: 'Ngày Chiến Thắng 30/4',
+    date: '2027-04-30',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-05-01',
+    name: 'Ngày Quốc Tế Lao Động 1/5',
+    date: '2027-05-01',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-09-02',
+    name: 'Quốc Khánh 2/9',
+    date: '2027-09-02',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)',
+  },
+  {
+    id: 'hol-2027-09-03',
+    name: 'Nghỉ liền kề Quốc Khánh',
+    date: '2027-09-03',
+    multiplier: 2,
+    active: true,
+    isDefault: true,
+    description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)',
+  },
 ];
 
 let mongoClient = null;
@@ -87,12 +262,12 @@ function saveVault(employees) {
 
     const currentVault = loadVault();
     const vaultMap = new Map();
-    currentVault.forEach(e => {
+    currentVault.forEach((e) => {
       const key = e.id || e.code || e.username;
       if (key) vaultMap.set(key, e);
     });
 
-    employees.forEach(e => {
+    employees.forEach((e) => {
       const key = e.id || e.code || e.username;
       if (!key) return;
       if (e.isTest || e.username === 'LINHNVTNV' || String(key).startsWith('test-')) return;
@@ -100,9 +275,29 @@ function saveVault(employees) {
 
       // Hợp nhất thông tin: Luôn bảo toàn các trường dữ liệu thực tế đã có
       const merged = { ...existing, ...e };
-      const importantFields = ['fullName', 'shortName', 'dob', 'cccd', 'phone', 'address', 'bankCode', 'bankName', 'bankAccount', 'accountName', 'hourlyRate', 'password', 'passwordChanged', 'gender', 'avatar'];
-      importantFields.forEach(f => {
-        if ((merged[f] === undefined || merged[f] === '') && (existing[f] !== undefined && existing[f] !== '')) {
+      const importantFields = [
+        'fullName',
+        'shortName',
+        'dob',
+        'cccd',
+        'phone',
+        'address',
+        'bankCode',
+        'bankName',
+        'bankAccount',
+        'accountName',
+        'hourlyRate',
+        'password',
+        'passwordChanged',
+        'gender',
+        'avatar',
+      ];
+      importantFields.forEach((f) => {
+        if (
+          (merged[f] === undefined || merged[f] === '') &&
+          existing[f] !== undefined &&
+          existing[f] !== ''
+        ) {
           merged[f] = existing[f];
         }
       });
@@ -113,8 +308,9 @@ function saveVault(employees) {
     const finalEmployees = Array.from(vaultMap.values());
     const vaultData = {
       lastUpdated: new Date().toISOString(),
-      protectionNotice: "Kho du lieu nhan su bat bien Kyodo Food - Khong the bi ghi de boi cap nhat!",
-      employees: finalEmployees
+      protectionNotice:
+        'Kho du lieu nhan su bat bien Kyodo Food - Khong the bi ghi de boi cap nhat!',
+      employees: finalEmployees,
     };
 
     const tmpVault = `${VAULT_PATH}.tmp`;
@@ -132,7 +328,7 @@ function saveVault(employees) {
 // Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Render/Railway)
 if (process.env.MONGODB_URI) {
   MongoClient.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 })
-    .then(async client => {
+    .then(async (client) => {
       mongoClient = client;
       mongoDb = client.db('kyodo_food');
       isMongo = true;
@@ -141,24 +337,35 @@ if (process.env.MONGODB_URI) {
       try {
         const record = await mongoDb.collection('app_state').findOne({ _id: 'master_db' });
         if (record && record.data) {
-          console.log('📥 Đã nạp dữ liệu đám mây từ MongoDB Atlas (Lần cuối cập nhật:', record.updatedAt || 'Không rõ', ')');
+          console.log(
+            '📥 Đã nạp dữ liệu đám mây từ MongoDB Atlas (Lần cuối cập nhật:',
+            record.updatedAt || 'Không rõ',
+            ')'
+          );
           saveDatabase(record.data, false);
-          console.log('🛡️ Phục hồi dữ liệu từ Cloud MongoDB thành công! Bảo toàn 100% không bị rollback.');
+          console.log(
+            '🛡️ Phục hồi dữ liệu từ Cloud MongoDB thành công! Bảo toàn 100% không bị rollback.'
+          );
         } else {
           const currentData = ensureDbFile();
-          await mongoDb.collection('app_state').updateOne(
-            { _id: 'master_db' },
-            { $set: { data: currentData, updatedAt: new Date().toISOString() } },
-            { upsert: true }
-          );
+          await mongoDb
+            .collection('app_state')
+            .updateOne(
+              { _id: 'master_db' },
+              { $set: { data: currentData, updatedAt: new Date().toISOString() } },
+              { upsert: true }
+            );
           console.log('🚀 Đã khởi tạo dữ liệu ban đầu lên MongoDB Atlas!');
         }
       } catch (pullErr) {
         console.error('⚠️ Lỗi nạp dữ liệu từ MongoDB Atlas:', pullErr.message);
       }
     })
-    .catch(err => {
-      console.warn('⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:', err.message);
+    .catch((err) => {
+      console.warn(
+        '⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:',
+        err.message
+      );
     });
 }
 
@@ -179,7 +386,7 @@ function ensureDbFile() {
       const content = fs.readFileSync(DB_PATH, 'utf-8');
       parsed = JSON.parse(content);
     } catch (err) {
-      console.error("Lỗi đọc database.json, khôi phục từ mẫu:", err);
+      console.error('Lỗi đọc database.json, khôi phục từ mẫu:', err);
       parsed = generateSeedData();
       dbNeedSave = true;
     }
@@ -197,17 +404,33 @@ function ensureDbFile() {
   const vaultEmployees = loadVault();
   if (vaultEmployees.length > 0) {
     const vaultMap = new Map();
-    vaultEmployees.forEach(ve => {
+    vaultEmployees.forEach((ve) => {
       const k = ve.id || ve.code || ve.username;
       if (k) vaultMap.set(k, ve);
     });
 
-    parsed.employees.forEach(emp => {
+    parsed.employees.forEach((emp) => {
       const k = emp.id || emp.code || emp.username;
       const v = vaultMap.get(k);
       if (v) {
-        const fields = ['fullName', 'shortName', 'dob', 'cccd', 'phone', 'address', 'bankCode', 'bankName', 'bankAccount', 'accountName', 'password', 'passwordChanged', 'hourlyRate', 'gender', 'avatar'];
-        fields.forEach(f => {
+        const fields = [
+          'fullName',
+          'shortName',
+          'dob',
+          'cccd',
+          'phone',
+          'address',
+          'bankCode',
+          'bankName',
+          'bankAccount',
+          'accountName',
+          'password',
+          'passwordChanged',
+          'hourlyRate',
+          'gender',
+          'avatar',
+        ];
+        fields.forEach((f) => {
           if (v[f] !== undefined && v[f] !== '' && (emp[f] === undefined || emp[f] === '')) {
             emp[f] = v[f];
             dbNeedSave = true;
@@ -217,10 +440,11 @@ function ensureDbFile() {
     });
 
     // Nếu có nhân viên trong vault mà database.json bị mất do cập nhật, phục hồi lại ngay
-    vaultEmployees.forEach(ve => {
-      const exists = parsed.employees.find(e => 
-        (e.id && ve.id && e.id === ve.id) || 
-        (e.username && ve.username && e.username === ve.username)
+    vaultEmployees.forEach((ve) => {
+      const exists = parsed.employees.find(
+        (e) =>
+          (e.id && ve.id && e.id === ve.id) ||
+          (e.username && ve.username && e.username === ve.username)
       );
       if (!exists) {
         parsed.employees.push(ve);
@@ -233,9 +457,9 @@ function ensureDbFile() {
   }
 
   // Tự động chuyển avatar mặc định về hình hiển thị Nam/Nữ (không dùng ảnh cá nhân cũ)
-  parsed.employees.forEach(e => {
+  parsed.employees.forEach((e) => {
     if (!e.avatar || e.avatar.includes('images.unsplash.com') || e.avatar.startsWith('http')) {
-      e.avatar = (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
+      e.avatar = e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
       dbNeedSave = true;
     }
   });
@@ -263,52 +487,57 @@ function saveDatabase(data, syncToCloud = true) {
 
   // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud
   if (syncToCloud && isMongo && mongoDb) {
-    mongoDb.collection('app_state').updateOne(
-      { _id: 'master_db' },
-      { $set: { data: data, updatedAt: new Date() } },
-      { upsert: true }
-    ).catch(err => console.error('Lỗi sync MongoDB:', err.message));
+    mongoDb
+      .collection('app_state')
+      .updateOne(
+        { _id: 'master_db' },
+        { $set: { data: data, updatedAt: new Date() } },
+        { upsert: true }
+      )
+      .catch((err) => console.error('Lỗi sync MongoDB:', err.message));
   }
 }
 
 // ---------------- EMPLOYEES ----------------
 function getEmployees(includeConfidential = true) {
   const db = ensureDbFile();
-  const list = (db.employees || []).filter(e => e.active !== false);
-  return list.map(e => ({
+  const list = (db.employees || []).filter((e) => e.active !== false);
+  return list.map((e) => ({
     id: e.id,
     username: e.username,
     code: e.code,
     fullName: e.fullName || e.name || '',
     shortName: e.shortName || e.name || '',
     name: e.shortName || e.name || '',
-    gender: e.gender || "Nam",
-    dob: e.dob || "",
-    phone: e.phone || "",
-    address: e.address || "",
-    cccd: e.cccd || "",
-    branch: e.branch || "Trưng Nữ Vương",
-    role: e.role || "Nhân viên",
+    gender: e.gender || 'Nam',
+    dob: e.dob || '',
+    phone: e.phone || '',
+    address: e.address || '',
+    cccd: e.cccd || '',
+    branch: e.branch || 'Trưng Nữ Vương',
+    role: e.role || 'Nhân viên',
     hourlyRate: Number(e.hourlyRate) || 25000,
-    bankCode: e.bankCode || "",
-    bankName: e.bankName || "",
-    bankAccount: e.bankAccount || "",
+    bankCode: e.bankCode || '',
+    bankName: e.bankName || '',
+    bankAccount: e.bankAccount || '',
     accountName: e.accountName || (e.fullName || e.name || '').toUpperCase(),
     avatar: e.avatar || (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
     active: e.active !== false,
     passwordChanged: e.passwordChanged === true,
-    isDefaultPassword: (comparePasswords('1234', e.password) || !e.password) && e.passwordChanged !== true,
-    password: e.password || '1234'
+    isDefaultPassword:
+      (comparePasswords('1234', e.password) || !e.password) && e.passwordChanged !== true,
+    password: e.password || '1234',
   }));
 }
 
 function getEmployeeByIdOrUsername(idOrUsername) {
   const db = ensureDbFile();
   const search = String(idOrUsername).trim().toLowerCase();
-  return db.employees.find(e => 
-    (e.id && e.id.toLowerCase() === search) || 
-    (e.username && e.username.toLowerCase() === search) || 
-    (e.code && e.code.toLowerCase() === search)
+  return db.employees.find(
+    (e) =>
+      (e.id && e.id.toLowerCase() === search) ||
+      (e.username && e.username.toLowerCase() === search) ||
+      (e.code && e.code.toLowerCase() === search)
   );
 }
 
@@ -316,10 +545,18 @@ function addEmployee(employeeData) {
   const db = ensureDbFile();
   const shortName = (employeeData.shortName || employeeData.name || '').trim();
   const fullName = (employeeData.fullName || employeeData.name || shortName).trim();
-  const rawUsername = (employeeData.username || employeeData.code || `NV${db.employees.length + 1}TNV`).trim().toUpperCase();
-  
+  const rawUsername = (
+    employeeData.username ||
+    employeeData.code ||
+    `NV${db.employees.length + 1}TNV`
+  )
+    .trim()
+    .toUpperCase();
+
   // Kiểm tra trùng username
-  const exists = db.employees.find(e => e.username && e.username.toUpperCase() === rawUsername && e.active !== false);
+  const exists = db.employees.find(
+    (e) => e.username && e.username.toUpperCase() === rawUsername && e.active !== false
+  );
   if (exists) {
     throw new Error(`Tài khoản "${rawUsername}" đã tồn tại! Vui lòng chọn tên đăng nhập khác.`);
   }
@@ -336,21 +573,21 @@ function addEmployee(employeeData) {
     shortName: shortName || fullName,
     name: shortName || fullName,
     gender: gender,
-    dob: employeeData.dob || "",
-    cccd: employeeData.cccd || "",
-    phone: employeeData.phone || "",
-    address: employeeData.address || "",
-    bankCode: employeeData.bankCode || "",
-    bankName: employeeData.bankName || "",
-    bankAccount: employeeData.bankAccount || "",
+    dob: employeeData.dob || '',
+    cccd: employeeData.cccd || '',
+    phone: employeeData.phone || '',
+    address: employeeData.address || '',
+    bankCode: employeeData.bankCode || '',
+    bankName: employeeData.bankName || '',
+    bankAccount: employeeData.bankAccount || '',
     accountName: employeeData.accountName || fullName.toUpperCase(),
-    branch: "Trưng Nữ Vương",
-    role: employeeData.role || "Nhân viên",
+    branch: 'Trưng Nữ Vương',
+    role: employeeData.role || 'Nhân viên',
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
-    password: String(employeeData.password || "1234").trim(),
-    passwordChanged: !!(employeeData.password && String(employeeData.password).trim() !== "1234"),
+    password: String(employeeData.password || '1234').trim(),
+    passwordChanged: !!(employeeData.password && String(employeeData.password).trim() !== '1234'),
     avatar: employeeData.avatar || defaultAvatar,
-    active: true
+    active: true,
   };
 
   db.employees.push(newEmp);
@@ -360,29 +597,44 @@ function addEmployee(employeeData) {
 
 function updateEmployeeAvatar(employeeId, avatarUrl) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
-  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  const emp = db.employees.find(
+    (e) =>
+      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
+      e.active !== false
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
   emp.avatar = avatarUrl;
   saveDatabase(db);
-  return { success: true, avatar: avatarUrl, message: "Cập nhật ảnh đại diện thành công!" };
+  return { success: true, avatar: avatarUrl, message: 'Cập nhật ảnh đại diện thành công!' };
 }
 
 function updateEmployee(id, updateData) {
   const db = ensureDbFile();
-  const idx = db.employees.findIndex(e => e.id === id || e.username === id || e.code === id);
+  const idx = db.employees.findIndex((e) => e.id === id || e.username === id || e.code === id);
   if (idx === -1) return null;
 
   const current = db.employees[idx];
-  const shortName = (updateData.shortName !== undefined ? updateData.shortName : (updateData.name || current.shortName || current.name || '')).trim();
-  const fullName = (updateData.fullName !== undefined ? updateData.fullName : (current.fullName || current.name || shortName)).trim();
+  const shortName = (
+    updateData.shortName !== undefined
+      ? updateData.shortName
+      : updateData.name || current.shortName || current.name || ''
+  ).trim();
+  const fullName = (
+    updateData.fullName !== undefined
+      ? updateData.fullName
+      : current.fullName || current.name || shortName
+  ).trim();
   const gender = updateData.gender || current.gender || 'Nữ';
   let avatar = updateData.avatar || current.avatar;
   if (!avatar || avatar === '/avatar-female.svg' || avatar === '/avatar-male.svg') {
     avatar = gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
   }
-  const hourlyRate = updateData.hourlyRate !== undefined 
-    ? (Number(updateData.hourlyRate) || 0) 
-    : (current.hourlyRate !== undefined ? Number(current.hourlyRate) : 25000);
+  const hourlyRate =
+    updateData.hourlyRate !== undefined
+      ? Number(updateData.hourlyRate) || 0
+      : current.hourlyRate !== undefined
+        ? Number(current.hourlyRate)
+        : 25000;
 
   // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập (Lưu dạng văn bản rõ cho Admin quản lý)
   let newPassword = current.password || '1234';
@@ -391,19 +643,29 @@ function updateEmployee(id, updateData) {
     const pTrim = String(updateData.password).trim();
     if (pTrim && pTrim !== '••••••••') {
       newPassword = pTrim;
-      passwordChanged = (pTrim !== '1234');
+      passwordChanged = pTrim !== '1234';
     }
   }
 
   // Bảo vệ dữ liệu thực tế do người dùng / nhân viên nhập
-  const cccd = updateData.cccd !== undefined ? String(updateData.cccd).trim() : (current.cccd || '');
-  const phone = updateData.phone !== undefined ? String(updateData.phone).trim() : (current.phone || '');
-  const address = updateData.address !== undefined ? String(updateData.address).trim() : (current.address || '');
-  const dob = updateData.dob !== undefined ? String(updateData.dob).trim() : (current.dob || '');
-  const bankCode = updateData.bankCode !== undefined ? String(updateData.bankCode).trim() : (current.bankCode || '');
-  const bankName = updateData.bankName !== undefined ? String(updateData.bankName).trim() : (current.bankName || '');
-  const bankAccount = updateData.bankAccount !== undefined ? String(updateData.bankAccount).trim() : (current.bankAccount || '');
-  const accountName = updateData.accountName !== undefined ? String(updateData.accountName).trim().toUpperCase() : (current.accountName || fullName.toUpperCase());
+  const cccd = updateData.cccd !== undefined ? String(updateData.cccd).trim() : current.cccd || '';
+  const phone =
+    updateData.phone !== undefined ? String(updateData.phone).trim() : current.phone || '';
+  const address =
+    updateData.address !== undefined ? String(updateData.address).trim() : current.address || '';
+  const dob = updateData.dob !== undefined ? String(updateData.dob).trim() : current.dob || '';
+  const bankCode =
+    updateData.bankCode !== undefined ? String(updateData.bankCode).trim() : current.bankCode || '';
+  const bankName =
+    updateData.bankName !== undefined ? String(updateData.bankName).trim() : current.bankName || '';
+  const bankAccount =
+    updateData.bankAccount !== undefined
+      ? String(updateData.bankAccount).trim()
+      : current.bankAccount || '';
+  const accountName =
+    updateData.accountName !== undefined
+      ? String(updateData.accountName).trim().toUpperCase()
+      : current.accountName || fullName.toUpperCase();
 
   db.employees[idx] = {
     ...current,
@@ -424,10 +686,10 @@ function updateEmployee(id, updateData) {
     hourlyRate: hourlyRate,
     password: newPassword,
     passwordChanged: passwordChanged,
-    branch: "Trưng Nữ Vương",
+    branch: 'Trưng Nữ Vương',
     id: current.id,
     code: current.code,
-    username: current.username
+    username: current.username,
   };
 
   saveDatabase(db);
@@ -446,7 +708,7 @@ function updateEmployee(id, updateData) {
 
 function deleteEmployee(id, hard = false) {
   const db = ensureDbFile();
-  const idx = db.employees.findIndex(e => e.id === id);
+  const idx = db.employees.findIndex((e) => e.id === id);
   if (idx === -1) return false;
 
   if (hard) {
@@ -461,14 +723,19 @@ function deleteEmployee(id, hard = false) {
 // ---------------- AUTHENTICATION ----------------
 function authenticateUser(username, password) {
   const db = ensureDbFile();
-  const u = String(username || '').trim().toLowerCase();
+  const u = String(username || '')
+    .trim()
+    .toLowerCase();
   const p = String(password || '').trim();
 
-  const currentAdminUsername = String(db.settings.adminUsername || 'admin').trim().toLowerCase();
+  const currentAdminUsername = String(db.settings.adminUsername || 'admin')
+    .trim()
+    .toLowerCase();
   const currentAdminPassword = String(db.settings.adminPassword || '20162020').trim();
 
   // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', 'Admin', username tùy chỉnh, hoặc các định danh quản lý)
-  const isAdminUser = (u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang');
+  const isAdminUser =
+    u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang';
   if (isAdminUser) {
     const isMatch = comparePasswords(p, currentAdminPassword);
     if (isMatch) {
@@ -479,13 +746,13 @@ function authenticateUser(username, password) {
       }
       return {
         role: 'admin',
-        user: { 
-          username: db.settings.adminUsername || 'Admin', 
-          name: db.settings.adminName || 'Chủ Cửa Hàng (Admin)', 
+        user: {
+          username: db.settings.adminUsername || 'Admin',
+          name: db.settings.adminName || 'Chủ Cửa Hàng (Admin)',
           role: 'admin',
           email: db.settings.adminEmail || '',
-          phone: db.settings.adminPhone || ''
-        }
+          phone: db.settings.adminPhone || '',
+        },
       };
     } else {
       throw new Error('Mật khẩu Quản trị không chính xác!');
@@ -493,12 +760,10 @@ function authenticateUser(username, password) {
   }
 
   // 2. Kiểm tra tài khoản Nhân viên (UTNVTNV, BAONVTNV...)
-  const emp = db.employees.find(e => 
-    e.active !== false && 
-    (
-      (e.username && e.username.toLowerCase() === u) ||
-      (e.code && e.code.toLowerCase() === u)
-    )
+  const emp = db.employees.find(
+    (e) =>
+      e.active !== false &&
+      ((e.username && e.username.toLowerCase() === u) || (e.code && e.code.toLowerCase() === u))
   );
 
   if (!emp) {
@@ -511,7 +776,9 @@ function authenticateUser(username, password) {
 
   if (!isEmpMatch) {
     if (p === '1234' && emp.passwordChanged) {
-      throw new Error(`Tài khoản "${emp.shortName || emp.name}" đã đổi mật khẩu riêng! Mật khẩu khởi tạo 1234 đã hết hiệu lực. Vui lòng nhập đúng mật khẩu mới nhất.`);
+      throw new Error(
+        `Tài khoản "${emp.shortName || emp.name}" đã đổi mật khẩu riêng! Mật khẩu khởi tạo 1234 đã hết hiệu lực. Vui lòng nhập đúng mật khẩu mới nhất.`
+      );
     }
     throw new Error('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
   }
@@ -527,66 +794,75 @@ function authenticateUser(username, password) {
     fullName: emp.fullName || emp.name || '',
     shortName: emp.shortName || emp.name || '',
     name: emp.shortName || emp.name || '',
-    gender: emp.gender || "Nam",
-    dob: emp.dob || "",
-    cccd: emp.cccd || "",
-    phone: emp.phone || "",
-    address: emp.address || "",
-    branch: emp.branch || "Trưng Nữ Vương",
-    role: emp.role || "Nhân viên",
-    bankCode: emp.bankCode || "",
-    bankName: emp.bankName || "",
-    bankAccount: emp.bankAccount || "",
+    gender: emp.gender || 'Nam',
+    dob: emp.dob || '',
+    cccd: emp.cccd || '',
+    phone: emp.phone || '',
+    address: emp.address || '',
+    branch: emp.branch || 'Trưng Nữ Vương',
+    role: emp.role || 'Nhân viên',
+    bankCode: emp.bankCode || '',
+    bankName: emp.bankName || '',
+    bankAccount: emp.bankAccount || '',
     accountName: emp.accountName || (emp.fullName || emp.name || '').toUpperCase(),
     avatar: emp.avatar || defaultAvatar,
     passwordChanged: emp.passwordChanged === true,
-    isDefaultPassword: (!emp.passwordChanged && (comparePasswords('1234', emp.password) || !emp.password)),
-    active: emp.active
+    isDefaultPassword:
+      !emp.passwordChanged && (comparePasswords('1234', emp.password) || !emp.password),
+    active: emp.active,
   };
 
   return {
     role: 'employee',
     user: sanitizedEmp,
-    activeShift
+    activeShift,
   };
 }
 
 // Nhân viên tự đổi mật khẩu riêng biệt
 function changeEmployeePassword(employeeId, oldPassword, newPassword) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
-  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  const emp = db.employees.find(
+    (e) =>
+      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
+      e.active !== false
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
 
   const curPass = String(oldPassword || '').trim();
   if (emp.password && !comparePasswords(curPass, emp.password)) {
-    throw new Error("Mật khẩu hiện tại không chính xác!");
+    throw new Error('Mật khẩu hiện tại không chính xác!');
   }
 
   const newPass = String(newPassword || '').trim();
   if (!newPass || newPass.length < 4) {
-    throw new Error("Mật khẩu mới phải có ít nhất 4 ký tự!");
+    throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự!');
   }
 
   emp.password = newPass;
-  emp.passwordChanged = (newPass !== '1234');
+  emp.passwordChanged = newPass !== '1234';
   saveDatabase(db);
-  return { success: true, message: "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn." };
+  return { success: true, message: 'Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.' };
 }
 
 // Đặt lại mật khẩu nhân viên về 1234 (Dành cho Quản trị viên khi nhân viên quên mật khẩu)
 function resetEmployeePassword(employeeId, newPassword = '1234') {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
-  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  const emp = db.employees.find(
+    (e) =>
+      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
+      e.active !== false
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
 
   const p = String(newPassword || '1234').trim();
   emp.password = p;
-  emp.passwordChanged = (p !== '1234');
+  emp.passwordChanged = p !== '1234';
   saveDatabase(db);
-  return { 
-    success: true, 
+  return {
+    success: true,
     message: `Đã đặt lại mật khẩu cho nhân viên "${emp.shortName || emp.name}" về "${p}" thành công!`,
-    password: p
+    password: p,
   };
 }
 
@@ -596,19 +872,19 @@ function getAttendance(filters = {}) {
   let list = db.attendance || [];
 
   if (filters.employeeId) {
-    list = list.filter(a => a.employeeId === filters.employeeId);
+    list = list.filter((a) => a.employeeId === filters.employeeId);
   }
   if (filters.employeeCode) {
-    list = list.filter(a => a.employeeCode === filters.employeeCode);
+    list = list.filter((a) => a.employeeCode === filters.employeeCode);
   }
   if (filters.date) {
-    list = list.filter(a => a.date === filters.date);
+    list = list.filter((a) => a.date === filters.date);
   }
   if (filters.yearMonth) {
-    list = list.filter(a => a.date.startsWith(filters.yearMonth));
+    list = list.filter((a) => a.date.startsWith(filters.yearMonth));
   }
   if (filters.status) {
-    list = list.filter(a => a.status === filters.status);
+    list = list.filter((a) => a.status === filters.status);
   }
 
   return list.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
@@ -616,25 +892,29 @@ function getAttendance(filters = {}) {
 
 function getActiveShift(employeeId) {
   const db = ensureDbFile();
-  return (db.attendance || []).find(a => a.employeeId === employeeId && a.status === 'working') || null;
+  return (
+    (db.attendance || []).find((a) => a.employeeId === employeeId && a.status === 'working') || null
+  );
 }
 
 // Chấm công vào ca trực tiếp
 function checkIn({ employeeId, shiftCode, note }) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => e.id === employeeId);
-  if (!emp) throw new Error("Không tìm thấy nhân viên");
+  const emp = db.employees.find((e) => e.id === employeeId);
+  if (!emp) throw new Error('Không tìm thấy nhân viên');
 
-  const active = (db.attendance || []).find(a => a.employeeId === employeeId && a.status === 'working');
+  const active = (db.attendance || []).find(
+    (a) => a.employeeId === employeeId && a.status === 'working'
+  );
   if (active) {
-    throw new Error("Bạn đang trong ca làm việc, vui lòng bấm Kết Thúc Ca trước!");
+    throw new Error('Bạn đang trong ca làm việc, vui lòng bấm Kết Thúc Ca trước!');
   }
 
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
-  const shift = (db.shifts || []).find(s => s.code === shiftCode) || {
-    name: "Ca Sáng",
-    code: shiftCode || "SANG"
+  const shift = (db.shifts || []).find((s) => s.code === shiftCode) || {
+    name: 'Ca Sáng',
+    code: shiftCode || 'SANG',
   };
 
   const newRecord = {
@@ -642,16 +922,16 @@ function checkIn({ employeeId, shiftCode, note }) {
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
     employeeName: emp.name,
-    branch: "Trưng Nữ Vương",
+    branch: 'Trưng Nữ Vương',
     date: dateStr,
     checkIn: now.toISOString(),
     checkOut: null,
     totalHours: 0,
     shiftCode: shift.code,
     shiftName: shift.name,
-    status: "working",
-    note: note || "",
-    photo: null
+    status: 'working',
+    note: note || '',
+    photo: null,
   };
 
   db.attendance.push(newRecord);
@@ -664,13 +944,15 @@ function checkOut({ employeeId, attendanceId, note }) {
   const db = ensureDbFile();
   let record = null;
   if (attendanceId) {
-    record = (db.attendance || []).find(a => a.id === attendanceId);
+    record = (db.attendance || []).find((a) => a.id === attendanceId);
   } else if (employeeId) {
-    record = (db.attendance || []).find(a => a.employeeId === employeeId && a.status === 'working');
+    record = (db.attendance || []).find(
+      (a) => a.employeeId === employeeId && a.status === 'working'
+    );
   }
 
   if (!record) {
-    throw new Error("Không tìm thấy ca làm việc đang mở để kết thúc!");
+    throw new Error('Không tìm thấy ca làm việc đang mở để kết thúc!');
   }
 
   const now = new Date();
@@ -680,7 +962,7 @@ function checkOut({ employeeId, attendanceId, note }) {
 
   record.checkOut = now.toISOString();
   record.totalHours = totalHours;
-  record.status = "completed";
+  record.status = 'completed';
   if (note) {
     record.note = record.note ? `${record.note} | ${note}` : note;
   }
@@ -692,21 +974,27 @@ function checkOut({ employeeId, attendanceId, note }) {
 // NHÂN VIÊN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (KHAI BÁO CA LÀM - HỖ TRỢ NHIỀU CA TRONG NGÀY & CHỐNG TRÙNG LẶP)
 function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note }) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
-  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  const emp = db.employees.find(
+    (e) => e.id === employeeId || e.username === employeeId || e.code === employeeId
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
 
-  if (!date) throw new Error("Vui lòng chọn ngày làm việc!");
+  if (!date) throw new Error('Vui lòng chọn ngày làm việc!');
 
   // Không cho phép chấm công cho ngày trong tương lai (cho phép hôm nay hoặc các ngày trước đó)
   const todayYMD = getVietnamTodayYMD();
   if (date > todayYMD) {
-    throw new Error("Không thể chấm công cho ngày trong tương lai! Vui lòng chọn ngày hôm nay hoặc các ngày trước đó.");
+    throw new Error(
+      'Không thể chấm công cho ngày trong tương lai! Vui lòng chọn ngày hôm nay hoặc các ngày trước đó.'
+    );
   }
 
-  if (!startTime || !endTime) throw new Error("Vui lòng chọn đầy đủ giờ vào ca và giờ ra ca!");
+  if (!startTime || !endTime) throw new Error('Vui lòng chọn đầy đủ giờ vào ca và giờ ra ca!');
 
   if (startTime === endTime) {
-    throw new Error("Giờ vào ca và giờ ra ca không được giống nhau! Vui lòng chọn thời gian hợp lệ.");
+    throw new Error(
+      'Giờ vào ca và giờ ra ca không được giống nhau! Vui lòng chọn thời gian hợp lệ.'
+    );
   }
 
   // Parse checkIn và checkOut chính xác theo múi giờ
@@ -732,10 +1020,8 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
 
   // ================= BẢO VỆ CHỐNG TRÙNG LẶP & GIAO THOA THỜI GIAN =================
   // Lấy toàn bộ ca làm việc của nhân viên này để kiểm tra giao thoa
-  const existingRecords = (db.attendance || []).filter(a => 
-    a.employeeId === emp.id && 
-    a.status !== 'cancelled' &&
-    a.checkIn && a.checkOut
+  const existingRecords = (db.attendance || []).filter(
+    (a) => a.employeeId === emp.id && a.status !== 'cancelled' && a.checkIn && a.checkOut
   );
 
   for (const rec of existingRecords) {
@@ -769,11 +1055,11 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
 
   // Đặt tên ca làm việc thông minh
   let autoShiftName = shiftName;
-  if (!autoShiftName || autoShiftName === "Khai báo ngày làm" || autoShiftName === "MANUAL") {
-    if (startTime === "08:00" && endTime === "17:00") {
-      autoShiftName = "Ca Sáng";
-    } else if (startTime === "17:00" && endTime === "22:00") {
-      autoShiftName = "Ca Chiều";
+  if (!autoShiftName || autoShiftName === 'Khai báo ngày làm' || autoShiftName === 'MANUAL') {
+    if (startTime === '08:00' && endTime === '17:00') {
+      autoShiftName = 'Ca Sáng';
+    } else if (startTime === '17:00' && endTime === '22:00') {
+      autoShiftName = 'Ca Chiều';
     } else {
       autoShiftName = `Ca ${startTime}-${endTime}`;
     }
@@ -787,19 +1073,19 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
     employeeName: emp.name,
-    branch: "Trưng Nữ Vương",
+    branch: 'Trưng Nữ Vương',
     date: date,
     checkIn: checkInISO,
     checkOut: checkOutISO,
     totalHours: Number(calculatedHours.toFixed(2)),
-    shiftCode: "MANUAL",
+    shiftCode: 'MANUAL',
     shiftName: autoShiftName,
-    status: "completed",
-    note: note || "Nhân viên tự nhập giờ làm",
+    status: 'completed',
+    note: note || 'Nhân viên tự nhập giờ làm',
     photo: null,
     isHoliday: isHol,
-    holidayMultiplier: isHol ? (Number(hol.multiplier) || 2) : 1,
-    holidayName: isHol ? hol.name : null
+    holidayMultiplier: isHol ? Number(hol.multiplier) || 2 : 1,
+    holidayName: isHol ? hol.name : null,
   };
 
   db.attendance.push(newRecord);
@@ -809,8 +1095,8 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
 
 function adjustAttendance(id, updateData) {
   const db = ensureDbFile();
-  const record = (db.attendance || []).find(a => a.id === id);
-  if (!record) throw new Error("Bản ghi chấm công không tồn tại");
+  const record = (db.attendance || []).find((a) => a.id === id);
+  if (!record) throw new Error('Bản ghi chấm công không tồn tại');
 
   if (updateData.checkIn) record.checkIn = updateData.checkIn;
   if (updateData.checkOut) record.checkOut = updateData.checkOut;
@@ -820,7 +1106,7 @@ function adjustAttendance(id, updateData) {
   if (record.checkIn && record.checkOut && !updateData.totalHours) {
     const diffMs = new Date(record.checkOut) - new Date(record.checkIn);
     record.totalHours = Math.max(0, Number((diffMs / 3600000).toFixed(2)));
-    record.status = "completed";
+    record.status = 'completed';
   }
 
   saveDatabase(db);
@@ -829,7 +1115,7 @@ function adjustAttendance(id, updateData) {
 
 function deleteAttendance(id) {
   const db = ensureDbFile();
-  const idx = db.attendance.findIndex(a => a.id === id);
+  const idx = db.attendance.findIndex((a) => a.id === id);
   if (idx === -1) return false;
 
   db.attendance.splice(idx, 1);
@@ -840,12 +1126,16 @@ function deleteAttendance(id) {
 // ---------------- ỨNG TIỀN LƯƠNG TRƯỚC (SALARY ADVANCES) ----------------
 function requestSalaryAdvance({ employeeId, date, amount, reason }) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
-  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  const emp = db.employees.find(
+    (e) =>
+      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
+      e.active !== false
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
 
   const numAmount = Math.round(Number(amount));
   if (isNaN(numAmount) || numAmount <= 0) {
-    throw new Error("Số tiền ứng lương phải lớn hơn 0 VNĐ!");
+    throw new Error('Số tiền ứng lương phải lớn hơn 0 VNĐ!');
   }
 
   const advDate = date || new Date().toISOString().split('T')[0];
@@ -855,13 +1145,13 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
     employeeCode: emp.username || emp.code,
     employeeName: emp.shortName || emp.name,
     employeeShortName: emp.shortName || emp.name,
-    branch: "Trưng Nữ Vương",
+    branch: 'Trưng Nữ Vương',
     date: advDate,
     salaryMonth: getSalaryMonthForAdvance(advDate),
     amount: numAmount,
-    reason: reason ? String(reason).trim() : "Ứng tiền lương",
-    status: "approved",
-    createdAt: new Date().toISOString()
+    reason: reason ? String(reason).trim() : 'Ứng tiền lương',
+    status: 'approved',
+    createdAt: new Date().toISOString(),
   };
 
   if (!db.salaryAdvances) db.salaryAdvances = [];
@@ -880,7 +1170,7 @@ function getVietnamTodayYMD() {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
+      day: '2-digit',
     }).format(new Date());
   } catch (e) {
     const d = new Date(Date.now() + 7 * 3600 * 1000);
@@ -902,7 +1192,9 @@ function getVietnamCurrentYM() {
 function getSalaryMonthForAdvance(dateStr) {
   if (!dateStr) return '';
   const s = String(dateStr).trim().split('T')[0];
-  let year = 0, month = 0, day = 0;
+  let year = 0,
+    month = 0,
+    day = 0;
 
   if (s.includes('-')) {
     const parts = s.split('-');
@@ -958,18 +1250,21 @@ function getSalaryAdvances(employeeId = null, yearMonth = null) {
   let list = db.salaryAdvances || [];
   if (employeeId) {
     const search = String(employeeId).trim().toLowerCase();
-    list = list.filter(a => 
-      (a.employeeId && a.employeeId.toLowerCase() === search) || 
-      (a.employeeCode && a.employeeCode.toLowerCase() === search)
+    list = list.filter(
+      (a) =>
+        (a.employeeId && a.employeeId.toLowerCase() === search) ||
+        (a.employeeCode && a.employeeCode.toLowerCase() === search)
     );
   }
   if (yearMonth) {
-    list = list.filter(a => getSalaryMonthForAdvance(a.date) === yearMonth);
+    list = list.filter((a) => getSalaryMonthForAdvance(a.date) === yearMonth);
   }
-  list = list.map(a => ({
-    ...a,
-    salaryMonth: getSalaryMonthForAdvance(a.date)
-  })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  list = list
+    .map((a) => ({
+      ...a,
+      salaryMonth: getSalaryMonthForAdvance(a.date),
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const totalCount = list.length;
   const totalAmount = list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -977,14 +1272,14 @@ function getSalaryAdvances(employeeId = null, yearMonth = null) {
   return {
     records: list,
     totalCount,
-    totalAmount
+    totalAmount,
   };
 }
 
 function deleteSalaryAdvance(id) {
   const db = ensureDbFile();
   if (!db.salaryAdvances) return false;
-  const idx = db.salaryAdvances.findIndex(a => a.id === id);
+  const idx = db.salaryAdvances.findIndex((a) => a.id === id);
   if (idx === -1) return false;
   db.salaryAdvances.splice(idx, 1);
   saveDatabase(db);
@@ -994,7 +1289,7 @@ function deleteSalaryAdvance(id) {
 function updateSalaryAdvance(id, { amount, date, reason }) {
   const db = ensureDbFile();
   if (!db.salaryAdvances) return null;
-  const idx = db.salaryAdvances.findIndex(a => a.id === id);
+  const idx = db.salaryAdvances.findIndex((a) => a.id === id);
   if (idx === -1) return null;
 
   if (amount !== undefined && !isNaN(Number(amount))) {
@@ -1014,10 +1309,14 @@ function updateSalaryAdvance(id, { amount, date, reason }) {
 // ---------------- XIN NGÀY NGHỈ (LEAVE REQUESTS) ----------------
 function requestLeave({ employeeId, date, endDate, shift, reason }) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
-  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
+  const emp = db.employees.find(
+    (e) =>
+      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
+      e.active !== false
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
 
-  if (!date) throw new Error("Vui lòng chọn ngày xin nghỉ!");
+  if (!date) throw new Error('Vui lòng chọn ngày xin nghỉ!');
 
   const newLeave = {
     id: `leave-${Date.now()}`,
@@ -1025,13 +1324,13 @@ function requestLeave({ employeeId, date, endDate, shift, reason }) {
     employeeCode: emp.username || emp.code,
     employeeName: emp.shortName || emp.name,
     employeeShortName: emp.shortName || emp.name,
-    branch: "Trưng Nữ Vương",
+    branch: 'Trưng Nữ Vương',
     date: date,
     endDate: endDate || date,
-    shift: shift || "Cả ngày",
-    reason: reason ? String(reason).trim() : "Có việc gia đình",
-    status: "approved",
-    createdAt: new Date().toISOString()
+    shift: shift || 'Cả ngày',
+    reason: reason ? String(reason).trim() : 'Có việc gia đình',
+    status: 'approved',
+    createdAt: new Date().toISOString(),
   };
 
   if (!db.leaveRequests) db.leaveRequests = [];
@@ -1045,13 +1344,16 @@ function getLeaveRequests(employeeId = null, yearMonth = null) {
   let list = db.leaveRequests || [];
   if (employeeId) {
     const search = String(employeeId).trim().toLowerCase();
-    list = list.filter(l => 
-      (l.employeeId && l.employeeId.toLowerCase() === search) || 
-      (l.employeeCode && l.employeeCode.toLowerCase() === search)
+    list = list.filter(
+      (l) =>
+        (l.employeeId && l.employeeId.toLowerCase() === search) ||
+        (l.employeeCode && l.employeeCode.toLowerCase() === search)
     );
   }
   if (yearMonth) {
-    list = list.filter(l => extractYearMonth(l.date) === yearMonth || (l.date && l.date.startsWith(yearMonth)));
+    list = list.filter(
+      (l) => extractYearMonth(l.date) === yearMonth || (l.date && l.date.startsWith(yearMonth))
+    );
   }
   list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   return list;
@@ -1060,7 +1362,7 @@ function getLeaveRequests(employeeId = null, yearMonth = null) {
 function deleteLeaveRequest(id) {
   const db = ensureDbFile();
   if (!db.leaveRequests) return false;
-  const idx = db.leaveRequests.findIndex(l => l.id === id);
+  const idx = db.leaveRequests.findIndex((l) => l.id === id);
   if (idx === -1) return false;
   db.leaveRequests.splice(idx, 1);
   saveDatabase(db);
@@ -1071,18 +1373,18 @@ function deleteLeaveRequest(id) {
 function countLeaveDaysInMonth(leaveList = [], yearMonth) {
   if (!leaveList || !Array.isArray(leaveList)) return 0;
   const uniqueDates = new Set();
-  leaveList.forEach(l => {
+  leaveList.forEach((l) => {
     const startStr = l.date;
     const endStr = l.endDate || l.date;
     if (!startStr) return;
-    
+
     const dStart = new Date(startStr);
     const dEnd = new Date(endStr);
     if (isNaN(dStart.getTime())) return;
-    
+
     const cur = new Date(dStart);
     const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
-    
+
     let count = 0;
     while (cur <= stop && count <= 31) {
       const ymd = cur.toISOString().split('T')[0];
@@ -1099,14 +1401,16 @@ function countLeaveDaysInMonth(leaveList = [], yearMonth) {
 // ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN TỔNG GIỜ LÀM) ----------------
 function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false) {
   const db = ensureDbFile();
-  const emp = db.employees.find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
-  if (!emp) throw new Error("Nhân viên không tồn tại");
+  const emp = db.employees.find(
+    (e) => e.id === employeeId || e.username === employeeId || e.code === employeeId
+  );
+  if (!emp) throw new Error('Nhân viên không tồn tại');
 
   const currentYM = yearMonth || getVietnamCurrentYM();
 
-  const monthRecords = (db.attendance || []).filter(
-    a => a.employeeId === emp.id && a.date.startsWith(currentYM)
-  ).sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+  const monthRecords = (db.attendance || [])
+    .filter((a) => a.employeeId === emp.id && a.date.startsWith(currentYM))
+    .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
 
   let totalCompletedHours = 0;
   let regularHours = 0;
@@ -1115,10 +1419,10 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   const daysWorkedSet = new Set();
   let shiftCount = 0;
 
-  monthRecords.forEach(rec => {
+  monthRecords.forEach((rec) => {
     const hol = getHolidayByDate(rec.date);
     const isHol = !!(hol && hol.active !== false);
-    const multiplier = isHol ? (Number(hol.multiplier) || 2) : 1;
+    const multiplier = isHol ? Number(hol.multiplier) || 2 : 1;
 
     if (isHol && !rec.isHoliday) {
       rec.isHoliday = true;
@@ -1146,13 +1450,16 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   regularHours = Number(regularHours.toFixed(2));
   holidayHours = Number(holidayHours.toFixed(2));
 
-  const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
-    ? Number(emp.hourlyRate)
-    : (emp.name === 'Út' ? 25000 : 22000);
+  const hourlyRate =
+    emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate))
+      ? Number(emp.hourlyRate)
+      : emp.name === 'Út'
+        ? 25000
+        : 22000;
 
   const regularSalary = Math.round(regularHours * hourlyRate);
   let holidaySalary = 0;
-  monthRecords.forEach(rec => {
+  monthRecords.forEach((rec) => {
     if (rec.status === 'completed') {
       const hol = getHolidayByDate(rec.date);
       if (hol && hol.active !== false) {
@@ -1174,20 +1481,20 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
       username: emp.username,
       code: emp.code,
       name: emp.name,
-      gender: emp.gender || "Nam",
-      dob: emp.dob || "",
-      cccd: emp.cccd || "",
-      phone: emp.phone || "",
-      address: emp.address || "",
-      bankCode: emp.bankCode || "",
-      bankName: emp.bankName || "",
-      bankAccount: emp.bankAccount || "",
+      gender: emp.gender || 'Nam',
+      dob: emp.dob || '',
+      cccd: emp.cccd || '',
+      phone: emp.phone || '',
+      address: emp.address || '',
+      bankCode: emp.bankCode || '',
+      bankName: emp.bankName || '',
+      bankAccount: emp.bankAccount || '',
       accountName: emp.accountName || emp.name.toUpperCase(),
       avatar: emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
-      branch: "Trưng Nữ Vương",
+      branch: 'Trưng Nữ Vương',
       role: emp.role,
       passwordChanged: emp.passwordChanged === true,
-      isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true
+      isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
     },
     yearMonth: currentYM,
     totalHours: totalCompletedHours,
@@ -1202,7 +1509,7 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     leaveRequests: leaveData,
     salaryConfidential: !includeSalary,
     activeShift: activeShift,
-    records: monthRecords
+    records: monthRecords,
   };
 
   if (includeSalary) {
@@ -1221,14 +1528,14 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
 function getMasterMonthlyReport(yearMonth) {
   const db = ensureDbFile();
   const currentYM = yearMonth || getVietnamCurrentYM();
-  
+
   const [yearStr, monthStr] = currentYM.split('-');
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const days = [];
-  const vietnameseDays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  const vietnameseDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   for (let d = 1; d <= daysInMonth; d++) {
     const dStr = d < 10 ? '0' + d : '' + d;
     const mStr = String(month).padStart(2, '0');
@@ -1244,12 +1551,12 @@ function getMasterMonthlyReport(yearMonth) {
       isWeekend: dateObj.getDay() === 0,
       isHoliday: isHoliday,
       holidayName: isHoliday ? hol.name : null,
-      holidayMultiplier: isHoliday ? (Number(hol.multiplier) || 2) : 1
+      holidayMultiplier: isHoliday ? Number(hol.multiplier) || 2 : 1,
     });
   }
 
-  const employees = db.employees.filter(e => e.active !== false);
-  const allMonthAttendance = (db.attendance || []).filter(a => a.date.startsWith(currentYM));
+  const employees = db.employees.filter((e) => e.active !== false);
+  const allMonthAttendance = (db.attendance || []).filter((a) => a.date.startsWith(currentYM));
 
   let storeTotalHours = 0;
   let storeRegularHours = 0;
@@ -1257,8 +1564,8 @@ function getMasterMonthlyReport(yearMonth) {
   let storeTotalSalary = 0;
   let storeTotalAdvance = 0;
 
-  const rows = employees.map(emp => {
-    const empRecords = allMonthAttendance.filter(a => a.employeeId === emp.id);
+  const rows = employees.map((emp) => {
+    const empRecords = allMonthAttendance.filter((a) => a.employeeId === emp.id);
     const dailyData = {};
     let empTotalHours = 0;
     let empRegularHours = 0;
@@ -1270,13 +1577,19 @@ function getMasterMonthlyReport(yearMonth) {
     let eveningShifts = 0;
     let otherShifts = 0;
 
-    empRecords.forEach(log => {
+    empRecords.forEach((log) => {
       if (log.status === 'completed' || log.status === 'working') {
         const sName = (log.shiftName || '').toLowerCase();
         const sCode = (log.shiftCode || '').toUpperCase();
         if (sName.includes('sáng') || sCode === 'SANG' || sCode === 'CA1') {
           morningShifts++;
-        } else if (sName.includes('chiều') || sName.includes('tối') || sCode === 'CHIEU' || sCode === 'CA2' || sCode === 'CA3') {
+        } else if (
+          sName.includes('chiều') ||
+          sName.includes('tối') ||
+          sCode === 'CHIEU' ||
+          sCode === 'CA2' ||
+          sCode === 'CA3'
+        ) {
           eveningShifts++;
         } else {
           otherShifts++;
@@ -1284,15 +1597,18 @@ function getMasterMonthlyReport(yearMonth) {
       }
     });
 
-    const hourlyRate = (emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate)))
-      ? Number(emp.hourlyRate)
-      : (emp.name === 'Út' ? 25000 : 22000);
+    const hourlyRate =
+      emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate))
+        ? Number(emp.hourlyRate)
+        : emp.name === 'Út'
+          ? 25000
+          : 22000;
 
-    days.forEach(dayInfo => {
-      const dayLogs = empRecords.filter(a => a.date === dayInfo.date);
+    days.forEach((dayInfo) => {
+      const dayLogs = empRecords.filter((a) => a.date === dayInfo.date);
       if (dayLogs.length > 0) {
         let dayHours = 0;
-        dayLogs.forEach(log => {
+        dayLogs.forEach((log) => {
           if (log.status === 'completed') {
             dayHours += Number(log.totalHours || 0);
           }
@@ -1315,7 +1631,7 @@ function getMasterMonthlyReport(yearMonth) {
           logs: dayLogs,
           isHoliday: dayInfo.isHoliday,
           holidayName: dayInfo.holidayName,
-          holidayMultiplier: dayInfo.holidayMultiplier
+          holidayMultiplier: dayInfo.holidayMultiplier,
         };
       } else {
         dailyData[dayInfo.day] = {
@@ -1323,7 +1639,7 @@ function getMasterMonthlyReport(yearMonth) {
           logs: [],
           isHoliday: dayInfo.isHoliday,
           holidayName: dayInfo.holidayName,
-          holidayMultiplier: dayInfo.holidayMultiplier
+          holidayMultiplier: dayInfo.holidayMultiplier,
         };
       }
     });
@@ -1357,7 +1673,7 @@ function getMasterMonthlyReport(yearMonth) {
       bankCode: emp.bankCode || '',
       bankName: emp.bankName || '',
       bankAccount: emp.bankAccount || '',
-      accountName: emp.accountName || emp.name.toUpperCase()
+      accountName: emp.accountName || emp.name.toUpperCase(),
     };
 
     return {
@@ -1380,13 +1696,13 @@ function getMasterMonthlyReport(yearMonth) {
       advanceCount: advanceCount,
       advanceTotal: advanceTotal,
       netSalary: netSalary,
-      advances: advData.records
+      advances: advData.records,
     };
   });
 
   return {
     yearMonth: currentYM,
-    branchName: "Trưng Nữ Vương",
+    branchName: 'Trưng Nữ Vương',
     year,
     month,
     daysInMonth,
@@ -1399,8 +1715,8 @@ function getMasterMonthlyReport(yearMonth) {
       storeHolidayHours: Number(storeHolidayHours.toFixed(2)),
       storeTotalSalary: storeTotalSalary,
       storeTotalAdvance: storeTotalAdvance,
-      storeTotalNetSalary: storeTotalSalary - storeTotalAdvance
-    }
+      storeTotalNetSalary: storeTotalSalary - storeTotalAdvance,
+    },
   };
 }
 
@@ -1431,7 +1747,7 @@ function getAdminProfileStatus() {
     maskedPhone: maskPhone(s.adminPhone),
     hasEmail: !!(s.adminEmail && s.adminEmail.trim()),
     hasPhone: !!(s.adminPhone && s.adminPhone.trim()),
-    isDefaultPassword: !s.adminPassword || comparePasswords('20162020', s.adminPassword)
+    isDefaultPassword: !s.adminPassword || comparePasswords('20162020', s.adminPassword),
   };
 }
 
@@ -1439,7 +1755,8 @@ function updateAdminProfile(data) {
   const db = ensureDbFile();
   if (!db.settings) db.settings = {};
 
-  const { adminName, adminUsername, adminEmail, adminPhone, currentPassword, newPassword } = data || {};
+  const { adminName, adminUsername, adminEmail, adminPhone, currentPassword, newPassword } =
+    data || {};
 
   const currentActual = db.settings.adminPassword || '20162020';
   if (newPassword && newPassword.trim()) {
@@ -1460,7 +1777,7 @@ function updateAdminProfile(data) {
   return {
     success: true,
     message: 'Đã lưu thông tin tài khoản Quản trị viên thành công!',
-    profile: getAdminProfileStatus()
+    profile: getAdminProfileStatus(),
   };
 }
 
@@ -1482,7 +1799,8 @@ function changeAdminPassword(oldPassword, newPassword) {
 
   return {
     success: true,
-    message: '🎉 Đổi mật khẩu Quản trị viên thành công! Vui lòng ghi nhớ mật khẩu mới để đăng nhập.'
+    message:
+      '🎉 Đổi mật khẩu Quản trị viên thành công! Vui lòng ghi nhớ mật khẩu mới để đăng nhập.',
   };
 }
 
@@ -1496,18 +1814,27 @@ function recoverAdminPassword(identifier) {
   }
 
   const cleanInput = rawInput.toLowerCase().replace(/[\s\-\.]/g, '');
-  const savedEmail = String(db.settings.adminEmail || '').toLowerCase().trim();
-  const savedPhone = String(db.settings.adminPhone || '').replace(/[\s\-\.]/g, '').trim();
+  const savedEmail = String(db.settings.adminEmail || '')
+    .toLowerCase()
+    .trim();
+  const savedPhone = String(db.settings.adminPhone || '')
+    .replace(/[\s\-\.]/g, '')
+    .trim();
 
   if (!savedEmail && !savedPhone) {
-    throw new Error('Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Vui lòng liên hệ hỗ trợ kỹ thuật hoặc dùng mật khẩu khởi tạo.');
+    throw new Error(
+      'Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Vui lòng liên hệ hỗ trợ kỹ thuật hoặc dùng mật khẩu khởi tạo.'
+    );
   }
 
-  const matchEmail = savedEmail && (cleanInput === savedEmail || cleanInput === savedEmail.replace(/[\s\-\.]/g, ''));
-  const matchPhone = savedPhone && (cleanInput === savedPhone);
+  const matchEmail =
+    savedEmail && (cleanInput === savedEmail || cleanInput === savedEmail.replace(/[\s\-\.]/g, ''));
+  const matchPhone = savedPhone && cleanInput === savedPhone;
 
   if (!matchEmail && !matchPhone) {
-    throw new Error('Email hoặc Số điện thoại không khớp với hồ sơ Quản trị viên đã đăng ký! Vui lòng kiểm tra lại.');
+    throw new Error(
+      'Email hoặc Số điện thoại không khớp với hồ sơ Quản trị viên đã đăng ký! Vui lòng kiểm tra lại.'
+    );
   }
 
   // Khởi tạo mật khẩu mới an toàn: Kyodo@ + 4 số ngẫu nhiên
@@ -1517,13 +1844,15 @@ function recoverAdminPassword(identifier) {
   db.settings.adminPassword = hashPassword(newPassword);
   saveDatabase(db);
 
-  const channel = matchEmail ? `Email (${maskEmail(savedEmail)})` : `Số điện thoại (${maskPhone(savedPhone)})`;
+  const channel = matchEmail
+    ? `Email (${maskEmail(savedEmail)})`
+    : `Số điện thoại (${maskPhone(savedPhone)})`;
 
   return {
     success: true,
     message: `Xác minh danh tính thành công! Mật khẩu mới tạm thời là: ${newPassword}. Vui lòng đăng nhập và đổi lại mật khẩu ngay!`,
     sentTo: channel,
-    adminUsername: db.settings.adminUsername || 'admin'
+    adminUsername: db.settings.adminUsername || 'admin',
   };
 }
 
@@ -1547,13 +1876,12 @@ function getShifts() {
   return db.shifts || [];
 }
 
-
 // ---------------- QUẢN LÝ NGÀY LỄ TRONG NĂM (HỆ SỐ LƯƠNG X2) ----------------
 function getHolidays(year = null) {
   const db = ensureDbFile();
   let list = db.holidays || [];
   if (year) {
-    list = list.filter(h => h.date && h.date.startsWith(String(year)));
+    list = list.filter((h) => h.date && h.date.startsWith(String(year)));
   }
   return list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
@@ -1563,16 +1891,17 @@ function getHolidayByDate(dateStr) {
   const db = ensureDbFile();
   const dOnly = String(dateStr).trim().split('T')[0];
   const list = db.holidays || [];
-  return list.find(h => h.date === dOnly && h.active !== false) || null;
+  return list.find((h) => h.date === dOnly && h.active !== false) || null;
 }
 
 function addHoliday({ name, date, multiplier = 2, active = true, description = '' }) {
-  if (!name || !String(name).trim()) throw new Error("Vui lòng nhập tên ngày lễ!");
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Vui lòng chọn ngày lễ hợp lệ (Định dạng: YYYY-MM-DD)!");
+  if (!name || !String(name).trim()) throw new Error('Vui lòng nhập tên ngày lễ!');
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
+    throw new Error('Vui lòng chọn ngày lễ hợp lệ (Định dạng: YYYY-MM-DD)!');
   const db = ensureDbFile();
   if (!db.holidays) db.holidays = [];
 
-  const existing = db.holidays.find(h => h.date === date);
+  const existing = db.holidays.find((h) => h.date === date);
   if (existing) {
     throw new Error(`Ngày ${date} đã tồn tại trong danh sách ngày lễ (${existing.name})!`);
   }
@@ -1584,7 +1913,7 @@ function addHoliday({ name, date, multiplier = 2, active = true, description = '
     multiplier: Math.max(1, Number(multiplier) || 2),
     active: active !== false,
     isDefault: false,
-    description: String(description || '').trim()
+    description: String(description || '').trim(),
   };
 
   db.holidays.push(newHol);
@@ -1596,13 +1925,15 @@ function addHoliday({ name, date, multiplier = 2, active = true, description = '
 function updateHoliday(id, updateData) {
   const db = ensureDbFile();
   if (!db.holidays) db.holidays = [];
-  const idx = db.holidays.findIndex(h => h.id === id);
-  if (idx === -1) throw new Error("Không tìm thấy ngày lễ cần cập nhật!");
+  const idx = db.holidays.findIndex((h) => h.id === id);
+  if (idx === -1) throw new Error('Không tìm thấy ngày lễ cần cập nhật!');
 
   if (updateData.name !== undefined) db.holidays[idx].name = String(updateData.name).trim();
-  if (updateData.multiplier !== undefined) db.holidays[idx].multiplier = Math.max(1, Number(updateData.multiplier) || 2);
+  if (updateData.multiplier !== undefined)
+    db.holidays[idx].multiplier = Math.max(1, Number(updateData.multiplier) || 2);
   if (updateData.active !== undefined) db.holidays[idx].active = updateData.active === true;
-  if (updateData.description !== undefined) db.holidays[idx].description = String(updateData.description).trim();
+  if (updateData.description !== undefined)
+    db.holidays[idx].description = String(updateData.description).trim();
   if (updateData.date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(updateData.date)) {
     db.holidays[idx].date = updateData.date;
   }
@@ -1615,14 +1946,13 @@ function deleteHoliday(id) {
   const db = ensureDbFile();
   if (!db.holidays) db.holidays = [];
   const initialLen = db.holidays.length;
-  db.holidays = db.holidays.filter(h => h.id !== id);
+  db.holidays = db.holidays.filter((h) => h.id !== id);
   if (db.holidays.length === initialLen) {
-    throw new Error("Không tìm thấy ngày lễ để xóa!");
+    throw new Error('Không tìm thấy ngày lễ để xóa!');
   }
   saveDatabase(db);
-  return { success: true, message: "Đã xóa ngày lễ thành công!" };
+  return { success: true, message: 'Đã xóa ngày lễ thành công!' };
 }
-
 
 module.exports = {
   isMongoConnected: () => isMongo,
@@ -1669,5 +1999,5 @@ module.exports = {
   recoverAdminPassword,
   hashPassword,
   comparePasswords,
-  isBcryptHash
+  isBcryptHash,
 };

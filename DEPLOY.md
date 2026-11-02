@@ -3,11 +3,13 @@
 ## 🚀 Quick Start (Production)
 
 ### 1. Prerequisites
+
 - Docker 24+ & Docker Compose v2+
 - GitHub repository with Actions enabled
 - (Optional) MongoDB Atlas account for cloud sync
 
 ### 2. Environment Setup
+
 ```bash
 # Copy environment template
 cp .env.example .env
@@ -20,6 +22,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 ### 3. Deploy with Docker Compose
+
 ```bash
 # Build and start
 docker compose up -d --build
@@ -36,6 +39,7 @@ curl http://localhost:5000/health
 ## 🔧 Development Workflow
 
 ### Local Development
+
 ```bash
 # Install dependencies
 npm install
@@ -49,6 +53,7 @@ npm run dev:full
 ```
 
 ### Code Quality
+
 ```bash
 # Lint
 npm run lint
@@ -68,6 +73,7 @@ npm run test
 ## 🐳 Docker Production Deployment
 
 ### Build & Run
+
 ```bash
 # Build image
 docker compose build
@@ -83,6 +89,7 @@ docker compose down
 ```
 
 ### Health Checks
+
 ```bash
 # Application health
 curl http://localhost:5000/health
@@ -92,6 +99,7 @@ docker compose ps
 ```
 
 ### Updates
+
 ```bash
 # Pull latest code
 git pull origin main
@@ -108,22 +116,24 @@ docker compose up -d --build
 
 ### Required Secrets (GitHub Settings > Secrets > Actions)
 
-| Secret | Description | Required |
-|--------|-------------|----------|
-| `GITHUB_TOKEN` | Auto-provided by GitHub | Yes |
+| Secret           | Description                | Required |
+| ---------------- | -------------------------- | -------- |
+| `GITHUB_TOKEN`   | Auto-provided by GitHub    | Yes      |
 | `DEPLOY_SSH_KEY` | SSH private key for server | Optional |
-| `DEPLOY_HOST` | Server IP/hostname | Optional |
-| `DEPLOY_USER` | SSH username | Optional |
-| `SLACK_WEBHOOK` | Failure notifications | Optional |
+| `DEPLOY_HOST`    | Server IP/hostname         | Optional |
+| `DEPLOY_USER`    | SSH username               | Optional |
+| `SLACK_WEBHOOK`  | Failure notifications      | Optional |
 
 ### Workflow Triggers
-| Event | Jobs Run |
-|-------|----------|
-| Push to `main` | Lint → Test → Build → Docker → Sign → Deploy |
-| Pull Request to `main` | Lint → Test → Build |
-| Manual trigger | All jobs |
+
+| Event                  | Jobs Run                                     |
+| ---------------------- | -------------------------------------------- |
+| Push to `main`         | Lint → Test → Build → Docker → Sign → Deploy |
+| Pull Request to `main` | Lint → Test → Build                          |
+| Manual trigger         | All jobs                                     |
 
 ### Local Docker Testing
+
 ```bash
 # Test build locally
 docker build -t kyodo-test .
@@ -140,6 +150,7 @@ curl http://localhost:5000/health
 ## 🔐 Security Checklist
 
 ### Before Production Deploy
+
 - [ ] Strong `JWT_SECRET` (32+ chars)
 - [ ] Change default admin password
 - [ ] Configure `ADMIN_EMAIL`/`ADMIN_PHONE` for password recovery
@@ -150,6 +161,7 @@ curl http://localhost:5000/health
 - [ ] Set up monitoring/alerting
 
 ### JWT Secret Generation
+
 ```bash
 # Option 1: Node.js
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -166,6 +178,7 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 ## 📦 Backup & Recovery
 
 ### Manual Backup
+
 ```bash
 # Backup database
 cp data/database.json backups/database_$(date +%Y%m%d_%H%M%S).json
@@ -176,12 +189,14 @@ rsync -avz data/ user@backup-server:/path/to/backups/
 ```
 
 ### Automated Backup (Cron)
+
 ```bash
 # Add to crontab (runs daily at 2 AM)
 0 2 * * * /path/to/backup-script.sh
 ```
 
 ### Restore
+
 ```bash
 # Stop app
 docker compose down
@@ -200,15 +215,16 @@ docker compose up -d
 
 ### Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| Port 5000 in use | Change PORT in .env or stop conflicting service |
-| JWT_SECRET too short | Generate 32+ char secret |
-| GitHub update fails | Check GITHUB_TOKEN has repo scope |
-| Auto-update not working | Check GitHub Actions workflow runs |
-| Data not persisting | Check volume mounts in docker-compose.yml |
+| Issue                   | Solution                                        |
+| ----------------------- | ----------------------------------------------- |
+| Port 5000 in use        | Change PORT in .env or stop conflicting service |
+| JWT_SECRET too short    | Generate 32+ char secret                        |
+| GitHub update fails     | Check GITHUB_TOKEN has repo scope               |
+| Auto-update not working | Check GitHub Actions workflow runs              |
+| Data not persisting     | Check volume mounts in docker-compose.yml       |
 
 ### Logs
+
 ```bash
 # Application logs
 docker compose logs -f kyodo-app --tail=100
@@ -218,6 +234,7 @@ docker compose logs -f kyodo-app --tail=100
 ```
 
 ### Reset Everything
+
 ```bash
 # Nuclear option - destroys all data!
 docker compose down -v
@@ -236,4 +253,4 @@ rm -rf data/
 
 ---
 
-*Last updated: 2026-11-01 | Version 2.0.0*
+_Last updated: 2026-11-01 | Version 2.0.0_

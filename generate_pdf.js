@@ -595,7 +595,8 @@ const htmlContent = `<!DOCTYPE html>
 const tempHtml = path.join(__dirname, 'temp_guide.html');
 const outputPdfDownloads = 'C:/Users/Sand/Downloads/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf';
 const outputPdfPublic = path.join(__dirname, 'public', 'Huong_Dan_Su_Dung_Nhan_Vien.pdf');
-const outputPdfArtifacts = 'C:/Users/Sand/.gemini/antigravity/brain/74819dd8-5025-4b3b-ab84-a9d36bd0ca0c/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf';
+const outputPdfArtifacts =
+  'C:/Users/Sand/.gemini/antigravity/brain/74819dd8-5025-4b3b-ab84-a9d36bd0ca0c/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf';
 
 fs.writeFileSync(tempHtml, htmlContent, 'utf-8');
 

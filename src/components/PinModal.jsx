@@ -6,19 +6,19 @@ export default function PinModal({
   isOpen,
   onClose,
   onSubmit,
-  title = "Nhập Mã PIN Chấm Công",
-  subtitle = "Vui lòng nhập 4 số PIN của bạn",
+  title = 'Nhập Mã PIN Chấm Công',
+  subtitle = 'Vui lòng nhập 4 số PIN của bạn',
   targetUser = null,
-  isAdmin = false
+  isAdmin = false,
 }) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setPin("");
-      setError("");
+      setPin('');
+      setError('');
       setLoading(false);
     }
   }, [isOpen]);
@@ -51,7 +51,7 @@ export default function PinModal({
 
   const handleDigit = (digit) => {
     if (pin.length >= 6) return;
-    setError("");
+    setError('');
     const newPin = pin + digit;
     setPin(newPin);
 
@@ -62,23 +62,23 @@ export default function PinModal({
   };
 
   const handleDelete = () => {
-    setPin(prev => prev.slice(0, -1));
-    setError("");
+    setPin((prev) => prev.slice(0, -1));
+    setError('');
   };
 
   const handleClear = () => {
-    setPin("");
-    setError("");
+    setPin('');
+    setError('');
   };
 
   const triggerSubmit = async (pinValue) => {
     try {
       setLoading(true);
-      setError("");
+      setError('');
       await onSubmit(pinValue);
     } catch (err) {
-      setError(err.message || "Mã PIN không đúng, vui lòng thử lại!");
-      setPin("");
+      setError(err.message || 'Mã PIN không đúng, vui lòng thử lại!');
+      setPin('');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function PinModal({
 
   const handleSubmit = () => {
     if (pin.length < 4) {
-      setError("Vui lòng nhập đủ mã PIN (tối thiểu 4 số)");
+      setError('Vui lòng nhập đủ mã PIN (tối thiểu 4 số)');
       return;
     }
     triggerSubmit(pin);
@@ -95,11 +95,12 @@ export default function PinModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 border border-slate-100 transform transition-all">
-        
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-amber-100 text-amber-800'}`}>
+            <div
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-amber-100 text-amber-800'}`}
+            >
               <Lock className="w-5 h-5" />
             </div>
             <div>
@@ -107,7 +108,7 @@ export default function PinModal({
               <p className="text-xs text-slate-500">{subtitle}</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
           >
@@ -118,10 +119,13 @@ export default function PinModal({
         {/* User preview if selecting an employee */}
         {targetUser && (
           <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 mb-5">
-            <img 
-              src={targetUser.avatar || (targetUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')} 
-              alt={targetUser.name} 
-              className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400 bg-slate-50" 
+            <img
+              src={
+                targetUser.avatar ||
+                (targetUser.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg')
+              }
+              alt={targetUser.name}
+              className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400 bg-slate-50"
             />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-slate-900 truncate">{targetUser.name}</div>
@@ -185,7 +189,7 @@ export default function PinModal({
           <button
             type="button"
             disabled={loading}
-            onClick={() => handleDigit("0")}
+            onClick={() => handleDigit('0')}
             className="h-14 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-2xl font-bold text-slate-800 transition-all flex items-center justify-center border border-slate-200 shadow-2xs hover:scale-102"
           >
             0

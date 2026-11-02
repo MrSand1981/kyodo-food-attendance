@@ -12,7 +12,7 @@ import {
   countLeaveDaysInMonth,
   calculateMonthlySalary,
   formatVND,
-  formatVNDWithUnit
+  formatVNDWithUnit,
 } from '../src/shared/business-rules';
 
 describe('Business Rules', () => {
@@ -90,7 +90,7 @@ describe('Business Rules', () => {
         checkIn: '2026-11-15T08:00:00+07:00',
         checkOut: '2026-11-15T12:00:00+07:00',
         status: 'completed',
-        totalHours: 4
+        totalHours: 4,
       },
       {
         id: '2',
@@ -98,8 +98,8 @@ describe('Business Rules', () => {
         checkIn: '2026-11-15T13:00:00+07:00',
         checkOut: '2026-11-15T17:00:00+07:00',
         status: 'completed',
-        totalHours: 4
-      }
+        totalHours: 4,
+      },
     ];
 
     it('should detect exact duplicate', () => {
@@ -141,7 +141,7 @@ describe('Business Rules', () => {
       const leaves = [
         { date: '2026-11-10', endDate: '2026-11-12' },
         { date: '2026-11-15', endDate: '2026-11-15' },
-        { date: '2026-11-20', endDate: '2026-11-22' }
+        { date: '2026-11-20', endDate: '2026-11-22' },
       ];
       expect(countLeaveDaysInMonth(leaves, '2026-11')).toBe(7); // 3 + 1 + 3
     });
@@ -149,7 +149,7 @@ describe('Business Rules', () => {
     it('should handle overlapping leave ranges', () => {
       const leaves = [
         { date: '2026-11-10', endDate: '2026-11-15' },
-        { date: '2026-11-12', endDate: '2026-11-18' }
+        { date: '2026-11-12', endDate: '2026-11-18' },
       ];
       expect(countLeaveDaysInMonth(leaves, '2026-11')).toBe(9); // 10-18 = 9 days unique
     });
@@ -157,7 +157,7 @@ describe('Business Rules', () => {
     it('should filter by month', () => {
       const leaves = [
         { date: '2026-10-28', endDate: '2026-11-02' },
-        { date: '2026-11-10', endDate: '2026-11-12' }
+        { date: '2026-11-10', endDate: '2026-11-12' },
       ];
       expect(countLeaveDaysInMonth(leaves, '2026-11')).toBe(5); // 1-2 (2 days) + 10-12 (3 days) = 5
     });

@@ -8,8 +8,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@server': path.resolve(__dirname, './server'),
-      '@shared': path.resolve(__dirname, './src/shared')
-    }
+      '@shared': path.resolve(__dirname, './src/shared'),
+    },
   },
   test: {
     environment: 'jsdom',
@@ -18,8 +18,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests/', '*.config.*', 'dist/']
+      exclude: ['node_modules/', 'tests/', '*.config.*', 'dist/'],
     },
-    globals: true
-  }
+    globals: true,
+  },
 });

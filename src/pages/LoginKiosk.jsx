@@ -1,19 +1,39 @@
 // src/pages/LoginKiosk.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  User, Lock, Sparkles, LogIn, Shield, Check, 
-  AlertCircle, ArrowRight, MapPin, Eye, EyeOff, ShieldCheck,
-  RefreshCw, ArrowDownCircle, CheckCircle2, FileText,
-  Mail, Phone, KeyRound, Settings, X, Copy, Send, HelpCircle
+import {
+  User,
+  Lock,
+  Sparkles,
+  LogIn,
+  Shield,
+  Check,
+  AlertCircle,
+  ArrowRight,
+  MapPin,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  RefreshCw,
+  ArrowDownCircle,
+  CheckCircle2,
+  FileText,
+  Mail,
+  Phone,
+  KeyRound,
+  Settings,
+  X,
+  Copy,
+  Send,
+  HelpCircle,
 } from 'lucide-react';
 import { api } from '../utils/api';
 
-export default function LoginKiosk({ 
-  employees = [], 
-  onLoginSubmit, 
+export default function LoginKiosk({
+  employees = [],
+  onLoginSubmit,
   settings,
   appMode = 'all', // 'all' | 'employee' | 'manager'
-  onSwitchMode
+  onSwitchMode,
 }) {
   const [activeTab, setActiveTab] = useState(appMode === 'manager' ? 'admin' : 'employee');
   const [username, setUsername] = useState('UTNVTNV');
@@ -88,7 +108,7 @@ export default function LoginKiosk({
       if (res.hasUpdate) {
         setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
       } else {
-        setUpdateMsg(`Bản v${res.currentVersion || '2.0.0'} (Chính Thức)`);
+        setUpdateMsg(`Bản v${res.currentVersion || '2.1.0'} (Chính Thức)`);
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra cập nhật:', err.message);
@@ -109,14 +129,20 @@ export default function LoginKiosk({
   }, []);
 
   const handleApplyUpdate = async () => {
-    const isCloud = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const isCloud =
+      window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     if (isCloud) {
       alert('Máy chủ Cloud tự động cập nhật bản mới nhất từ GitHub. Đang làm mới giao diện...');
       window.location.reload();
       return;
     }
 
-    if (!window.confirm('Ứng dụng sẽ tự động tải bản cập nhật mới từ GitHub mà không làm mất dữ liệu chấm công. Bạn có muốn tiếp tục?')) return;
+    if (
+      !window.confirm(
+        'Ứng dụng sẽ tự động tải bản cập nhật mới từ GitHub mà không làm mất dữ liệu chấm công. Bạn có muốn tiếp tục?'
+      )
+    )
+      return;
     try {
       setUpdatingApp(true);
       setError('');
@@ -167,9 +193,9 @@ export default function LoginKiosk({
     try {
       setLoading(true);
       setError('');
-      await onLoginSubmit({ 
-        username: (adminCustomUsername || 'admin').trim(), 
-        password: adminPassword.trim() 
+      await onLoginSubmit({
+        username: (adminCustomUsername || 'admin').trim(),
+        password: adminPassword.trim(),
       });
     } catch (err) {
       setError(err.message || 'Mật khẩu Quản trị không chính xác! Vui lòng thử lại.');
@@ -199,7 +225,9 @@ export default function LoginKiosk({
       return;
     }
     if (!profileEmail.trim() && !profilePhone.trim()) {
-      setProfileError('Vui lòng nhập ít nhất Email hoặc Số điện thoại để dùng khôi phục mật khẩu khi cần!');
+      setProfileError(
+        'Vui lòng nhập ít nhất Email hoặc Số điện thoại để dùng khôi phục mật khẩu khi cần!'
+      );
       return;
     }
     try {
@@ -211,7 +239,7 @@ export default function LoginKiosk({
         adminEmail: profileEmail.trim(),
         adminPhone: profilePhone.trim(),
         currentPassword: profileCurrentPwd,
-        newPassword: profileNewPwd
+        newPassword: profileNewPwd,
       };
       const res = await api.updateAdminProfile(payload);
       setProfileMsg(res.message);
@@ -246,7 +274,10 @@ export default function LoginKiosk({
     try {
       setChangePwdLoading(true);
       setChangePwdError('');
-      const res = await api.changeAdminPassword({ oldPassword: oldAdminPwd, newPassword: newAdminPwd });
+      const res = await api.changeAdminPassword({
+        oldPassword: oldAdminPwd,
+        newPassword: newAdminPwd,
+      });
       setChangePwdMsg(res.message);
       setAdminPassword(newAdminPwd);
       await loadAdminStatus();
@@ -307,22 +338,22 @@ export default function LoginKiosk({
   const isManagerOnly = appMode === 'manager';
 
   // Xác định nhân viên đang được chọn có đang dùng mật khẩu khởi tạo mặc định 1234 hay đã đổi mật khẩu
-  const selectedEmp = employees.find(e => 
-    (e.username && e.username.toUpperCase() === username.toUpperCase()) ||
-    (e.code && e.code.toUpperCase() === username.toUpperCase())
+  const selectedEmp = employees.find(
+    (e) =>
+      (e.username && e.username.toUpperCase() === username.toUpperCase()) ||
+      (e.code && e.code.toUpperCase() === username.toUpperCase())
   );
   const isDefaultPassword = selectedEmp ? selectedEmp.isDefaultPassword : true;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 pt-1 sm:pt-2 pb-6 flex flex-col items-center">
-      
       {/* Hero Store Greeting */}
       <div className="text-center mb-2 sm:mb-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold mb-1.5 border border-amber-200">
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v2.0 (Chính Thức)</span>
+          <span className="font-black text-amber-950">Bản v2.1 (Chính Thức)</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -365,7 +396,9 @@ export default function LoginKiosk({
             <div>
               <div className="font-black text-sm flex items-center gap-2">
                 <span>Phần mềm đã có phiên bản mới (v{updateStatus.latestVersion})!</span>
-                <span className="px-2 py-0.5 rounded-full bg-white text-amber-800 text-[10px] font-black uppercase tracking-wider">Mới</span>
+                <span className="px-2 py-0.5 rounded-full bg-white text-amber-800 text-[10px] font-black uppercase tracking-wider">
+                  Mới
+                </span>
               </div>
               <p className="text-xs text-amber-100 mt-0.5">
                 Phần mềm đã có phiên bản mới hãy nhấn cập nhật ngay để cập nhật các tính năng mới.
@@ -397,22 +430,28 @@ export default function LoginKiosk({
             Chọn Tài Khoản Của Bạn (Mỗi Nhân Viên Tự Nhập Mật Khẩu)
           </div>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
-            {employees.map(emp => {
+            {employees.map((emp) => {
               const displayName = emp.shortName || emp.name;
-              const isSelected = username.toUpperCase() === (emp.username || emp.code).toUpperCase();
-              const avatarSrc = emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
+              const isSelected =
+                username.toUpperCase() === (emp.username || emp.code).toUpperCase();
+              const avatarSrc =
+                emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg');
               return (
                 <div
                   key={emp.id}
                   onClick={() => quickSelectEmployee(emp)}
                   className={`p-2 sm:p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2 text-left ${
-                    isSelected 
-                      ? 'border-amber-500 bg-amber-50/80 shadow-sm ring-2 ring-amber-500/20' 
+                    isSelected
+                      ? 'border-amber-500 bg-amber-50/80 shadow-sm ring-2 ring-amber-500/20'
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
                   <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                    <img src={avatarSrc} alt={displayName} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50" />
+                    <img
+                      src={avatarSrc}
+                      alt={displayName}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover ring-2 ring-white shadow-xs shrink-0 bg-slate-50"
+                    />
                     <div className="min-w-0">
                       <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 truncate whitespace-nowrap">
                         {displayName}
@@ -440,16 +479,18 @@ export default function LoginKiosk({
 
       {/* Main Login Card */}
       <div className="w-full bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 max-w-md mx-auto">
-        
         {/* Tab Switcher (Chỉ hiển thị khi ở chế độ tổng hợp 'all') */}
         {appMode === 'all' && (
           <div className="flex rounded-2xl bg-slate-100 p-1 mb-4">
             <button
               type="button"
-              onClick={() => { setActiveTab('employee'); setError(''); }}
+              onClick={() => {
+                setActiveTab('employee');
+                setError('');
+              }}
               className={`flex-1 py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === 'employee' 
-                  ? 'bg-white text-amber-700 shadow-xs' 
+                activeTab === 'employee'
+                  ? 'bg-white text-amber-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -458,10 +499,13 @@ export default function LoginKiosk({
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('admin'); setError(''); }}
+              onClick={() => {
+                setActiveTab('admin');
+                setError('');
+              }}
               className={`flex-1 py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === 'admin' 
-                  ? 'bg-white text-amber-700 shadow-xs' 
+                activeTab === 'admin'
+                  ? 'bg-white text-amber-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -506,7 +550,7 @@ export default function LoginKiosk({
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="nhập mật khẩu để đăng nhập"
                   value={password}
@@ -603,7 +647,7 @@ export default function LoginKiosk({
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
-                  type={showAdminPassword ? "text" : "password"}
+                  type={showAdminPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"
                   autoComplete="current-password"
@@ -637,7 +681,6 @@ export default function LoginKiosk({
             </button>
           </form>
         )}
-
       </div>
 
       {/* ================= MODAL 1: QUÊN MẬT KHẨU ADMIN (1 THAO TÁC LẤY LẠI MẬT KHẨU) ================= */}
@@ -658,7 +701,7 @@ export default function LoginKiosk({
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowForgotModal(false)}
                 className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
@@ -728,13 +771,16 @@ export default function LoginKiosk({
                     <span>Khôi Phục Mật Khẩu Thành Công!</span>
                   </div>
                   <p className="text-xs text-emerald-800 mb-3 leading-relaxed">
-                    Mật khẩu mới đã được cập nhật vào hệ thống và xác nhận gửi tới <strong>{forgotResult.sentTo}</strong>:
+                    Mật khẩu mới đã được cập nhật vào hệ thống và xác nhận gửi tới{' '}
+                    <strong>{forgotResult.sentTo}</strong>:
                   </p>
-                  
+
                   {/* Hộp mật khẩu mới nổi bật */}
                   <div className="p-3 bg-white rounded-xl border-2 border-emerald-300 flex items-center justify-between gap-2 shadow-xs">
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Mật Khẩu Mới Của Bạn:</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                        Mật Khẩu Mới Của Bạn:
+                      </span>
                       <span className="font-mono text-lg font-black text-slate-900 tracking-wider">
                         {forgotResult.newPassword}
                       </span>
@@ -785,7 +831,7 @@ export default function LoginKiosk({
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowChangeModal(false)}
                 className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
@@ -894,7 +940,7 @@ export default function LoginKiosk({
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowRegisterModal(false)}
                 className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
@@ -944,7 +990,9 @@ export default function LoginKiosk({
                     onChange={(e) => setProfileUsername(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold font-mono text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                   />
-                  <p className="text-[10px] text-slate-400 mt-0.5">Có thể đặt là admin hoặc tên bất kỳ bạn muốn</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Có thể đặt là admin hoặc tên bất kỳ bạn muốn
+                  </p>
                 </div>
               </div>
 
@@ -988,7 +1036,8 @@ export default function LoginKiosk({
                   </div>
                 </div>
                 <p className="text-[10px] text-amber-800">
-                  💡 Khi quên mật khẩu, hệ thống sẽ xác minh theo Email hoặc Số điện thoại này để cấp lại mật khẩu mới cho bạn.
+                  💡 Khi quên mật khẩu, hệ thống sẽ xác minh theo Email hoặc Số điện thoại này để
+                  cấp lại mật khẩu mới cho bạn.
                 </p>
               </div>
 
@@ -1060,8 +1109,14 @@ export default function LoginKiosk({
           className="w-full sm:w-auto text-slate-600 hover:text-amber-700 flex items-center justify-center gap-2 font-bold transition-all py-2.5 px-4 rounded-2xl hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-200 shadow-2xs cursor-pointer bg-white whitespace-nowrap"
           title="Bấm để kiểm tra xem hệ thống đã có phiên bản phần mềm mới chưa"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`} />
-          <span className="whitespace-nowrap">{checkingUpdate ? 'Đang kiểm tra từ GitHub...' : (updateMsg || 'Bản v2.0 (Chính Thức) • Kiểm Tra Cập Nhật')}</span>
+          <RefreshCw
+            className={`w-3.5 h-3.5 text-slate-400 shrink-0 ${checkingUpdate ? 'animate-spin text-amber-600' : ''}`}
+          />
+          <span className="whitespace-nowrap">
+            {checkingUpdate
+              ? 'Đang kiểm tra từ GitHub...'
+              : updateMsg || 'Bản v2.1 (Chính Thức) • Kiểm Tra Cập Nhật'}
+          </span>
         </button>
 
         {updateStatus?.hasUpdate && (
@@ -1072,11 +1127,12 @@ export default function LoginKiosk({
             className="w-full sm:w-auto text-xs font-black py-2.5 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer animate-pulse whitespace-nowrap"
           >
             <ArrowDownCircle className="w-3.5 h-3.5 shrink-0" />
-            <span className="whitespace-nowrap">Cập Nhật Bản Mới Ngay (v{updateStatus.latestVersion})</span>
+            <span className="whitespace-nowrap">
+              Cập Nhật Bản Mới Ngay (v{updateStatus.latestVersion})
+            </span>
           </button>
         )}
       </div>
-
     </div>
   );
 }
