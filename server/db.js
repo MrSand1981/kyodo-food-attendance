@@ -1735,19 +1735,22 @@ function maskPhone(phone) {
   return `${clean.slice(0, 3)}****${clean.slice(-3)}`;
 }
 
-function getAdminProfileStatus() {
+function getAdminProfileStatus(isAdmin = false) {
   const db = ensureDbFile();
   const s = db.settings || {};
   return {
     adminName: s.adminName || 'Chủ Cửa Hàng (Admin)',
     adminUsername: s.adminUsername || 'admin',
-    adminEmail: s.adminEmail || '',
-    adminPhone: s.adminPhone || '',
+    // CHỈ trả về email và số điện thoại thô nếu đã xác thực vai trò Admin
+    adminEmail: isAdmin ? s.adminEmail || '' : undefined,
+    adminPhone: isAdmin ? s.adminPhone || '' : undefined,
     maskedEmail: maskEmail(s.adminEmail),
     maskedPhone: maskPhone(s.adminPhone),
     hasEmail: !!(s.adminEmail && s.adminEmail.trim()),
     hasPhone: !!(s.adminPhone && s.adminPhone.trim()),
-    isDefaultPassword: !s.adminPassword || comparePasswords('20162020', s.adminPassword),
+    ...(isAdmin
+      ? { isDefaultPassword: !s.adminPassword || comparePasswords('20162020', s.adminPassword) }
+      : {}),
   };
 }
 
@@ -1777,7 +1780,7 @@ function updateAdminProfile(data) {
   return {
     success: true,
     message: 'Đã lưu thông tin tài khoản Quản trị viên thành công!',
-    profile: getAdminProfileStatus(),
+    profile: getAdminProfileStatus(true),
   };
 }
 
@@ -1804,7 +1807,27 @@ function changeAdminPassword(oldPassword, newPassword) {
   };
 }
 
-function recoverAdminPassword(identifier) {
+// Đặt lại mật khẩu Quản trị viên an toàn trực tiếp (dùng cho CLI trên máy chủ)
+function resetAdminPasswordDirect(newPassword = 'admin') {
+  const db = ensureDbFile();
+  if (!db.settings) db.settings = {};
+
+  const cleanPass = String(newPassword || '').trim();
+  if (!cleanPass || cleanPass.length < 4) {
+    throw new Error('Mật khẩu quản trị mới phải có ít nhất 4 ký tự!');
+  }
+
+  db.settings.adminPassword = hashPassword(cleanPass);
+  saveDatabase(db);
+
+  return {
+    success: true,
+    adminUsername: db.settings.adminUsername || 'admin',
+    message: 'Đã đặt lại mật khẩu Quản trị viên thành công!',
+  };
+}
+
+async function recoverAdminPassword(identifier, options = {}) {
   const db = ensureDbFile();
   if (!db.settings) db.settings = {};
 
@@ -1823,7 +1846,7 @@ function recoverAdminPassword(identifier) {
 
   if (!savedEmail && !savedPhone) {
     throw new Error(
-      'Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Vui lòng liên hệ hỗ trợ kỹ thuật hoặc dùng mật khẩu khởi tạo.'
+      'Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Vui lòng liên hệ kỹ thuật viên hoặc chạy lệnh: npm run reset-admin'
     );
   }
 
@@ -1837,6 +1860,30 @@ function recoverAdminPassword(identifier) {
     );
   }
 
+  const telegramService = options.telegramService || require('./telegramService');
+  const zaloService = options.zaloService || require('./zaloService');
+
+  const tgConfig = telegramService ? telegramService.getTelegramConfig() : { enabled: false };
+  const zaloConfig = zaloService ? zaloService.getZaloConfig() : { enabled: false };
+
+  const hasTelegram = Boolean(tgConfig.enabled && tgConfig.botToken && tgConfig.chatId);
+  const hasZalo = Boolean(
+    zaloConfig.enabled &&
+    (zaloConfig.webhookUrl || (zaloConfig.oaAccessToken && zaloConfig.oaUserId))
+  );
+
+  const envRecoveryKey = process.env.ADMIN_RECOVERY_KEY;
+  const isMasterKeyValid =
+    envRecoveryKey && options.recoveryKey && options.recoveryKey.trim() === envRecoveryKey.trim();
+
+  // BẢO VỆ TUYỆT ĐỐI: Không bao giờ trả mật khẩu ra trình duyệt công cộng.
+  // Yêu cầu phải có kênh thông báo bảo mật (Telegram/Zalo) hoặc Server Recovery Key
+  if (!hasTelegram && !hasZalo && !isMasterKeyValid) {
+    throw new Error(
+      'Kênh thông báo bảo mật (Telegram/Zalo) chưa được kích hoạt để nhận mật khẩu. Để bảo vệ dữ liệu quán ăn, mật khẩu không được phép hiển thị trên màn hình. Vui lòng đặt lại trên máy chủ bằng lệnh: npm run reset-admin'
+    );
+  }
+
   // Khởi tạo mật khẩu mới an toàn: Kyodo@ + 4 số ngẫu nhiên
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const newPassword = `Kyodo@${randomSuffix}`;
@@ -1844,23 +1891,65 @@ function recoverAdminPassword(identifier) {
   db.settings.adminPassword = hashPassword(newPassword);
   saveDatabase(db);
 
-  const channel = matchEmail
-    ? `Email (${maskEmail(savedEmail)})`
-    : `Số điện thoại (${maskPhone(savedPhone)})`;
+  const adminUsername = db.settings.adminUsername || 'admin';
+  const channelsNotified = [];
 
+  // Gửi ngoài băng tới Telegram nếu có
+  if (hasTelegram && telegramService.notifyAdminPasswordReset) {
+    try {
+      await telegramService.notifyAdminPasswordReset({
+        adminUsername,
+        newPassword,
+        ip: options.ip || '',
+      });
+      channelsNotified.push('Telegram');
+    } catch (tgErr) {
+      console.error('⚠️ [Telegram] Lỗi gửi thông báo reset mật khẩu:', tgErr.message);
+    }
+  }
+
+  // Gửi ngoài băng tới Zalo nếu có
+  if (hasZalo && zaloService.notifyAdminPasswordReset) {
+    try {
+      await zaloService.notifyAdminPasswordReset({
+        adminUsername,
+        newPassword,
+        ip: options.ip || '',
+      });
+      channelsNotified.push('Zalo');
+    } catch (zaloErr) {
+      console.error('⚠️ [Zalo] Lỗi gửi thông báo reset mật khẩu:', zaloErr.message);
+    }
+  }
+
+  const channelText =
+    channelsNotified.length > 0
+      ? channelsNotified.join(' & ')
+      : isMasterKeyValid
+        ? 'Khóa quản trị máy chủ (Server Master Key)'
+        : 'Kênh bảo mật Quản lý';
+
+  // KHÔNG BAO GIỜ TRẢ newPassword VỀ PHẢN HỒI HTTP CỦA CLIENT
   return {
     success: true,
-    message: `Xác minh danh tính thành công! Mật khẩu mới tạm thời là: ${newPassword}. Vui lòng đăng nhập và đổi lại mật khẩu ngay!`,
-    sentTo: channel,
-    adminUsername: db.settings.adminUsername || 'admin',
+    message: `Xác minh thành công! Mật khẩu mới tạm thời đã được gửi trực tiếp tới kênh thông báo bảo mật (${channelText}) của Quản lý. Vui lòng kiểm tra tin nhắn và đăng nhập lại!`,
+    sentTo: channelText,
+    adminUsername,
   };
 }
 
 // ---------------- SETTINGS ----------------
-function getSettings() {
+function getSettings(isAdmin = false) {
   const db = ensureDbFile();
   const s = { ...(db.settings || {}) };
   delete s.adminPassword; // BẢO VỆ TUYỆT ĐỐI: KHÔNG BAO GIỜ TRẢ MẬT KHẨU ADMIN RA NGOÀI API CÔNG KHAI
+  if (!isAdmin) {
+    delete s.adminEmail;
+    delete s.adminPhone;
+    delete s.telegram;
+    delete s.zalo;
+    delete s.cloudConfig;
+  }
   return s;
 }
 
@@ -1996,6 +2085,7 @@ module.exports = {
   getAdminProfileStatus,
   updateAdminProfile,
   changeAdminPassword,
+  resetAdminPasswordDirect,
   recoverAdminPassword,
   hashPassword,
   comparePasswords,

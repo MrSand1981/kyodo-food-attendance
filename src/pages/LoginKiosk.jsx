@@ -108,7 +108,7 @@ export default function LoginKiosk({
       if (res.hasUpdate) {
         setUpdateMsg(`Đã có bản cập nhật mới v${res.latestVersion}!`);
       } else {
-        setUpdateMsg(`Bản v${res.currentVersion || '2.3.0'} (Chính Thức)`);
+        setUpdateMsg(`Bản v${res.currentVersion || '2.4.0'} (Chính Thức)`);
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra cập nhật:', err.message);
@@ -353,7 +353,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v2.3 (Chính Thức)</span>
+          <span className="font-black text-amber-950">Bản v2.4 (Chính Thức)</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -617,7 +617,7 @@ export default function LoginKiosk({
                     onClick={() => {
                       setForgotResult(null);
                       setForgotError('');
-                      setForgotIdentifier(adminStatus?.adminEmail || adminStatus?.adminPhone || '');
+                      setForgotIdentifier('');
                       setShowForgotModal(true);
                     }}
                     className="text-[11px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer flex items-center gap-0.5"
@@ -697,7 +697,7 @@ export default function LoginKiosk({
                     Khôi Phục Mật Khẩu Admin
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Chỉ 1 thao tác nhận mật khẩu mới về Email hoặc Số điện thoại
+                    Gửi mật khẩu mới bảo mật qua kênh Telegram hoặc Zalo của Quản lý
                   </p>
                 </div>
               </div>
@@ -735,7 +735,16 @@ export default function LoginKiosk({
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Nhập đúng Email hoặc Số điện thoại đã thiết lập trong thông tin Chủ Cửa Hàng.
+                    {adminStatus?.maskedEmail || adminStatus?.maskedPhone ? (
+                      <span>
+                        Gợi ý bảo mật:{' '}
+                        <strong className="text-slate-700 font-mono">
+                          {adminStatus.maskedEmail || adminStatus.maskedPhone}
+                        </strong>
+                      </span>
+                    ) : (
+                      'Nhập đúng Email hoặc Số điện thoại đã thiết lập trong thông tin Chủ Cửa Hàng.'
+                    )}
                   </p>
                 </div>
 
@@ -757,7 +766,7 @@ export default function LoginKiosk({
                     ) : (
                       <>
                         <Send className="w-3.5 h-3.5" />
-                        <span>Lấy Lại Mật Khẩu Ngay</span>
+                        <span>Gửi Yêu Cầu Khôi Phục</span>
                       </>
                     )}
                   </button>
@@ -768,44 +777,36 @@ export default function LoginKiosk({
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
                   <div className="flex items-center gap-2 mb-2 font-black text-sm text-emerald-800">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span>Khôi Phục Mật Khẩu Thành Công!</span>
+                    <span>Yêu Cầu Khôi Phục Đã Tiếp Nhận!</span>
                   </div>
                   <p className="text-xs text-emerald-800 mb-3 leading-relaxed">
-                    Mật khẩu mới đã được cập nhật vào hệ thống và xác nhận gửi tới{' '}
-                    <strong>{forgotResult.sentTo}</strong>:
+                    {forgotResult.message}
                   </p>
 
-                  {/* Hộp mật khẩu mới nổi bật */}
-                  <div className="p-3 bg-white rounded-xl border-2 border-emerald-300 flex items-center justify-between gap-2 shadow-xs">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                        Mật Khẩu Mới Của Bạn:
-                      </span>
-                      <span className="font-mono text-lg font-black text-slate-900 tracking-wider">
-                        {forgotResult.newPassword}
-                      </span>
+                  {/* Thông tin bảo mật ngoài kênh */}
+                  <div className="p-3 bg-white/90 rounded-xl border border-emerald-200 text-slate-700 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Bảo Vệ An Ninh Ngoài Kênh (Out-of-band Security)</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(forgotResult.newPassword);
-                        alert('Đã sao chép mật khẩu mới vào bộ nhớ đệm!');
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-1 cursor-pointer transition-all"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Sao chép</span>
-                    </button>
+                    <p className="text-[11px] text-slate-600 leading-normal">
+                      Để ngăn chặn kẻ gian chiếm quyền quản trị từ màn hình kiosk công cộng, mật
+                      khẩu mới không hiển thị tại đây mà đã được gửi riêng tư đến kênh bảo mật{' '}
+                      <strong>{forgotResult.sentTo}</strong> của Quản lý.
+                    </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={applyRecoveredPassword}
+                  onClick={() => {
+                    setShowForgotModal(false);
+                    setForgotResult(null);
+                  }}
                   className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Tự Điền & Đăng Nhập Ngay</span>
+                  <span>Đã Nhận Mật Khẩu, Quay Lại Đăng Nhập</span>
                 </button>
               </div>
             )}
@@ -1115,7 +1116,7 @@ export default function LoginKiosk({
           <span className="whitespace-nowrap">
             {checkingUpdate
               ? 'Đang kiểm tra từ GitHub...'
-              : updateMsg || 'Bản v2.3 (Chính Thức) • Kiểm Tra Cập Nhật'}
+              : updateMsg || 'Bản v2.4 (Chính Thức) • Kiểm Tra Cập Nhật'}
           </span>
         </button>
 

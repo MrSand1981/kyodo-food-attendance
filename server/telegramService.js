@@ -140,7 +140,37 @@ async function notifyAttendance({ employee, date, shiftName, startTime, endTime,
   return sendNotification(text);
 }
 
-// 4. Kiểm tra kết nối Telegram Bot (gửi tin nhắn test)
+// 4. Thông báo khôi phục mật khẩu Quản trị viên (Gửi ngoài kênh bảo mật Telegram)
+async function notifyAdminPasswordReset({ adminUsername, newPassword, ip }) {
+  const config = getTelegramConfig();
+  if (!config.enabled || !config.botToken || !config.chatId) {
+    return { sent: false, reason: 'Telegram disabled or unconfigured' };
+  }
+
+  const now = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date());
+
+  const text = `🔐 <b>YÊU CẦU ĐẶT LẠI MẬT KHẨU QUẢN TRỊ VIÊN</b>
+━━━━━━━━━━━━━━━━━━
+🏪 <b>Cơ sở:</b> Kyodo Food - Trưng Nữ Vương, Đà Nẵng
+👤 <b>Tài khoản Quản trị:</b> <b>${adminUsername || 'admin'}</b>
+🔑 <b>Mật khẩu mới tạm thời:</b> <code>${newPassword}</code>
+⏰ <b>Thời gian yêu cầu:</b> ${now}
+🌐 <b>IP yêu cầu:</b> <code>${ip || 'Kiosk / Mạng cục bộ'}</code>
+━━━━━━━━━━━━━━━━━━
+⚠️ <i><b>Lưu ý quan trọng:</b> Mật khẩu mới đã được cập nhật. Vui lòng đăng nhập ngay và đổi lại mật khẩu trong mục Cài Đặt. Nếu bạn KHÔNG thực hiện thao tác này, tài khoản của bạn có thể đang bị tấn công, hãy đổi mật khẩu ngay!</i>`;
+
+  return sendTelegramRaw(config.botToken, config.chatId, text);
+}
+
+// 5. Kiểm tra kết nối Telegram Bot (gửi tin nhắn test)
 async function testTelegram(botToken, chatId) {
   const now = new Intl.DateTimeFormat('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -170,5 +200,6 @@ module.exports = {
   notifySalaryAdvance,
   notifyLeaveRequest,
   notifyAttendance,
+  notifyAdminPasswordReset,
   testTelegram,
 };

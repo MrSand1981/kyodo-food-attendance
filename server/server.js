@@ -152,7 +152,8 @@ app.get(['/health', '/api/health'], (req, res) => {
 // 1. SETTINGS & SHIFTS
 app.get('/api/settings', (req, res) => {
   try {
-    const settings = db.getSettings();
+    const isAdmin = Boolean(req.user && req.user.role === 'admin');
+    const settings = db.getSettings(isAdmin);
     const shifts = db.getShifts();
     res.json({ success: true, settings, shifts });
   } catch (err) {
@@ -222,7 +223,8 @@ app.post('/api/auth/logout', (req, res) => {
 // 2.1. ADMIN PROFILE & PASSWORD RECOVERY (ĐĂNG KÝ, ĐỔI MẬT KHẨU & QUÊN MẬT KHẨU ADMIN)
 app.get('/api/admin/profile-status', (req, res) => {
   try {
-    const status = db.getAdminProfileStatus();
+    const isAdmin = Boolean(req.user && req.user.role === 'admin');
+    const status = db.getAdminProfileStatus(isAdmin);
     res.json({ success: true, ...status });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -248,10 +250,15 @@ app.post('/api/admin/change-password', requireAdmin, (req, res) => {
   }
 });
 
-app.post('/api/admin/forgot-password', loginLimiter, (req, res) => {
+app.post('/api/admin/forgot-password', loginLimiter, async (req, res) => {
   try {
-    const { identifier } = req.body;
-    const result = db.recoverAdminPassword(identifier);
+    const { identifier, recoveryKey } = req.body;
+    const result = await db.recoverAdminPassword(identifier, {
+      recoveryKey,
+      ip: req.ip || req.connection?.remoteAddress,
+      telegramService,
+      zaloService,
+    });
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

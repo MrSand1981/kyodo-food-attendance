@@ -192,4 +192,94 @@ describe('Security & Authentication Tests', () => {
     expect(nextCalled).toBe(false);
     expect(status).toBe(401);
   });
+
+  it('should NEVER leak adminEmail or adminPhone to unauthenticated calls in getAdminProfileStatus', () => {
+    // 1. Unauthenticated / Public call (false)
+    const publicStatus = db.getAdminProfileStatus(false);
+    expect(publicStatus.adminEmail).toBeUndefined();
+    expect(publicStatus.adminPhone).toBeUndefined();
+    expect(publicStatus.isDefaultPassword).toBeUndefined();
+    expect(publicStatus.maskedEmail).toBeDefined();
+    expect(publicStatus.maskedEmail).toContain('*');
+    expect(publicStatus.maskedPhone).toBeDefined();
+    expect(publicStatus.maskedPhone).toContain('*');
+    expect(publicStatus.hasEmail).toBe(true);
+    expect(publicStatus.hasPhone).toBe(true);
+
+    // 2. Authenticated Admin call (true)
+    const adminStatus = db.getAdminProfileStatus(true);
+    expect(adminStatus.adminEmail).toBeDefined();
+    expect(adminStatus.adminEmail.length).toBeGreaterThan(0);
+    expect(adminStatus.adminPhone).toBeDefined();
+    expect(adminStatus.adminPhone.length).toBeGreaterThan(0);
+  });
+
+  it('should sanitize settings and never leak admin contacts or credentials to public getSettings', () => {
+    // Public call: getSettings(false)
+    const publicSettings = db.getSettings(false);
+    expect(publicSettings.adminPassword).toBeUndefined();
+    expect(publicSettings.adminEmail).toBeUndefined();
+    expect(publicSettings.adminPhone).toBeUndefined();
+    expect(publicSettings.telegram).toBeUndefined();
+    expect(publicSettings.zalo).toBeUndefined();
+    expect(publicSettings.cloudConfig).toBeUndefined();
+
+    // Store display fields remain available
+    expect(publicSettings.storeName).toBeDefined();
+  });
+
+  it('should refuse forgot-password without out-of-band channel and NEVER reveal newPassword over HTTP', async () => {
+    // 1. Reject invalid identifier
+    await expect(
+      db.recoverAdminPassword('wrong-email@example.com', {
+        telegramService: { getTelegramConfig: () => ({ enabled: false }) },
+        zaloService: { getZaloConfig: () => ({ enabled: false }) },
+      })
+    ).rejects.toThrow('không khớp với hồ sơ Quản trị viên');
+
+    // 2. Matching email, but NO out-of-band channels configured:
+    // Must refuse to reveal password over public HTTP and suggest CLI reset
+    const savedEmail = db.getAdminProfileStatus(true).adminEmail;
+    await expect(
+      db.recoverAdminPassword(savedEmail, {
+        telegramService: { getTelegramConfig: () => ({ enabled: false }) },
+        zaloService: { getZaloConfig: () => ({ enabled: false }) },
+      })
+    ).rejects.toThrow('Kênh thông báo bảo mật (Telegram/Zalo) chưa được kích hoạt');
+
+    // 3. Matching email with Telegram out-of-band channel active:
+    let telegramNotifiedWithPassword = '';
+    const mockTelegram = {
+      getTelegramConfig: () => ({ enabled: true, botToken: 'mock-token', chatId: 'mock-chat' }),
+      notifyAdminPasswordReset: async ({ newPassword }: any) => {
+        telegramNotifiedWithPassword = newPassword;
+      },
+    };
+
+    const res = await db.recoverAdminPassword(savedEmail, {
+      telegramService: mockTelegram,
+      zaloService: { getZaloConfig: () => ({ enabled: false }) },
+    });
+
+    expect(res.success).toBe(true);
+    // CRITICAL: newPassword MUST NEVER be in the response returned to client!
+    expect((res as any).newPassword).toBeUndefined();
+    expect(res.sentTo).toContain('Telegram');
+    expect(telegramNotifiedWithPassword).toMatch(/^Kyodo@\d{4}$/);
+
+    // Verify admin can now login with the dispatched password
+    const loginRes = db.authenticateUser('admin', telegramNotifiedWithPassword);
+    expect(loginRes.role).toBe('admin');
+  });
+
+  it('should support safe server CLI reset tool resetAdminPasswordDirect', () => {
+    const directResult = db.resetAdminPasswordDirect('KyodoSecure@2026');
+    expect(directResult.success).toBe(true);
+
+    const reAuth = db.authenticateUser('admin', 'KyodoSecure@2026');
+    expect(reAuth.role).toBe('admin');
+
+    // Restore standard password for subsequent tests
+    db.resetAdminPasswordDirect('20162020');
+  });
 });

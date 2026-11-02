@@ -188,7 +188,48 @@ Tổng giờ: ${hours} tiếng`;
   });
 }
 
-// 4. Kiểm tra kết nối Zalo (Test)
+// 4. Thông báo khôi phục mật khẩu Quản trị viên (Gửi ngoài kênh bảo mật Zalo)
+async function notifyAdminPasswordReset({ adminUsername, newPassword, ip }) {
+  const config = getZaloConfig();
+  if (!config.enabled) {
+    return { sent: false, reason: 'Zalo disabled' };
+  }
+
+  const now = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date());
+
+  const text = `🔐 YÊU CẦU ĐẶT LẠI MẬT KHẨU QUẢN TRỊ VIÊN
+━━━━━━━━━━━━━━━━━━
+🏪 Cơ sở: Kyodo Food - Trưng Nữ Vương, Đà Nẵng
+👤 Tài khoản: ${adminUsername || 'admin'}
+🔑 Mật khẩu mới tạm thời: ${newPassword}
+⏰ Thời gian: ${now}
+🌐 IP: ${ip || 'Kiosk / Mạng nội bộ'}
+━━━━━━━━━━━━━━━━━━
+⚠️ Mật khẩu mới đã được cập nhật. Vui lòng đăng nhập ngay và đổi mật khẩu trong mục Cài Đặt!`;
+
+  if (config.mode === 'oa' && config.oaAccessToken && config.oaUserId) {
+    return sendViaZaloOA(config.oaAccessToken, config.oaUserId, text);
+  } else if (config.webhookUrl) {
+    return sendViaWebhook(config.webhookUrl, {
+      event: 'admin_password_reset',
+      adminUsername,
+      newPassword,
+      time: now,
+      text,
+    });
+  }
+  return { sent: false, reason: 'Zalo configuration incomplete' };
+}
+
+// 5. Kiểm tra kết nối Zalo (Test)
 async function testZalo(testConfig) {
   const now = new Intl.DateTimeFormat('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -234,5 +275,6 @@ module.exports = {
   notifySalaryAdvance,
   notifyLeaveRequest,
   notifyAttendance,
+  notifyAdminPasswordReset,
   testZalo,
 };
