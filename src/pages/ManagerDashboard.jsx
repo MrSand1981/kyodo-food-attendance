@@ -618,7 +618,7 @@ export default function ManagerDashboard({
 
   // Cau hinh ket noi Cloud (Nghe An - Da Nang)
   const [cloudConfig, setCloudConfig] = useState({
-    cloudUrl: 'https://kyodo-food-attendance.onrender.com',
+    cloudUrl: 'https://kyodo-food-attendance-2.onrender.com',
     activeMode: 'cloud',
   });
   const [savingCloud, setSavingCloud] = useState(false);
@@ -2716,7 +2716,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   type="url"
                   value={cloudConfig.cloudUrl}
                   onChange={(e) => setCloudConfig({ ...cloudConfig, cloudUrl: e.target.value })}
-                  placeholder="https://kyodo-food-attendance.onrender.com"
+                  placeholder="https://kyodo-food-attendance-2.onrender.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">

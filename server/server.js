@@ -1168,7 +1168,7 @@ if (require.main === module) {
     const publicCloudUrl =
       process.env.RENDER_EXTERNAL_URL ||
       process.env.APP_URL ||
-      'https://kyodo-food-attendance.onrender.com';
+      'https://kyodo-food-attendance-2.onrender.com';
     if (publicCloudUrl && publicCloudUrl.startsWith('http')) {
       console.log(
         `[Keep-Alive 24/7] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping (mỗi 9 phút)`
