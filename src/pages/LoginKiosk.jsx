@@ -353,7 +353,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v2.8 (Chính Thức)</span>
+          <span className="font-black text-amber-950">Bản v2.9 (Chính Thức)</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -553,6 +553,7 @@ export default function LoginKiosk({
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="nhập mật khẩu để đăng nhập"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-mono tracking-widest"
@@ -1116,7 +1117,7 @@ export default function LoginKiosk({
           <span className="whitespace-nowrap">
             {checkingUpdate
               ? 'Đang kiểm tra từ GitHub...'
-              : updateMsg || 'Bản v2.8 (Chính Thức) • Kiểm Tra Cập Nhật'}
+              : updateMsg || 'Bản v2.9 (Chính Thức) • Kiểm Tra Cập Nhật'}
           </span>
         </button>
 

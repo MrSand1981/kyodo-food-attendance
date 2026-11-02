@@ -1,6 +1,6 @@
 {
-  "hash": "v2.8.0",
-  "subject": "Kyodo Food v2.8.0: Fix sập container Render khi chưa cấu hình JWT_SECRET và tự động tạo khóa bảo mật 256-bit",
-  "version": "2.8.0",
+  "hash": "v2.9.0",
+  "subject": "Kyodo Food v2.9.0: Bảo vệ quyền riêng tư nhân viên trên máy dùng chung - Tự động khóa & đăng xuất sau khi vào/ra ca và sau 60s không thao tác",
+  "version": "2.9.0",
   "date": "02/11/2026"
 }
