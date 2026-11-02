@@ -873,13 +873,13 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                                     bankAccount: row.employee.bankAccount,
                                     accountName: row.employee.accountName || row.employee.name,
                                     amount: transferAmount,
-                                    memo: `Kyodo Luong T${selectedMonth.split('-')[1]} ${row.employee.name}`,
+                                    memo: `KyodoFoods DN Thanh Toan Tien Luong. Cam On Em`,
                                     employeeName: row.employee.name
                                   });
                                   setShowQrModal(true);
-                                }} className="mt-3 w-full py-2.5 px-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/30 shadow-inner whitespace-nowrap" title="Tạo mã VietQR quét bằng App ngân hàng chuyển khoản đúng số tiền thực lĩnh">
-                                  <QrCode className="w-4 h-4 shrink-0" />
-                                  <span className="whitespace-nowrap">📲 Quét QR Chuyển Khoản Lương Ngay</span>
+                                }} className="mt-3 w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md whitespace-nowrap" title="Tạo mã VietQR quét bằng App ngân hàng chuyển khoản đúng số tiền thực lĩnh">
+                                  <CreditCard className="w-4 h-4 shrink-0" />
+                                  <span className="whitespace-nowrap">💳 Thanh Toán Lương (Quét Mã QR)</span>
                                 </Button>
                               )}
                             </Card>

@@ -8,17 +8,6 @@ WshShell.CurrentDirectory = strDir
 ' ==============================================================================
 ' 1. KIEM TRA VA KICH HOAT CUA SO DA TON TAI (SINGLE-INSTANCE: CHI MO 1 CUA SO DUY NHAT)
 ' ==============================================================================
-If WshShell.AppActivate("Kyodo Food App") Then
-    WScript.Sleep 50
-    WshShell.SendKeys "% r"
-    WScript.Quit
-End If
-If WshShell.AppActivate("Kyodo Food") Then
-    WScript.Sleep 50
-    WshShell.SendKeys "% r"
-    WScript.Quit
-End If
-
 focusExe = strDir & "\bin\FocusApp.exe"
 If fso.FileExists(focusExe) Then
     ret = WshShell.Run(Chr(34) & focusExe & Chr(34), 0, True)

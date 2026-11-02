@@ -57,6 +57,16 @@ export default function ManagerDashboard({ settings, onSettingsChange, shifts })
   // Modal QR Code chuyển khoản VietQR
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrModalData, setQrModalData] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const copyToClipboard = (text, fieldName) => {
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(String(text));
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (_) {}
+  };
 
   // Quản lý hiển thị mật khẩu nhân viên
   const [visiblePasswords, setVisiblePasswords] = useState({});
@@ -1244,30 +1254,33 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                             </div>
                           </div>
 
-                          {/* Nút quét VietQR chuyển khoản lương ngay */}
-                          {row.employee?.bankAccount && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const transferAmount = Math.max(0, row.netSalary ?? (row.totalSalary - (row.advanceTotal || 0)));
-                                setQrModalData({
-                                  bankCode: row.employee.bankCode,
-                                  bankName: row.employee.bankName,
-                                  bankAccount: row.employee.bankAccount,
-                                  accountName: row.employee.accountName || row.employee.name,
-                                  amount: transferAmount,
-                                  memo: `Kyodo Luong T${selectedMonth.split('-')[1]} ${row.employee.name}`,
-                                  employeeName: row.employee.name
-                                });
-                                setShowQrModal(true);
-                              }}
-                              className="mt-3 w-full py-2.5 px-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/30 shadow-inner whitespace-nowrap"
-                              title="Tạo mã VietQR quét bằng App ngân hàng chuyển khoản đúng số tiền thực lĩnh"
-                            >
-                              <QrCode className="w-4 h-4 shrink-0" />
-                              <span className="whitespace-nowrap">📲 Quét QR Chuyển Khoản Lương Ngay</span>
-                            </button>
-                          )}
+                          {/* Nút thanh toán tiền lương VietQR chuẩn */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!row.employee?.bankAccount) {
+                                alert(`Nhân viên ${row.employee.name} chưa cập nhật Tài Khoản Ngân Hàng! Vui lòng vào tab "Hồ Sơ Nhân Sự" để bổ sung số tài khoản ngân hàng.`);
+                                return;
+                              }
+                              const transferAmount = Math.max(0, row.netSalary ?? (row.totalSalary - (row.advanceTotal || 0)));
+                              setQrModalData({
+                                bankCode: row.employee.bankCode,
+                                bankName: row.employee.bankName,
+                                bankAccount: row.employee.bankAccount,
+                                accountName: row.employee.accountName || row.employee.name,
+                                amount: transferAmount,
+                                memo: `KyodoFoods DN Thanh Toan Tien Luong. Cam On Em`,
+                                employeeName: row.employee.name,
+                                month: selectedMonth
+                              });
+                              setShowQrModal(true);
+                            }}
+                            className="mt-3 w-full py-2.5 px-3 rounded-xl bg-linear-to-r from-amber-600 via-amber-700 to-yellow-600 hover:from-amber-700 hover:to-amber-800 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md hover:shadow-lg whitespace-nowrap"
+                            title="Tạo mã VietQR quét bằng App ngân hàng chuyển khoản đúng số tiền thực lĩnh kèm nội dung chuẩn: KyodoFoods DN Thanh Toan Tien Luong. Cam On Em"
+                          >
+                            <CreditCard className="w-4 h-4 shrink-0 text-amber-200" />
+                            <span className="whitespace-nowrap">💳 Thanh Toán Lương (Quét Mã QR)</span>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1455,7 +1468,32 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                         {Number(row.advanceTotal || 0).toLocaleString()}đ
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/50 whitespace-nowrap text-xs">
-                        {Number(row.netSalary ?? row.totalSalary).toLocaleString()}đ
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span>{Number(row.netSalary ?? row.totalSalary).toLocaleString()}đ</span>
+                          {row.employee?.bankAccount && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const transferAmount = Math.max(0, row.netSalary ?? (row.totalSalary - (row.advanceTotal || 0)));
+                                setQrModalData({
+                                  bankCode: row.employee.bankCode,
+                                  bankName: row.employee.bankName,
+                                  bankAccount: row.employee.bankAccount,
+                                  accountName: row.employee.accountName || row.employee.name,
+                                  amount: transferAmount,
+                                  memo: `KyodoFoods DN Thanh Toan Tien Luong. Cam On Em`,
+                                  employeeName: row.employee.name,
+                                  month: selectedMonth
+                                });
+                                setShowQrModal(true);
+                              }}
+                              className="p-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 transition-all cursor-pointer shadow-2xs"
+                              title={`Quét mã QR thanh toán lương cho ${row.employee.name}`}
+                            >
+                              <QrCode className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -3560,58 +3598,155 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
         </div>
       )}
 
-      {/* ================= MODAL: XEM MÃ VIETQR CHUYỂN KHOẢN (GLOBAL) ================= */}
+      {/* ================= MODAL: XEM MÃ VIETQR THANH TOÁN LƯƠNG (GLOBAL) ================= */}
       {showQrModal && qrModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 border border-slate-100 text-center animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-              <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-amber-600" />
-                <span>Mã VietQR Chuyển Khoản</span>
-              </h4>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 sm:p-6 border border-slate-100 text-center animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 leading-tight">
+                    Thanh Toán Lương (VietQR)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={() => setShowQrModal(false)}
-                className="p-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 cursor-pointer"
+                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-200 mb-4 inline-block">
+            {/* QR Image Box */}
+            <div className="p-3 bg-linear-to-b from-amber-50/70 to-yellow-50/30 rounded-2xl border border-amber-200/80 mb-3.5 inline-block w-full max-w-[280px]">
+              <div className="text-[10px] font-black uppercase tracking-wider text-amber-800 mb-1 flex items-center justify-center gap-1">
+                <QrCode className="w-3.5 h-3.5 text-amber-600" />
+                <span>Napas 247 • Quét Bằng App Ngân Hàng</span>
+              </div>
               <img
                 src={getVietQRUrl({
                   bankCode: qrModalData.bankCode,
                   bankAccount: qrModalData.bankAccount,
                   amount: qrModalData.amount,
                   accountName: qrModalData.accountName,
-                  memo: qrModalData.memo
+                  memo: qrModalData.memo || 'KyodoFoods DN Thanh Toan Tien Luong. Cam On Em'
                 })}
-                alt="Mã QR VietQR"
-                className="w-64 h-64 mx-auto rounded-xl object-contain shadow-xs bg-white p-2"
+                alt="Mã QR VietQR Thanh Toán Lương"
+                className="w-56 h-56 mx-auto rounded-xl object-contain shadow-xs bg-white p-2 border border-amber-100"
               />
+              <p className="text-[10px] text-slate-400 mt-1 italic">
+                Tự động điền đúng Số Tiền & Nội Dung Chuyển Khoản
+              </p>
             </div>
 
-            <div className="text-xs space-y-1 text-slate-700">
-              <p className="font-bold text-slate-900 text-sm">{qrModalData.employeeName}</p>
-              <p>Ngân hàng: <strong>{qrModalData.bankName || qrModalData.bankCode}</strong></p>
-              <p className="font-mono text-base font-extrabold text-amber-700">{qrModalData.bankAccount}</p>
-              <p className="uppercase text-[11px] font-bold text-slate-500">{qrModalData.accountName}</p>
+            {/* Khối Nội Dung Chuyển Khoản theo yêu cầu của user */}
+            <div className="mb-3.5 p-3 rounded-2xl bg-amber-500/10 border-2 border-dashed border-amber-400 text-left">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-extrabold text-amber-900 uppercase tracking-wide flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  Nội dung chuyển khoản (Đã gắn vào QR):
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(qrModalData.memo || 'KyodoFoods DN Thanh Toan Tien Luong. Cam On Em', 'memo')}
+                  className="text-[11px] font-black text-amber-800 hover:text-amber-950 bg-white px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  {copiedField === 'memo' ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span className="text-emerald-700">Đã chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span>Sao chép</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-amber-200/80 font-mono font-bold text-xs text-amber-950 select-all break-all">
+                {qrModalData.memo || 'KyodoFoods DN Thanh Toan Tien Luong. Cam On Em'}
+              </div>
+            </div>
+
+            {/* Chi tiết người thụ hưởng & số tiền */}
+            <div className="text-xs space-y-2 text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200/70 text-left mb-4">
+              <div className="flex items-center justify-between border-b border-slate-200/50 pb-1.5">
+                <span className="text-slate-500 font-medium">Nhân viên thụ hưởng:</span>
+                <strong className="text-slate-900 font-bold">{qrModalData.employeeName}</strong>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-200/50 pb-1.5">
+                <span className="text-slate-500 font-medium">Ngân hàng:</span>
+                <span className="font-bold text-slate-800">{qrModalData.bankName || qrModalData.bankCode}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-200/50 pb-1.5">
+                <span className="text-slate-500 font-medium">Số tài khoản:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-black text-amber-800 text-sm">{qrModalData.bankAccount}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(qrModalData.bankAccount, 'account')}
+                    className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                    title="Sao chép số tài khoản"
+                  >
+                    {copiedField === 'account' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-200/50 pb-1.5">
+                <span className="text-slate-500 font-medium">Chủ tài khoản:</span>
+                <strong className="uppercase text-[11px] font-black text-slate-800">{qrModalData.accountName}</strong>
+              </div>
               {qrModalData.amount > 0 && (
-                <div className="mt-2 pt-2 border-t border-slate-100">
-                  <span className="text-[11px] text-slate-500">Số tiền chuyển:</span>
-                  <div className="text-xl font-black text-emerald-700 font-mono">
-                    {Number(qrModalData.amount).toLocaleString('vi-VN')} VNĐ
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-slate-600 font-extrabold text-xs">Số tiền thanh toán:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base sm:text-lg font-black text-emerald-700 font-mono">
+                      {Number(qrModalData.amount).toLocaleString('vi-VN')} VNĐ
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(String(qrModalData.amount), 'amount')}
+                      className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                      title="Sao chép số tiền"
+                    >
+                      {copiedField === 'amount' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={() => setShowQrModal(false)}
-              className="mt-5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all cursor-pointer"
-            >
-              Đóng Cửa Sổ
-            </button>
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+                  setShowQrModal(false);
+                }}
+                className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Đã Chuyển Khoản</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Đóng Cửa Sổ
+              </button>
+            </div>
           </div>
         </div>
       )}
