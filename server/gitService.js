@@ -36,7 +36,7 @@ async function getGitStatus() {
 
     let unpushedCount = 0;
     try {
-      const revCount = await runCmd(`git rev-list --count HEAD ^origin/${branch}`);
+      const revCount = await runCmd(`git rev-list --count origin/${branch}..HEAD`);
       unpushedCount = parseInt(revCount, 10) || 0;
     } catch (_) {}
 
