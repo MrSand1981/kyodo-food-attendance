@@ -298,4 +298,61 @@ describe('Business Rules', () => {
       expect(formatShortTime('')).toBe('--:--');
     });
   });
+
+  describe('Makeup Attendance Filtering Rules', () => {
+    const records = [
+      {
+        id: 'rec-1',
+        date: '2026-11-01',
+        totalHours: 5,
+        status: 'completed',
+        isMakeup: false,
+      },
+      {
+        id: 'rec-2',
+        date: '2026-11-02',
+        totalHours: 9,
+        status: 'rejected',
+        isMakeup: true,
+        rejectReason: 'Bảo nghỉ làm chứ không phải quên chấm công',
+      },
+      {
+        id: 'rec-3',
+        date: '2026-11-03',
+        totalHours: 4,
+        status: 'pending',
+        isMakeup: true,
+      },
+    ];
+
+    it('should strictly exclude rejected and pending records from completed worked records', () => {
+      const completedRecords = records.filter(
+        (r) => r.status === 'completed' || r.status === 'working'
+      );
+      expect(completedRecords.length).toBe(1);
+      expect(completedRecords[0].id).toBe('rec-1');
+      expect(completedRecords[0].totalHours).toBe(5);
+    });
+
+    it('should accurately calculate total hours strictly from completed/working records', () => {
+      const completedRecords = records.filter(
+        (r) => r.status === 'completed' || r.status === 'working'
+      );
+      const totalHours = completedRecords.reduce((sum, r) => sum + r.totalHours, 0);
+      expect(totalHours).toBe(5); // 9h rejected is NOT counted
+    });
+
+    it('should properly isolate rejected makeup requests', () => {
+      const rejected = records.filter((r) => r.isMakeup && r.status === 'rejected');
+      expect(rejected.length).toBe(1);
+      expect(rejected[0].id).toBe('rec-2');
+      expect(rejected[0].rejectReason).toBe('Bảo nghỉ làm chứ không phải quên chấm công');
+    });
+
+    it('should properly isolate pending makeup requests', () => {
+      const pending = records.filter((r) => r.isMakeup && r.status === 'pending');
+      expect(pending.length).toBe(1);
+      expect(pending[0].id).toBe('rec-3');
+    });
+  });
 });
