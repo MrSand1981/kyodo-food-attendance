@@ -972,7 +972,17 @@ function checkOut({ employeeId, attendanceId, note }) {
 }
 
 // NHÂN VIÊN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (KHAI BÁO CA LÀM - HỖ TRỢ NHIỀU CA TRONG NGÀY & CHỐNG TRÙNG LẶP)
-function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note }) {
+// QUY TẮC BẢO MẬT: Nếu chấm công cho ngày trong quá khứ (< todayYMD) bởi nhân viên -> Cần Quản lý phê duyệt (status: 'pending') để chống khai gian!
+function recordDailyWork({
+  employeeId,
+  date,
+  startTime,
+  endTime,
+  hours,
+  shiftName,
+  note,
+  requestedByRole = 'employee',
+}) {
   const db = ensureDbFile();
   const emp = db.employees.find(
     (e) => e.id === employeeId || e.username === employeeId || e.code === employeeId
@@ -1019,9 +1029,14 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
   }
 
   // ================= BẢO VỆ CHỐNG TRÙNG LẶP & GIAO THOA THỜI GIAN =================
-  // Lấy toàn bộ ca làm việc của nhân viên này để kiểm tra giao thoa
+  // Lấy toàn bộ ca làm việc của nhân viên này để kiểm tra giao thoa (bao gồm ca hoàn thành và ca đang chờ duyệt)
   const existingRecords = (db.attendance || []).filter(
-    (a) => a.employeeId === emp.id && a.status !== 'cancelled' && a.checkIn && a.checkOut
+    (a) =>
+      a.employeeId === emp.id &&
+      a.status !== 'cancelled' &&
+      a.status !== 'rejected' &&
+      a.checkIn &&
+      a.checkOut
   );
 
   for (const rec of existingRecords) {
@@ -1043,11 +1058,11 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
 
       if (startTime === existStartStr && endTime === existEndStr) {
         throw new Error(
-          `Trùng lặp thời gian! Bạn đã chấm công ca ${existStartStr} - ${existEndStr} (${rec.totalHours} giờ) trong ngày ${recDateVN} rồi. Không được khai báo lặp lại 2 lần để gian lận giờ làm!`
+          `Trùng lặp thời gian! Bạn đã có ca làm/yêu cầu chấm công ${existStartStr} - ${existEndStr} (${rec.totalHours} giờ) trong ngày ${recDateVN} rồi.`
         );
       } else {
         throw new Error(
-          `Trùng thời gian làm việc! Khoảng giờ bạn nhập (${startTime} - ${endTime}) bị giao thoa/trùng đè với ca làm (${existStartStr} - ${existEndStr}) đã chấm ngày ${recDateVN}. Vui lòng nhập khoảng giờ khác!`
+          `Trùng thời gian làm việc! Khoảng giờ bạn nhập (${startTime} - ${endTime}) bị giao thoa/trùng đè với ca (${existStartStr} - ${existEndStr}) đã có ngày ${recDateVN}. Vui lòng nhập khoảng giờ khác!`
         );
       }
     }
@@ -1068,6 +1083,12 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
   const hol = getHolidayByDate(date);
   const isHol = !!(hol && hol.active !== false);
 
+  // Phân biệt: Nếu là ngày trong quá khứ (< todayYMD) và người yêu cầu là Nhân viên:
+  // Cần chuyển sang trạng thái chờ Quản lý phê duyệt để chống khai gian
+  const isMakeup = date < todayYMD;
+  const isPendingApproval = isMakeup && requestedByRole !== 'admin';
+  const status = isPendingApproval ? 'pending' : 'completed';
+
   const newRecord = {
     id: `att-manual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     employeeId: emp.id,
@@ -1080,17 +1101,87 @@ function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftNam
     totalHours: Number(calculatedHours.toFixed(2)),
     shiftCode: 'MANUAL',
     shiftName: autoShiftName,
-    status: 'completed',
-    note: note || 'Nhân viên tự nhập giờ làm',
+    status: status, // 'pending' (chờ quản lý duyệt bù) | 'completed'
+    isMakeup: isMakeup,
+    reason:
+      note ||
+      (isMakeup ? 'Nhân viên xin chấm công bù (quên chấm công)' : 'Nhân viên tự nhập giờ làm'),
+    note: note || (isMakeup ? 'Chấm công bù - Chờ Quản lý duyệt' : 'Nhân viên tự nhập giờ làm'),
     photo: null,
     isHoliday: isHol,
     holidayMultiplier: isHol ? Number(hol.multiplier) || 2 : 1,
     holidayName: isHol ? hol.name : null,
+    createdAt: new Date().toISOString(),
+    approvedAt: !isPendingApproval ? new Date().toISOString() : null,
+    approvedBy: !isPendingApproval ? (requestedByRole === 'admin' ? 'Admin' : 'Auto') : null,
+    rejectedAt: null,
+    rejectedBy: null,
+    rejectReason: null,
   };
 
   db.attendance.push(newRecord);
   saveDatabase(db);
   return newRecord;
+}
+
+// Lấy danh sách yêu cầu chấm công bù
+function getMakeupRequests(employeeId = null, month = null) {
+  const db = ensureDbFile();
+  let list = (db.attendance || []).filter((a) => a.isMakeup === true);
+  if (employeeId) {
+    list = list.filter((a) => a.employeeId === employeeId);
+  }
+  if (month) {
+    list = list.filter((a) => a.date && a.date.startsWith(month));
+  }
+  return list.sort(
+    (a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
+  );
+}
+
+// Quản lý Chấp nhận (Duyệt) chấm công bù
+function approveMakeupAttendance(id, adminUser = {}) {
+  const db = ensureDbFile();
+  const rec = (db.attendance || []).find((a) => a.id === id);
+  if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
+  if (rec.status === 'completed') {
+    throw new Error('Yêu cầu chấm công bù này đã được duyệt trước đó!');
+  }
+  rec.status = 'completed';
+  rec.approvedAt = new Date().toISOString();
+  rec.approvedBy = adminUser.name || adminUser.username || 'Admin';
+  rec.rejectedAt = null;
+  rec.rejectedBy = null;
+  rec.rejectReason = null;
+  saveDatabase(db);
+  return rec;
+}
+
+// Quản lý Từ chối chấm công bù
+function rejectMakeupAttendance(id, adminUser = {}, reason = '') {
+  const db = ensureDbFile();
+  const rec = (db.attendance || []).find((a) => a.id === id);
+  if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
+  rec.status = 'rejected';
+  rec.rejectedAt = new Date().toISOString();
+  rec.rejectedBy = adminUser.name || adminUser.username || 'Admin';
+  rec.rejectReason = reason || 'Quản lý từ chối yêu cầu chấm công bù';
+  saveDatabase(db);
+  return rec;
+}
+
+// Xóa/Hủy yêu cầu chấm công bù (chỉ khi đang pending)
+function deleteMakeupAttendance(id, user = {}) {
+  const db = ensureDbFile();
+  const idx = (db.attendance || []).findIndex((a) => a.id === id);
+  if (idx === -1) return false;
+  const rec = db.attendance[idx];
+  if (user.role !== 'admin' && rec.employeeId !== user.id && rec.employeeCode !== user.username) {
+    throw new Error('Bạn không có quyền xóa yêu cầu chấm công bù của người khác!');
+  }
+  db.attendance.splice(idx, 1);
+  saveDatabase(db);
+  return true;
 }
 
 function adjustAttendance(id, updateData) {
@@ -1605,6 +1696,9 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     leaveDates: absenceInfo.leaveDates,
     absenceDates: absenceInfo.absenceDates,
     registeredLeaveDates: absenceInfo.registeredLeaveDates,
+    pendingMakeupRequests: monthRecords.filter((r) => r.isMakeup && r.status === 'pending'),
+    rejectedMakeupRequests: monthRecords.filter((r) => r.isMakeup && r.status === 'rejected'),
+    approvedMakeupRequests: monthRecords.filter((r) => r.isMakeup && r.status === 'completed'),
     advanceCount: advData.totalCount,
     advanceTotal: advData.totalAmount,
     advances: advData.records,
@@ -1720,13 +1814,19 @@ function getMasterMonthlyReport(yearMonth) {
 
     days.forEach((dayInfo) => {
       const dayLogs = empRecords.filter((a) => a.date === dayInfo.date);
+      const completedLogs = dayLogs.filter(
+        (a) => a.status === 'completed' || a.status === 'working'
+      );
+      const pendingMakeupLogs = dayLogs.filter((a) => a.isMakeup && a.status === 'pending');
+      const hasCompleted = completedLogs.length > 0;
+      const hasPendingMakeup = !hasCompleted && pendingMakeupLogs.length > 0;
       const isPast = dayInfo.date < todayYMD;
       const isToday = dayInfo.date === todayYMD;
       const isDayOff = leaveDatesSet.has(dayInfo.date);
 
-      if (dayLogs.length > 0) {
+      if (hasCompleted) {
         let dayHours = 0;
-        dayLogs.forEach((log) => {
+        completedLogs.forEach((log) => {
           if (log.status === 'completed') {
             dayHours += Number(log.totalHours || 0);
           }
@@ -1734,7 +1834,7 @@ function getMasterMonthlyReport(yearMonth) {
 
         dayHours = Number(dayHours.toFixed(2));
         empTotalHours += dayHours;
-        if (dayHours > 0 || dayLogs.length > 0) daysWorked++;
+        if (dayHours > 0 || completedLogs.length > 0) daysWorked++;
 
         if (dayInfo.isHoliday) {
           empHolidayHours += dayHours;
@@ -1746,12 +1846,15 @@ function getMasterMonthlyReport(yearMonth) {
 
         dailyData[dayInfo.day] = {
           hours: dayHours,
-          logs: dayLogs,
+          logs: completedLogs,
+          allLogs: dayLogs,
           isHoliday: dayInfo.isHoliday,
           holidayName: dayInfo.holidayName,
           holidayMultiplier: dayInfo.holidayMultiplier,
-          isWorked: dayHours > 0 || dayLogs.length > 0,
-          isDayOff: false, // Có chấm công hoặc chấm công bù -> Loại trừ tuyệt đối khỏi ngày nghỉ!
+          isWorked: true,
+          isDayOff: false, // Có chấm công được duyệt -> Loại trừ tuyệt đối khỏi ngày nghỉ!
+          hasPendingMakeup: false,
+          pendingMakeup: null,
           isPastDay: isPast,
           isToday: isToday,
         };
@@ -1759,11 +1862,14 @@ function getMasterMonthlyReport(yearMonth) {
         dailyData[dayInfo.day] = {
           hours: 0,
           logs: [],
+          allLogs: dayLogs,
           isHoliday: dayInfo.isHoliday,
           holidayName: dayInfo.holidayName,
           holidayMultiplier: dayInfo.holidayMultiplier,
           isWorked: false,
           isDayOff: isDayOff, // true nếu qua ngày hôm sau chưa phát sinh chấm công
+          hasPendingMakeup: hasPendingMakeup,
+          pendingMakeup: hasPendingMakeup ? pendingMakeupLogs[0] : null,
           isPastDay: isPast,
           isToday: isToday,
         };
@@ -1815,6 +1921,8 @@ function getMasterMonthlyReport(yearMonth) {
       leaveDates: absenceInfo.leaveDates,
       absenceDates: absenceInfo.absenceDates,
       leaves: leaveData,
+      pendingMakeupCount: empRecords.filter((a) => a.isMakeup && a.status === 'pending').length,
+      pendingMakeupList: empRecords.filter((a) => a.isMakeup && a.status === 'pending'),
       hourlyRate: hourlyRate,
       regularSalary: empRegularSalary,
       holidaySalary: empHolidaySalary,
@@ -1827,6 +1935,13 @@ function getMasterMonthlyReport(yearMonth) {
     };
   });
 
+  const allPendingMakeup = (db.attendance || []).filter(
+    (a) =>
+      a.isMakeup &&
+      a.status === 'pending' &&
+      (!currentYM || (a.date && a.date.startsWith(currentYM)))
+  );
+
   return {
     yearMonth: currentYM,
     branchName: 'Trưng Nữ Vương',
@@ -1835,6 +1950,8 @@ function getMasterMonthlyReport(yearMonth) {
     daysInMonth,
     days,
     rows,
+    allPendingMakeup: allPendingMakeup,
+    pendingMakeupCount: allPendingMakeup.length,
     summary: {
       totalEmployees: employees.length,
       storeTotalHours: Number(storeTotalHours.toFixed(2)),
@@ -2191,6 +2308,10 @@ module.exports = {
   checkIn,
   checkOut,
   recordDailyWork,
+  getMakeupRequests,
+  approveMakeupAttendance,
+  rejectMakeupAttendance,
+  deleteMakeupAttendance,
   adjustAttendance,
   deleteAttendance,
   updateEmployeeAvatar,

@@ -171,6 +171,24 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // Quản lý Chấm công bù (Makeup Attendance)
+  getMakeupRequests: (employeeId = '', month = '') => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    if (month) params.append('month', month);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request(`/attendance/makeup-requests${qs}`);
+  },
+  approveMakeupAttendance: (id) =>
+    request(`/attendance/makeup-requests/${id}/approve`, { method: 'POST' }),
+  rejectMakeupAttendance: (id, reason = '') =>
+    request(`/attendance/makeup-requests/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  deleteMakeupAttendance: (id) =>
+    request(`/attendance/makeup-requests/${id}`, { method: 'DELETE' }),
+
   // Tổng kết cho nhân viên (cuối tháng nhận kết quả tổng số giờ làm việc)
   getMySummary: (employeeId, month) => {
     const query = month ? `?month=${month}` : '';

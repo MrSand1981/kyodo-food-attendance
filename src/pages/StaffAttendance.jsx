@@ -452,6 +452,12 @@ export default function StaffAttendance({
       );
       return;
     }
+    if (entryDate < todayYMD && !entryNote.trim()) {
+      setErrorMsg(
+        '⚠️ Bắt buộc nhập lý do chấm công bù (quên chấm công, mất điện, đổi ca...) để Quản lý xét duyệt!'
+      );
+      return;
+    }
     if (entryStart === entryEnd) {
       setErrorMsg('Giờ vào ca và giờ ra ca không được trùng nhau! Vui lòng chọn thời gian hợp lệ.');
       return;
@@ -511,17 +517,36 @@ export default function StaffAttendance({
         note: entryNote.trim(),
       });
 
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-
-      setFeedbackMsg(`🎉 ${res.message}`);
+      if (res.isPending) {
+        setFeedbackMsg(`⏳ ${res.message}`);
+      } else {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+        setFeedbackMsg(`🎉 ${res.message}`);
+      }
       setEntryNote('');
       await loadData();
     } catch (err) {
       setErrorMsg(err.message || 'Lỗi khi lưu thời gian làm việc!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hủy yêu cầu chấm công bù đang chờ duyệt
+  const handleDeleteMakeup = async (id, timeLabel) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn hủy yêu cầu chấm công bù "${timeLabel}" này không?`))
+      return;
+    try {
+      setLoading(true);
+      await api.deleteMakeupAttendance(id);
+      setFeedbackMsg(`Đã hủy yêu cầu chấm công bù thành công!`);
+      await loadData();
+    } catch (err) {
+      setErrorMsg(err.message || 'Lỗi khi hủy yêu cầu chấm công bù');
     } finally {
       setLoading(false);
     }
@@ -709,7 +734,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v2.12 (Chính Thức)
+                  Bản v2.13 (Chính Thức)
                 </span>
               </div>
 
@@ -1096,93 +1121,223 @@ export default function StaffAttendance({
             </div>
 
             {/* 5. Ghi Chú & Nút Xác Nhận */}
-            <div className="col-span-2 sm:col-span-2 flex items-center gap-2">
-              <div className="flex-1">
-                <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                  Ghi chú (tùy chọn):
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Phụ dọn kho, đổi ca..."
-                  value={entryNote}
-                  onChange={(e) => setEntryNote(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
-                />
-              </div>
+            {(() => {
+              const isMakeupDate = entryDate < getVietnamTodayYMD();
+              return (
+                <div className="col-span-2 sm:col-span-2 flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                      {isMakeupDate ? (
+                        <span className="text-amber-800 font-extrabold flex items-center gap-1">
+                          Lý do chấm bù (bắt buộc): *
+                        </span>
+                      ) : (
+                        'Ghi chú (tùy chọn):'
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      required={isMakeupDate}
+                      placeholder={
+                        isMakeupDate
+                          ? 'Ví dụ: Quên bấm chấm công, quán mất điện, đổi ca...'
+                          : 'Ví dụ: Phụ dọn kho, đổi ca...'
+                      }
+                      value={entryNote}
+                      onChange={(e) => setEntryNote(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden ${
+                        isMakeupDate
+                          ? 'bg-amber-50/80 border-amber-300 font-semibold text-amber-950 placeholder:text-amber-600/70'
+                          : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px] shrink-0"
-              >
-                <Send className="w-3.5 h-3.5 shrink-0" />
-                <span className="whitespace-nowrap">Xác Nhận Giờ Làm</span>
-              </button>
-            </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`px-5 py-2 rounded-xl active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px] shrink-0 ${
+                      isMakeupDate
+                        ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30 ring-2 ring-amber-400'
+                        : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
+                    }`}
+                  >
+                    {isMakeupDate ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap">
+                          ⚡ Gửi Yêu Cầu Chấm Bù (Chờ Quản Lý Duyệt)
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap">Xác Nhận Giờ Làm</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
+
+          {/* Ghi chú hướng dẫn quy trình Chấm Công Bù */}
+          {entryDate < getVietnamTodayYMD() && (
+            <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 flex items-start gap-2 text-xs text-amber-900 leading-relaxed">
+              <span className="text-base shrink-0">⚠️</span>
+              <div>
+                <strong className="font-extrabold">Quy trình Chấm Công Bù:</strong> Bạn đang chọn
+                ngày trong quá khứ ({formatDateVN(entryDate)}). Để tránh sai sót và khai gian, ca
+                làm này được gửi tới Quản Lý dưới dạng <em>Chấm Công Bù</em>. Sau khi Quản Lý kiểm
+                tra và <strong>Chấp Nhận</strong>, số giờ làm mới chính thức được tính vào bảng công
+                và ngày đó sẽ không còn bị tính là ngày nghỉ.
+              </div>
+            </div>
+          )}
         </form>
 
-        {/* Danh sách các ca làm đã khai báo trong ngày đã chọn (Hỗ trợ làm nhiều lần/ngày & chống trùng) */}
+        {/* Danh sách các ca làm đã khai báo trong ngày đã chọn (Hỗ trợ ca hoàn thành, ca chờ duyệt và ca bị từ chối) */}
         {(() => {
           const dayRecords = (summaryData?.records || []).filter(
             (r) => r.date === entryDate && r.status === 'completed'
           );
+          const dayPending = (summaryData?.pendingMakeupRequests || []).filter(
+            (r) => r.date === entryDate
+          );
+          const dayRejected = (summaryData?.rejectedMakeupRequests || []).filter(
+            (r) => r.date === entryDate
+          );
           const dayTotalHours = dayRecords.reduce((sum, r) => sum + Number(r.totalHours || 0), 0);
-          if (dayRecords.length === 0) return null;
+
+          if (dayRecords.length === 0 && dayPending.length === 0 && dayRejected.length === 0)
+            return null;
 
           return (
             <div className="mt-3.5 pt-3 border-t border-slate-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                 <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  Đã ghi nhận <strong>{dayRecords.length} ca làm việc</strong> trong ngày{' '}
-                  {formatDateVN(entryDate)}:
+                  Ngày <strong>{formatDateVN(entryDate)}</strong>: {dayRecords.length} ca chính thức
+                  {dayPending.length > 0 && ` • ${dayPending.length} ca chờ duyệt`}
                 </span>
-                <span className="text-[11px] font-black text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-lg w-fit">
-                  Tổng thời gian ngày: {dayTotalHours} giờ
-                </span>
+                {dayRecords.length > 0 && (
+                  <span className="text-[11px] font-black text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-lg w-fit">
+                    Tổng thời gian hợp lệ: {dayTotalHours} giờ
+                  </span>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {dayRecords.map((r, idx) => (
-                  <div
-                    key={r.id || idx}
-                    className="flex items-center justify-between bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/80 text-xs"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded-md bg-white border border-amber-200 font-mono font-bold text-[10px] text-amber-800">
-                        Ca {idx + 1}
-                      </span>
-                      <div>
-                        <span className="font-mono font-black text-slate-800 block">
-                          {formatShortTime(r.checkIn)} ➔ {formatShortTime(r.checkOut)}
+              {/* Danh sách ca chờ Quản Lý duyệt */}
+              {dayPending.length > 0 && (
+                <div className="mb-2 space-y-1.5">
+                  {dayPending.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between bg-amber-50 p-2.5 rounded-xl border border-amber-300 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-200 text-amber-900 font-bold text-[10px] animate-pulse">
+                          ⏳ Chờ Quản Lý Duyệt
                         </span>
-                        <span className="text-[10px] text-slate-500 italic block">
-                          {r.note || r.shiftName || 'Làm việc'}
-                        </span>
+                        <div>
+                          <span className="font-mono font-black text-slate-800 block">
+                            {formatShortTime(p.checkIn)} ➔ {formatShortTime(p.checkOut)} (
+                            {p.totalHours}h)
+                          </span>
+                          <span className="text-[10px] text-amber-800 italic block">
+                            Lý do: {p.note || 'Quên chấm công'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-lg text-xs">
-                        {r.totalHours}h
-                      </span>
                       <button
                         type="button"
                         onClick={() =>
-                          handleDeleteAttendance(
-                            r.id,
-                            `${formatShortTime(r.checkIn)} - ${formatShortTime(r.checkOut)}`
+                          handleDeleteMakeup(
+                            p.id,
+                            `${formatShortTime(p.checkIn)} - ${formatShortTime(p.checkOut)}`
                           )
                         }
-                        className="text-slate-400 hover:text-amber-800 p-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-colors"
-                        title="Xóa ca này nếu nhập nhầm"
+                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer transition-colors text-[11px] font-bold flex items-center gap-1"
+                        title="Hủy yêu cầu chấm bù này"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hủy yêu cầu</span>
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Danh sách ca bị Quản Lý từ chối */}
+              {dayRejected.length > 0 && (
+                <div className="mb-2 space-y-1.5">
+                  {dayRejected.map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex items-center justify-between bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-xs text-rose-900"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-rose-200 text-rose-900 font-bold text-[10px]">
+                          ❌ Từ Chối
+                        </span>
+                        <div>
+                          <span className="font-mono font-bold block">
+                            {formatShortTime(r.checkIn)} ➔ {formatShortTime(r.checkOut)} (
+                            {r.totalHours}h)
+                          </span>
+                          <span className="text-[10px] text-rose-700 italic block">
+                            Lý do Quản lý từ chối: {r.rejectReason || 'Không hợp lệ'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Danh sách ca chính thức đã được ghi nhận */}
+              {dayRecords.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {dayRecords.map((r, idx) => (
+                    <div
+                      key={r.id || idx}
+                      className="flex items-center justify-between bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/80 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 rounded-md bg-white border border-amber-200 font-mono font-bold text-[10px] text-amber-800">
+                          Ca {idx + 1}
+                        </span>
+                        <div>
+                          <span className="font-mono font-black text-slate-800 block">
+                            {formatShortTime(r.checkIn)} ➔ {formatShortTime(r.checkOut)}
+                          </span>
+                          <span className="text-[10px] text-slate-500 italic block">
+                            {r.note || r.shiftName || 'Làm việc'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-lg text-xs">
+                          {r.totalHours}h
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteAttendance(
+                              r.id,
+                              `${formatShortTime(r.checkIn)} - ${formatShortTime(r.checkOut)}`
+                            )
+                          }
+                          className="text-slate-400 hover:text-amber-800 p-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-colors"
+                          title="Xóa ca này nếu nhập nhầm"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()}
@@ -1361,37 +1516,72 @@ export default function StaffAttendance({
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {summaryData.absenceDates.map((absDate) => (
-                    <div
-                      key={absDate}
-                      className="flex items-center justify-between bg-white p-2 rounded-xl border border-amber-200 shadow-2xs"
-                    >
-                      <div>
-                        <span className="font-mono font-bold text-slate-800 text-xs block">
-                          {formatDateVN(absDate)}
-                        </span>
-                        <span className="text-[10px] text-slate-500">
-                          Chưa phát sinh ca chấm công
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEntryDate(absDate);
-                          if (absDate.length >= 7) {
-                            const ym = absDate.substring(0, 7);
-                            if (ym !== selectedMonth) setSelectedMonth(ym);
-                          }
-                          const formEl = document.getElementById('daily-work-entry-card');
-                          if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                        title="Bấm để khai báo ca làm việc bù cho ngày này"
+                  {summaryData.absenceDates.map((absDate) => {
+                    const pendingReq = (summaryData?.pendingMakeupRequests || []).find(
+                      (p) => p.date === absDate
+                    );
+                    const rejectedReq = (summaryData?.rejectedMakeupRequests || []).find(
+                      (r) => r.date === absDate
+                    );
+
+                    return (
+                      <div
+                        key={absDate}
+                        className="flex items-center justify-between bg-white p-2 rounded-xl border border-amber-200 shadow-2xs"
                       >
-                        ⚡ Chấm Công Bù
-                      </button>
-                    </div>
-                  ))}
+                        <div>
+                          <span className="font-mono font-bold text-slate-800 text-xs block">
+                            {formatDateVN(absDate)}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            {pendingReq
+                              ? '⏳ Đã gửi chấm bù, chờ Quản lý duyệt'
+                              : rejectedReq
+                                ? '❌ Chấm bù bị từ chối'
+                                : 'Chưa phát sinh ca chấm công'}
+                          </span>
+                        </div>
+
+                        {pendingReq ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[10px] border border-amber-300">
+                              ⏳ Chờ duyệt ({pendingReq.totalHours}h)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteMakeup(
+                                  pendingReq.id,
+                                  `${formatDateVN(absDate)} (${pendingReq.totalHours}h)`
+                                )
+                              }
+                              className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 cursor-pointer"
+                              title="Hủy yêu cầu chấm bù"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEntryDate(absDate);
+                              if (absDate.length >= 7) {
+                                const ym = absDate.substring(0, 7);
+                                if (ym !== selectedMonth) setSelectedMonth(ym);
+                              }
+                              const formEl = document.getElementById('daily-work-entry-card');
+                              if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                            title="Bấm để khai báo ca làm việc bù cho ngày này"
+                          >
+                            ⚡ Chấm Công Bù
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

@@ -71,6 +71,12 @@ export default function ManagerDashboard({
   const [employees, setEmployees] = useState([]);
   const [allAdvances, setAllAdvances] = useState([]);
   const [allLeaves, setAllLeaves] = useState([]);
+  const [allMakeupRequests, setAllMakeupRequests] = useState([]);
+  const [reviewingMakeup, setReviewingMakeup] = useState(null);
+  const [reviewTargetEmp, setReviewTargetEmp] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -223,17 +229,62 @@ export default function ManagerDashboard({
     }
   };
 
-  // Tải danh sách tạm ứng & nghỉ phép toàn cửa hàng
+  // Tải danh sách tạm ứng, nghỉ phép & chấm công bù toàn cửa hàng
   const loadAdvancesAndLeaves = async () => {
     try {
-      const [advRes, leaveRes] = await Promise.all([
+      const [advRes, leaveRes, makeupRes] = await Promise.all([
         api.getSalaryAdvances('', selectedMonth),
         api.getLeaveRequests('', selectedMonth),
+        api.getMakeupRequests('', selectedMonth),
       ]);
       setAllAdvances(advRes.records || []);
       setAllLeaves(leaveRes.records || []);
+      setAllMakeupRequests(makeupRes.requests || []);
     } catch (err) {
-      console.error('Lỗi tải tạm ứng và nghỉ phép:', err);
+      console.error('Lỗi tải tạm ứng, nghỉ phép và chấm công bù:', err);
+    }
+  };
+
+  // Mở modal duyệt chấm công bù
+  const handleOpenReviewMakeup = (makeupRecord, employee = null) => {
+    setReviewingMakeup(makeupRecord);
+    setReviewTargetEmp(employee || employees.find((e) => e.id === makeupRecord.employeeId) || null);
+    setShowRejectInput(false);
+    setRejectReason('');
+  };
+
+  // Chấp nhận chấm công bù
+  const handleApproveMakeup = async (id) => {
+    try {
+      setReviewLoading(true);
+      const res = await api.approveMakeupAttendance(id);
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+      setMessage(`✅ ${res.message || 'Đã chấp nhận chấm công bù thành công!'}`);
+      setReviewingMakeup(null);
+      await Promise.all([loadReport(), loadAdvancesAndLeaves()]);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi chấp nhận chấm công bù');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  // Từ chối chấm công bù
+  const handleRejectMakeup = async (id) => {
+    if (!rejectReason.trim()) {
+      alert('Vui lòng nhập lý do từ chối để nhân viên nắm được thông tin!');
+      return;
+    }
+    try {
+      setReviewLoading(true);
+      const res = await api.rejectMakeupAttendance(id, rejectReason.trim());
+      setMessage(`❌ ${res.message || 'Đã từ chối yêu cầu chấm công bù!'}`);
+      setReviewingMakeup(null);
+      await Promise.all([loadReport(), loadAdvancesAndLeaves()]);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi từ chối chấm công bù');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -919,7 +970,7 @@ export default function ManagerDashboard({
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v2.12 (Chính Thức)
+              Bản v2.13 (Chính Thức)
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
@@ -965,10 +1016,22 @@ export default function ManagerDashboard({
             }`}
           >
             <DollarSign className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span className="whitespace-nowrap">
-              <span className="hidden sm:inline">Tạm Ứng & Nghỉ Phép</span>
-              <span className="sm:hidden">Tạm Ứng & Nghỉ</span> (
-              {allAdvances.length + allLeaves.length})
+            <span className="whitespace-nowrap flex items-center gap-1">
+              <span className="hidden sm:inline">Tạm Ứng, Nghỉ Phép & Chấm Bù</span>
+              <span className="sm:hidden">Tạm Ứng & Nghỉ</span>
+              <span>
+                (
+                {allAdvances.length +
+                  allLeaves.length +
+                  allMakeupRequests.filter((r) => r.status === 'pending').length}
+                )
+              </span>
+              {allMakeupRequests.filter((r) => r.status === 'pending').length > 0 && (
+                <span
+                  className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block shrink-0"
+                  title="Có yêu cầu chấm bù đang chờ duyệt"
+                />
+              )}
             </span>
           </button>
 
@@ -1032,6 +1095,43 @@ export default function ManagerDashboard({
       {/* ================= TAB 1: BẢNG CHẤM CÔNG & QUYẾT TOÁN LƯƠNG TỔNG HỢP ================= */}
       {activeTab === 'timesheet' && (
         <div>
+          {/* Cảnh báo có yêu cầu Chấm Công Bù đang chờ xét duyệt */}
+          {((report?.allPendingMakeup && report.allPendingMakeup.length > 0) ||
+            allMakeupRequests.filter((r) => r.status === 'pending').length > 0) && (
+            <div className="mb-4 p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in no-print">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-xs shrink-0 animate-bounce">
+                  ⏳
+                </span>
+                <div>
+                  <h4 className="text-sm font-black text-amber-950 flex items-center gap-2">
+                    <span>
+                      Có{' '}
+                      {report?.pendingMakeupCount ||
+                        allMakeupRequests.filter((r) => r.status === 'pending').length}{' '}
+                      yêu cầu Chấm Công Bù đang chờ bạn duyệt!
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-600 text-white text-[10px] font-extrabold uppercase tracking-wider">
+                      Cần kiểm tra
+                    </span>
+                  </h4>
+                  <p className="text-xs text-amber-900 mt-0.5 leading-relaxed">
+                    Nhân viên đã gửi giải trình ca làm trong quá khứ do quên chấm công. Quản lý vui
+                    lòng kiểm tra đối chiếu để duyệt hoặc từ chối (tránh khai gian).
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('advances-leaves')}
+                className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white text-xs font-black transition-all shadow-md shadow-amber-600/30 cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
+              >
+                <span>Xem & Duyệt Ngay</span>
+                <span>➔</span>
+              </button>
+            </div>
+          )}
+
           {/* Controls Bar */}
           <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs mb-6 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
             <div className="flex items-center gap-3 w-full md:w-auto">
@@ -1730,12 +1830,37 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                             }
                           >
                             {hasHours ? (
-                              <span
-                                className="inline-flex items-center justify-center w-5 h-5 rounded bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] shadow-2xs transition-transform cursor-pointer"
-                                title={logsTooltip}
+                              <div className="relative inline-flex items-center justify-center">
+                                <span
+                                  className="inline-flex items-center justify-center w-5 h-5 rounded bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] shadow-2xs transition-transform cursor-pointer"
+                                  title={logsTooltip}
+                                >
+                                  {cellData.hours}
+                                </span>
+                                {cellData.hasPendingMakeup && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleOpenReviewMakeup(cellData.pendingMakeup, row.employee)
+                                    }
+                                    className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-400 text-amber-950 font-black text-[8px] flex items-center justify-center ring-1 ring-white animate-bounce cursor-pointer shadow-xs"
+                                    title={`Chờ duyệt bù: +${cellData.pendingMakeup.totalHours}h (Bấm để duyệt)`}
+                                  >
+                                    !
+                                  </button>
+                                )}
+                              </div>
+                            ) : cellData?.hasPendingMakeup ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleOpenReviewMakeup(cellData.pendingMakeup, row.employee)
+                                }
+                                className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 border-2 border-amber-500 font-black text-[9px] shadow-2xs transition-all cursor-pointer animate-pulse"
+                                title={`Yêu cầu chấm công bù: ${cellData.pendingMakeup.totalHours}h (${cellData.pendingMakeup.note || 'Không có lý do'}). Bấm để duyệt!`}
                               >
-                                {cellData.hours}
-                              </span>
+                                ⏳{cellData.pendingMakeup.totalHours}h
+                              </button>
                             ) : cellData?.isDayOff ? (
                               <span
                                 className="inline-flex items-center justify-center w-5 h-5 rounded bg-blue-100 hover:bg-blue-200 text-blue-800 font-black text-[9px] border border-blue-200/80 shadow-2xs transition-colors cursor-help"
@@ -2198,16 +2323,17 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
         </div>
       )}
 
-      {/* ================= TAB 3: QUẢN LÝ TẠM ỨNG LƯƠNG & THÔNG BÁO NGHỈ ================= */}
+      {/* ================= TAB 3: QUẢN LÝ TẠM ỨNG LƯƠNG, NGHỈ PHÉP & CHẤM CÔNG BÙ ================= */}
       {activeTab === 'advances-leaves' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-200">
             <div>
               <h3 className="text-lg font-bold text-slate-900 whitespace-nowrap">
-                Quản Lý Tạm Ứng Lương & Đăng Ký Ngày Nghỉ
+                Quản Lý Tạm Ứng, Nghỉ Phép & Phê Duyệt Chấm Bù
               </h3>
               <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
-                Tổng hợp tạm ứng lương và đăng ký ngày nghỉ của nhân viên.
+                Xét duyệt chấm bù chống khai gian, tổng hợp tạm ứng lương và lịch nghỉ phép của nhân
+                viên.
               </p>
             </div>
 
@@ -2221,6 +2347,122 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               <option value="2027-01">Tháng 01/2027</option>
               <option value="2026-10">Tháng 10/2026</option>
             </select>
+          </div>
+
+          {/* ================= SECTION 0: DUYỆT YÊU CẦU CHẤM CÔNG BÙ ================= */}
+          <div className="bg-white rounded-3xl p-6 border-2 border-amber-400 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-amber-100">
+              <div>
+                <h4 className="text-base font-black text-amber-950 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-amber-600 stroke-[2.5]" />
+                  <span>
+                    Yêu Cầu Chấm Công Bù (
+                    {allMakeupRequests.filter((r) => r.status === 'pending').length} chờ duyệt)
+                  </span>
+                </h4>
+                <p className="text-xs text-amber-900/80 mt-0.5">
+                  Nhân viên gửi yêu cầu xác nhận ca làm việc trong quá khứ do quên chấm công. Quản
+                  Lý duyệt hoặc từ chối để chống khai gian.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-xl border border-amber-200">
+                  {allMakeupRequests.length} tổng yêu cầu trong tháng
+                </span>
+              </div>
+            </div>
+
+            {allMakeupRequests.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border border-amber-200">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-amber-50/80 border-b border-amber-200 text-amber-950 font-bold uppercase text-[10px] tracking-wider">
+                      <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày Làm Bù</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Thời Gian Vào - Ra</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Số Giờ</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Lý Do / Giải Trình</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Thao Tác Duyệt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {allMakeupRequests.map((req) => (
+                      <tr key={req.id} className="hover:bg-amber-50/40 transition-colors">
+                        <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
+                          {req.employeeShortName || req.employeeName} ({req.employeeCode})
+                        </td>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800 whitespace-nowrap">
+                          {formatDateVN(req.date)}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-black text-slate-700 whitespace-nowrap">
+                          {formatShortTime(req.checkIn)} ➔ {formatShortTime(req.checkOut)}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-black text-amber-800 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded-lg bg-amber-100 border border-amber-300">
+                            {req.totalHours}h
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-700 max-w-xs truncate" title={req.note}>
+                          <span className="italic font-medium text-amber-950">
+                            "{req.note || 'Không có ghi chú'}"
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          {req.status === 'pending' ? (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold animate-pulse">
+                              ⏳ Chờ Duyệt
+                            </span>
+                          ) : req.status === 'completed' ? (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                              ✅ Đã Chấp Nhận
+                            </span>
+                          ) : (
+                            <span
+                              className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold"
+                              title={`Lý do từ chối: ${req.rejectReason || 'Không có'}`}
+                            >
+                              ❌ Đã Từ Chối
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          {req.status === 'pending' ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleApproveMakeup(req.id)}
+                                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-xs cursor-pointer transition-all flex items-center gap-1"
+                                title="Chấp nhận ca làm bù này, tính lương và trừ ngày nghỉ"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Duyệt</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReviewMakeup(req)}
+                                className="px-2.5 py-1 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-extrabold text-[11px] border border-rose-300 cursor-pointer transition-all"
+                                title="Mở chi tiết để kiểm tra hoặc từ chối"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                <span>Từ Chối</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">Đã xử lý</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic py-3 text-center bg-slate-50 rounded-2xl border border-slate-100">
+                Không có yêu cầu chấm công bù nào trong {formatMonthVN(selectedMonth)}.
+              </p>
+            )}
           </div>
 
           {/* Section: Danh sách tạm ứng */}
@@ -4626,6 +4868,159 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 Đóng Cửa Sổ
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: DUYỆT & XÉT DUYỆT CHẤM CÔNG BÙ ================= */}
+      {reviewingMakeup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-100 text-left animate-in fade-in zoom-in-95 my-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/30">
+                  <Clock className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 leading-tight">
+                    Xét Duyệt Chấm Công Bù
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Chống khai gian • Xác nhận ca làm việc trong quá khứ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewingMakeup(null)}
+                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Chi tiết yêu cầu */}
+            <div className="space-y-3 mb-5 text-xs">
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                    Nhân Viên Yêu Cầu
+                  </span>
+                  <div className="font-black text-slate-900 text-sm mt-0.5">
+                    {reviewTargetEmp?.fullName ||
+                      reviewTargetEmp?.name ||
+                      reviewingMakeup.employeeShortName ||
+                      reviewingMakeup.employeeName}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    Mã NV: {reviewTargetEmp?.username || reviewingMakeup.employeeCode}
+                    {reviewTargetEmp?.phone && ` • SĐT: ${reviewTargetEmp.phone}`}
+                  </div>
+                </div>
+                <div className="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-900 font-mono font-bold text-xs">
+                  {reviewingMakeup.status === 'pending' ? '⏳ Chờ Duyệt' : reviewingMakeup.status}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                    Ngày Làm Bù
+                  </span>
+                  <div className="font-black text-slate-800 text-sm font-mono mt-0.5">
+                    {formatDateVN(reviewingMakeup.date)}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+                  <span className="text-[10px] text-amber-700 font-bold uppercase block">
+                    Thời Gian & Số Giờ
+                  </span>
+                  <div className="font-black text-amber-900 text-sm font-mono mt-0.5">
+                    {formatShortTime(reviewingMakeup.checkIn)} ➔{' '}
+                    {formatShortTime(reviewingMakeup.checkOut)} ({reviewingMakeup.totalHours}h)
+                  </div>
+                </div>
+              </div>
+
+              {/* Giải trình của nhân viên */}
+              <div className="p-3.5 bg-amber-50/80 rounded-2xl border border-amber-300">
+                <span className="text-[10px] text-amber-900 font-extrabold uppercase block mb-1">
+                  📝 Lý do nhân viên giải trình:
+                </span>
+                <p className="text-xs text-amber-950 font-bold italic leading-relaxed">
+                  "{reviewingMakeup.note || 'Nhân viên không để lại ghi chú'}"
+                </p>
+              </div>
+
+              {/* Input lý do từ chối nếu bấm từ chối */}
+              {showRejectInput && (
+                <div className="p-3.5 bg-rose-50 rounded-2xl border-2 border-rose-300 animate-in fade-in">
+                  <label className="block text-[11px] font-black text-rose-900 uppercase mb-1.5">
+                    Nhập lý do từ chối (báo về nhân viên): *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Đối chiếu camera hôm đó không có ca làm, trùng lịch..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-rose-300 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-rose-500 focus:outline-hidden mb-2"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectInput(false)}
+                      className="px-3 py-1.5 rounded-xl bg-white text-slate-600 border border-slate-200 font-bold text-xs"
+                    >
+                      Quay Lại
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reviewLoading}
+                      onClick={() => handleRejectMakeup(reviewingMakeup.id)}
+                      className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-all shadow-xs"
+                    >
+                      {reviewLoading ? 'Đang gửi...' : 'Xác Nhận Từ Chối'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions Footer */}
+            {!showRejectInput && (
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowRejectInput(true)}
+                  className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Từ Chối Ca Bù</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReviewingMakeup(null)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewLoading}
+                    onClick={() => handleApproveMakeup(reviewingMakeup.id)}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>{reviewLoading ? 'Đang duyệt...' : '✓ Chấp Nhận Chấm Bù'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

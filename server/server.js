@@ -607,7 +607,13 @@ app.post('/api/attendance/daily-entry', requireAuth, (req, res) => {
       hours,
       shiftName,
       note,
+      requestedByRole: req.user.role,
     });
+
+    const isPending = record.status === 'pending';
+    const message = isPending
+      ? `Đã gửi yêu cầu chấm công bù ngày ${date} (${record.totalHours} giờ) lên Quản lý! Vui lòng chờ Quản lý kiểm tra và duyệt để ghi nhận công.`
+      : `Đã lưu thời gian làm việc ngày ${date} (${record.totalHours} giờ) thành công!`;
 
     // Bắn thông báo Telegram & Zalo (nếu bật)
     try {
@@ -618,7 +624,7 @@ app.post('/api/attendance/daily-entry', requireAuth, (req, res) => {
         .notifyAttendance({
           employee: emp,
           date,
-          shiftName,
+          shiftName: isPending ? `[CHẤM BÙ CHỜ DUYỆT] ${shiftName}` : shiftName,
           startTime,
           endTime,
           hours: record.totalHours,
@@ -628,7 +634,7 @@ app.post('/api/attendance/daily-entry', requireAuth, (req, res) => {
         .notifyAttendance({
           employee: emp,
           date,
-          shiftName,
+          shiftName: isPending ? `[CHẤM BÙ CHỜ DUYỆT] ${shiftName}` : shiftName,
           startTime,
           endTime,
           hours: record.totalHours,
@@ -639,8 +645,62 @@ app.post('/api/attendance/daily-entry', requireAuth, (req, res) => {
     res.json({
       success: true,
       record,
-      message: `Đã lưu thời gian làm việc ngày ${date} (${record.totalHours} giờ) thành công!`,
+      isPending,
+      message,
     });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// LẤY DANH SÁCH YÊU CẦU CHẤM CÔNG BÙ
+app.get('/api/attendance/makeup-requests', requireAuth, (req, res) => {
+  try {
+    let { employeeId, month } = req.query;
+    if (req.user.role !== 'admin') {
+      employeeId = req.user.id || req.user.username;
+    }
+    const requests = db.getMakeupRequests(employeeId, month);
+    res.json({ success: true, requests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// QUẢN LÝ CHẤP NHẬN (DUYỆT) CHẤM CÔNG BÙ
+app.post('/api/attendance/makeup-requests/:id/approve', requireAdmin, (req, res) => {
+  try {
+    const record = db.approveMakeupAttendance(req.params.id, req.user);
+    res.json({
+      success: true,
+      message: `Đã chấp nhận chấm công bù cho nhân viên ${record.employeeName} ngày ${record.date} (${record.totalHours}h)!`,
+      record,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// QUẢN LÝ TỪ CHỐI CHẤM CÔNG BÙ
+app.post('/api/attendance/makeup-requests/:id/reject', requireAdmin, (req, res) => {
+  try {
+    const { reason } = req.body || {};
+    const record = db.rejectMakeupAttendance(req.params.id, req.user, reason);
+    res.json({
+      success: true,
+      message: `Đã từ chối yêu cầu chấm công bù của nhân viên ${record.employeeName} ngày ${record.date}.`,
+      record,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// HỦY / XÓA YÊU CẦU CHẤM CÔNG BÙ
+app.delete('/api/attendance/makeup-requests/:id', requireAuth, (req, res) => {
+  try {
+    const ok = db.deleteMakeupAttendance(req.params.id, req.user);
+    res.json({ success: ok, message: 'Đã hủy yêu cầu chấm công bù thành công!' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
