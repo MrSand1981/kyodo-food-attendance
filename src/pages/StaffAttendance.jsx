@@ -1140,7 +1140,7 @@ export default function StaffAttendance({
                       required={isMakeupDate}
                       placeholder={
                         isMakeupDate
-                          ? 'Ví dụ: Quên bấm chấm công, quán mất điện, đổi ca...'
+                          ? 'Ví dụ: Quên chấm công, đổi ca...'
                           : 'Ví dụ: Phụ dọn kho, đổi ca...'
                       }
                       value={entryNote}
@@ -1156,18 +1156,16 @@ export default function StaffAttendance({
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`px-5 py-2 rounded-xl active:scale-98 text-white font-black text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px] shrink-0 ${
+                    className={`px-4 sm:px-5 py-2 rounded-xl active:scale-98 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer whitespace-nowrap h-[37px] mt-[18px] shrink-0 ${
                       isMakeupDate
-                        ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30 ring-2 ring-amber-400'
+                        ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
                         : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
                     }`}
                   >
                     {isMakeupDate ? (
                       <>
                         <Clock className="w-3.5 h-3.5 shrink-0" />
-                        <span className="whitespace-nowrap">
-                          ⚡ Gửi Yêu Cầu Chấm Bù (Chờ Quản Lý Duyệt)
-                        </span>
+                        <span className="whitespace-nowrap">⚡ Gửi Chấm Công Bù</span>
                       </>
                     ) : (
                       <>
@@ -1183,15 +1181,12 @@ export default function StaffAttendance({
 
           {/* Ghi chú hướng dẫn quy trình Chấm Công Bù */}
           {entryDate < getVietnamTodayYMD() && (
-            <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 flex items-start gap-2 text-xs text-amber-900 leading-relaxed">
-              <span className="text-base shrink-0">⚠️</span>
-              <div>
-                <strong className="font-extrabold">Quy trình Chấm Công Bù:</strong> Bạn đang chọn
-                ngày trong quá khứ ({formatDateVN(entryDate)}). Để tránh sai sót và khai gian, ca
-                làm này được gửi tới Quản Lý dưới dạng <em>Chấm Công Bù</em>. Sau khi Quản Lý kiểm
-                tra và <strong>Chấp Nhận</strong>, số giờ làm mới chính thức được tính vào bảng công
-                và ngày đó sẽ không còn bị tính là ngày nghỉ.
-              </div>
+            <div className="mt-2.5 px-3 py-2 rounded-xl bg-amber-50/90 border border-amber-200/90 flex items-center gap-2 text-xs text-amber-900">
+              <span className="text-sm shrink-0">💡</span>
+              <span className="leading-snug">
+                <strong>Lưu ý:</strong> Đăng ký chấm công bù cần được Quản lý phê duyệt mới được ghi
+                nhận vào bảng công.
+              </span>
             </div>
           )}
         </form>
