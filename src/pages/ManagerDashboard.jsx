@@ -288,6 +288,38 @@ export default function ManagerDashboard({
     }
   };
 
+  // Chuyển yêu cầu chấm bù về trạng thái Chờ Duyệt (reset)
+  const handleResetMakeup = async (id) => {
+    try {
+      setReviewLoading(true);
+      const res = await api.resetMakeupAttendance(id);
+      setMessage(`🔄 ${res.message || 'Đã chuyển về trạng thái Chờ Duyệt!'}`);
+      setReviewingMakeup(null);
+      await Promise.all([loadReport(), loadAdvancesAndLeaves()]);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi chuyển trạng thái yêu cầu chấm bù');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  // Xóa yêu cầu chấm bù dành cho Quản Lý
+  const handleDeleteMakeupByManager = async (id, name, date) => {
+    if (
+      !window.confirm(
+        `Bạn có chắc chắn muốn xóa yêu cầu chấm công bù ngày ${formatDateVN(date)} của ${name} không?`
+      )
+    )
+      return;
+    try {
+      await api.deleteMakeupAttendance(id);
+      setMessage(`Đã xóa yêu cầu chấm công bù của ${name}`);
+      await Promise.all([loadReport(), loadAdvancesAndLeaves()]);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi xóa yêu cầu chấm công bù');
+    }
+  };
+
   useEffect(() => {
     loadReport();
     loadEmployees();
@@ -2433,7 +2465,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               <button
                                 type="button"
                                 onClick={() => handleApproveMakeup(req.id)}
-                                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-xs cursor-pointer transition-all flex items-center gap-1"
+                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-xs cursor-pointer transition-all flex items-center gap-1"
                                 title="Chấp nhận ca làm bù này, tính lương và trừ ngày nghỉ"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -2442,7 +2474,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               <button
                                 type="button"
                                 onClick={() => handleOpenReviewMakeup(req)}
-                                className="px-2.5 py-1 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-extrabold text-[11px] border border-rose-300 cursor-pointer transition-all"
+                                className="px-2.5 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-extrabold text-[11px] border border-rose-300 cursor-pointer transition-all flex items-center gap-1"
                                 title="Mở chi tiết để kiểm tra hoặc từ chối"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -2450,7 +2482,38 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               </button>
                             </div>
                           ) : (
-                            <span className="text-[11px] text-slate-400 italic">Đã xử lý</span>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReviewMakeup(req)}
+                                className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-bold text-[11px] border border-slate-200 cursor-pointer transition-all"
+                                title="Xem chi tiết lý do hoặc đổi quyết định duyệt/từ chối"
+                              >
+                                Chi Tiết / Đổi
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleResetMakeup(req.id)}
+                                className="px-2 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] border border-amber-300 cursor-pointer transition-all"
+                                title="Chuyển về Chờ Duyệt để thử lại nút Duyệt và Từ Chối"
+                              >
+                                ⏳ Chờ Duyệt
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDeleteMakeupByManager(
+                                    req.id,
+                                    req.employeeShortName || req.employeeName,
+                                    req.date
+                                  )
+                                }
+                                className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors"
+                                title="Xóa yêu cầu này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -4991,15 +5054,35 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
             {/* Actions Footer */}
             {!showRejectInput && (
-              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowRejectInput(true)}
-                  className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Từ Chối Ca Bù</span>
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 flex-wrap">
+                <div className="flex items-center gap-2">
+                  {reviewingMakeup.status !== 'rejected' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectInput(true)}
+                      className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>
+                        {reviewingMakeup.status === 'completed'
+                          ? 'Đổi Sang Từ Chối'
+                          : 'Từ Chối Ca Bù'}
+                      </span>
+                    </button>
+                  )}
+
+                  {reviewingMakeup.status !== 'pending' && (
+                    <button
+                      type="button"
+                      disabled={reviewLoading}
+                      onClick={() => handleResetMakeup(reviewingMakeup.id)}
+                      className="px-3 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      title="Chuyển về trạng thái Chờ Duyệt ban đầu"
+                    >
+                      <span>⏳ Chuyển Về Chờ Duyệt</span>
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -5009,15 +5092,23 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   >
                     Đóng
                   </button>
-                  <button
-                    type="button"
-                    disabled={reviewLoading}
-                    onClick={() => handleApproveMakeup(reviewingMakeup.id)}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Check className="w-4 h-4 stroke-[3]" />
-                    <span>{reviewLoading ? 'Đang duyệt...' : '✓ Chấp Nhận Chấm Bù'}</span>
-                  </button>
+                  {reviewingMakeup.status !== 'completed' && (
+                    <button
+                      type="button"
+                      disabled={reviewLoading}
+                      onClick={() => handleApproveMakeup(reviewingMakeup.id)}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>
+                        {reviewLoading
+                          ? 'Đang duyệt...'
+                          : reviewingMakeup.status === 'rejected'
+                            ? '✓ Duyệt Lại (Chấp Nhận)'
+                            : '✓ Chấp Nhận Chấm Bù'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}

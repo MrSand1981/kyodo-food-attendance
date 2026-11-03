@@ -186,6 +186,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ reason }),
     }),
+  resetMakeupAttendance: (id) =>
+    request(`/attendance/makeup-requests/${id}/reset`, { method: 'POST' }),
   deleteMakeupAttendance: (id) =>
     request(`/attendance/makeup-requests/${id}`, { method: 'DELETE' }),
 

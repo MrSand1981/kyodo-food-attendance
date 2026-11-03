@@ -342,7 +342,25 @@ if (process.env.MONGODB_URI) {
             record.updatedAt || 'Không rõ',
             ')'
           );
+          // Tự động chuyển các bản ghi chấm bù chưa có phê duyệt chính thức (approvedAt là null) về 'pending' để Quản lý có nút Duyệt / Từ Chối
+          let modified = false;
+          if (Array.isArray(record.data.attendance)) {
+            record.data.attendance.forEach((a) => {
+              if (a.isMakeup && !a.approvedAt && a.status === 'completed') {
+                a.status = 'pending';
+                modified = true;
+              }
+            });
+          }
           saveDatabase(record.data, false);
+          if (modified && mongoDb) {
+            await mongoDb
+              .collection('app_state')
+              .updateOne(
+                { _id: 'master_db' },
+                { $set: { data: record.data, updatedAt: new Date().toISOString() } }
+              );
+          }
           console.log(
             '🛡️ Phục hồi dữ liệu từ Cloud MongoDB thành công! Bảo toàn 100% không bị rollback.'
           );
@@ -463,6 +481,16 @@ function ensureDbFile() {
       dbNeedSave = true;
     }
   });
+
+  // Tự động chuyển các bản ghi chấm bù chưa có phê duyệt chính thức (approvedAt là null) về 'pending' để Quản lý luôn có nút Duyệt / Từ Chối
+  if (Array.isArray(parsed.attendance)) {
+    parsed.attendance.forEach((a) => {
+      if (a.isMakeup && !a.approvedAt && a.status === 'completed') {
+        a.status = 'pending';
+        dbNeedSave = true;
+      }
+    });
+  }
 
   if (dbNeedSave) {
     saveDatabase(parsed);
@@ -1083,11 +1111,10 @@ function recordDailyWork({
   const hol = getHolidayByDate(date);
   const isHol = !!(hol && hol.active !== false);
 
-  // Phân biệt: Nếu là ngày trong quá khứ (< todayYMD) và người yêu cầu là Nhân viên:
-  // Cần chuyển sang trạng thái chờ Quản lý phê duyệt để chống khai gian
+  // Quy tắc bảo mật: Bất kỳ ca làm việc nào khai báo cho ngày trong quá khứ (< todayYMD)
+  // ĐỀU là Chấm Công Bù (isMakeup = true) và BẮT BUỘC phải qua Quản lý phê duyệt (status: 'pending')!
   const isMakeup = date < todayYMD;
-  const isPendingApproval = isMakeup && requestedByRole !== 'admin';
-  const status = isPendingApproval ? 'pending' : 'completed';
+  const status = isMakeup ? 'pending' : 'completed';
 
   const newRecord = {
     id: `att-manual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -1112,8 +1139,8 @@ function recordDailyWork({
     holidayMultiplier: isHol ? Number(hol.multiplier) || 2 : 1,
     holidayName: isHol ? hol.name : null,
     createdAt: new Date().toISOString(),
-    approvedAt: !isPendingApproval ? new Date().toISOString() : null,
-    approvedBy: !isPendingApproval ? (requestedByRole === 'admin' ? 'Admin' : 'Auto') : null,
+    approvedAt: null,
+    approvedBy: null,
     rejectedAt: null,
     rejectedBy: null,
     rejectReason: null,
@@ -1128,6 +1155,19 @@ function recordDailyWork({
 function getMakeupRequests(employeeId = null, month = null) {
   const db = ensureDbFile();
   let list = (db.attendance || []).filter((a) => a.isMakeup === true);
+  let modified = false;
+  list.forEach((a) => {
+    // Nếu bản ghi chấm bù chưa có người duyệt cụ thể (approvedBy là null hoặc Auto), luôn đưa về pending
+    if (a.isMakeup && (!a.approvedAt || a.approvedBy === 'Auto') && a.status === 'completed') {
+      a.status = 'pending';
+      a.approvedAt = null;
+      a.approvedBy = null;
+      modified = true;
+    }
+  });
+  if (modified) {
+    saveDatabase(db);
+  }
   if (employeeId) {
     list = list.filter((a) => a.employeeId === employeeId);
   }
@@ -1144,12 +1184,9 @@ function approveMakeupAttendance(id, adminUser = {}) {
   const db = ensureDbFile();
   const rec = (db.attendance || []).find((a) => a.id === id);
   if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
-  if (rec.status === 'completed') {
-    throw new Error('Yêu cầu chấm công bù này đã được duyệt trước đó!');
-  }
   rec.status = 'completed';
   rec.approvedAt = new Date().toISOString();
-  rec.approvedBy = adminUser.name || adminUser.username || 'Admin';
+  rec.approvedBy = adminUser.name || adminUser.username || 'Chủ Cửa Hàng';
   rec.rejectedAt = null;
   rec.rejectedBy = null;
   rec.rejectReason = null;
@@ -1164,13 +1201,28 @@ function rejectMakeupAttendance(id, adminUser = {}, reason = '') {
   if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
   rec.status = 'rejected';
   rec.rejectedAt = new Date().toISOString();
-  rec.rejectedBy = adminUser.name || adminUser.username || 'Admin';
+  rec.rejectedBy = adminUser.name || adminUser.username || 'Chủ Cửa Hàng';
   rec.rejectReason = reason || 'Quản lý từ chối yêu cầu chấm công bù';
   saveDatabase(db);
   return rec;
 }
 
-// Xóa/Hủy yêu cầu chấm công bù (chỉ khi đang pending)
+// Quản lý Chuyển yêu cầu chấm công bù về trạng thái Chờ Duyệt (reset to pending)
+function resetMakeupAttendanceToPending(id, adminUser = {}) {
+  const db = ensureDbFile();
+  const rec = (db.attendance || []).find((a) => a.id === id);
+  if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
+  rec.status = 'pending';
+  rec.approvedAt = null;
+  rec.approvedBy = null;
+  rec.rejectedAt = null;
+  rec.rejectedBy = null;
+  rec.rejectReason = null;
+  saveDatabase(db);
+  return rec;
+}
+
+// Xóa/Hủy yêu cầu chấm công bù (Quản lý được xóa bất kỳ lúc nào, Nhân viên chỉ xóa khi đang pending)
 function deleteMakeupAttendance(id, user = {}) {
   const db = ensureDbFile();
   const idx = (db.attendance || []).findIndex((a) => a.id === id);
@@ -2311,6 +2363,7 @@ module.exports = {
   getMakeupRequests,
   approveMakeupAttendance,
   rejectMakeupAttendance,
+  resetMakeupAttendanceToPending,
   deleteMakeupAttendance,
   adjustAttendance,
   deleteAttendance,

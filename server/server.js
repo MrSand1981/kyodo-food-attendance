@@ -696,6 +696,20 @@ app.post('/api/attendance/makeup-requests/:id/reject', requireAdmin, (req, res) 
   }
 });
 
+// QUẢN LÝ CHUYỂN YÊU CẦU CHẤM CÔNG BÙ VỀ CHỜ DUYỆT (RESET)
+app.post('/api/attendance/makeup-requests/:id/reset', requireAdmin, (req, res) => {
+  try {
+    const record = db.resetMakeupAttendanceToPending(req.params.id, req.user);
+    res.json({
+      success: true,
+      message: `Đã chuyển yêu cầu chấm công bù của ${record.employeeName} về trạng thái Chờ Duyệt!`,
+      record,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 // HỦY / XÓA YÊU CẦU CHẤM CÔNG BÙ
 app.delete('/api/attendance/makeup-requests/:id', requireAuth, (req, res) => {
   try {
