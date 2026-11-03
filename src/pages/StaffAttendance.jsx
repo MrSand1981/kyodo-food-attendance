@@ -12,6 +12,11 @@ import {
   PlusCircle,
   FileText,
   ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  ListFilter,
+  Smartphone,
+  Share,
   Check,
   LogOut,
   Send,
@@ -65,6 +70,10 @@ export default function StaffAttendance({
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [showPersonalQrModal, setShowPersonalQrModal] = useState(false);
+  const [historyTab, setHistoryTab] = useState('recent'); // 'recent' (7 ca gần nhất) | 'all' (Tất cả ca trong tháng)
+  const [isTableExpanded, setIsTableExpanded] = useState(false); // Mở rộng không giới hạn chiều cao
+  const [mobileViewMode, setMobileViewMode] = useState('cards'); // 'cards' (Dạng thẻ mobile chuẩn iOS) | 'table' (Dạng bảng)
+  const [showIosGuide, setShowIosGuide] = useState(false); // Popup hướng dẫn cài đặt PWA vào màn hình iPhone
 
   // Tự động đăng xuất sau 900s (15 phút) không có thao tác nếu nhân viên quên đăng xuất trên máy tính dùng chung
   useEffect(() => {
@@ -788,6 +797,17 @@ export default function StaffAttendance({
               <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
               <span className="whitespace-nowrap">Hướng Dẫn (PDF)</span>
             </a>
+
+            {/* Nút hướng dẫn cài Web App vào iPhone (iOS PWA) */}
+            <button
+              type="button"
+              onClick={() => setShowIosGuide(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              title="Hướng dẫn cài đặt ứng dụng vào màn hình chính iPhone để mở toàn màn hình"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <span className="whitespace-nowrap">Cài Vào iPhone</span>
+            </button>
 
             {/* Nút tự kiểm tra & chỉnh sửa thông tin cá nhân */}
             <button
@@ -1780,107 +1800,319 @@ export default function StaffAttendance({
           </div>
         </div>
 
-        {/* Detailed Breakdown Table (FORMAT DD/MM/YYYY) */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3 whitespace-nowrap">Ngày Làm (DD/MM/YYYY)</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Thứ</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Ca Làm Việc</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Giờ Vào</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Giờ Ra</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tổng Giờ</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Trạng Thái</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Ghi Chú</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {(() => {
-                const completedRecords = (summaryData?.records || []).filter(
-                  (r) => r.status === 'completed' || r.status === 'working'
-                );
-                if (completedRecords.length === 0) {
-                  return (
-                    <tr>
-                      <td colSpan={9} className="py-6 text-center text-slate-400 italic">
-                        Chưa có lịch sử làm việc hợp lệ trong {formatMonthVN(selectedMonth)}.
-                      </td>
-                    </tr>
-                  );
-                }
-                return completedRecords.map((rec) => {
-                  return (
-                    <tr key={rec.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2 px-3 font-bold text-slate-900 whitespace-nowrap">
-                        {formatDateVN(rec.date)}
-                      </td>
-                      <td className="py-2 px-3 text-slate-600 font-semibold whitespace-nowrap">
-                        {getDayOfWeekName(rec.date)}
-                      </td>
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold whitespace-nowrap">
-                            {rec.shiftName || rec.shiftCode}
-                          </span>
-                          {(rec.isHoliday ||
-                            holidaysList.some(
-                              (h) => h.date === rec.date && h.active !== false
-                            )) && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-black whitespace-nowrap">
-                              🎉 Lễ (×{rec.holidayMultiplier || 2})
+        {/* THANH ĐIỀU KHIỂN & BỘ LỌC THÔNG MINH (CHỐNG KÉO DÀI 31 NGÀY & TỐI ƯU CHO IPHONE/IOS) */}
+        {(() => {
+          const completedRecords = (summaryData?.records || []).filter(
+            (r) => r.status === 'completed' || r.status === 'working'
+          );
+          const displayRecords =
+            historyTab === 'recent' ? completedRecords.slice(0, 7) : completedRecords;
+
+          return (
+            <div>
+              {/* Toolbar: Bộ lọc tab + Nút mở rộng/thu gọn + Nút chuyển chế độ xem Mobile */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-100 no-print">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab('recent')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                      historyTab === 'recent'
+                        ? 'bg-white text-amber-900 shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>⚡ 7 Ca Gần Nhất</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab('all')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                      historyTab === 'all'
+                        ? 'bg-white text-amber-900 shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>Tất Cả ({completedRecords.length})</span>
+                    {completedRecords.length > 7 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Nút Mở Rộng / Thu Gọn khi chọn tab Tất Cả */}
+                  {historyTab === 'all' && completedRecords.length > 7 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsTableExpanded(!isTableExpanded)}
+                      className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                      title={
+                        isTableExpanded
+                          ? 'Thu gọn chiều cao bảng về khung 380px'
+                          : 'Xem tràn toàn màn hình'
+                      }
+                    >
+                      {isTableExpanded ? (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Thu Gọn Chiều Cao</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Xem Tràn Màn Hình</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Nút chuyển đổi Dạng Thẻ (Mobile) / Dạng Bảng trên Điện Thoại */}
+                  <div className="flex sm:hidden items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setMobileViewMode('cards')}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        mobileViewMode === 'cards'
+                          ? 'bg-white text-slate-900 shadow-2xs font-black'
+                          : 'text-slate-500'
+                      }`}
+                      title="Hiển thị dạng thẻ vuốt chạm tối ưu cho iPhone"
+                    >
+                      Dạng Thẻ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileViewMode('table')}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        mobileViewMode === 'table'
+                          ? 'bg-white text-slate-900 shadow-2xs font-black'
+                          : 'text-slate-500'
+                      }`}
+                      title="Hiển thị dạng bảng lưới truyền thống"
+                    >
+                      Dạng Bảng
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {completedRecords.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs">
+                  Chưa có lịch sử làm việc hợp lệ trong {formatMonthVN(selectedMonth)}.
+                </div>
+              ) : (
+                <>
+                  {/* 1. GIAO DIỆN DẠNG THẺ VUỐT CHẠM CHUẨN IOS (Mobile Cards View) */}
+                  <div
+                    className={`${mobileViewMode === 'cards' ? 'block sm:hidden' : 'hidden'} ${
+                      isTableExpanded ? 'max-h-none' : 'max-h-[380px] overflow-y-auto'
+                    } ios-scroll space-y-2 pr-0.5`}
+                  >
+                    {displayRecords.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="bg-white rounded-2xl p-3 border border-slate-200 shadow-2xs flex flex-col gap-2 hover:border-amber-300 transition-colors"
+                      >
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900 text-xs">
+                              {formatDateVN(rec.date)}
                             </span>
-                          )}
+                            <span className="text-[11px] text-slate-500 font-semibold">
+                              ({getDayOfWeekName(rec.date)})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold">
+                              {rec.shiftName || rec.shiftCode}
+                            </span>
+                            {(rec.isHoliday ||
+                              holidaysList.some(
+                                (h) => h.date === rec.date && h.active !== false
+                              )) && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-black">
+                                🎉 Lễ (×{rec.holidayMultiplier || 2})
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </td>
-                      <td className="py-2 px-3 font-mono font-bold text-emerald-700 whitespace-nowrap">
-                        {formatShortTime(rec.checkIn)}
-                      </td>
-                      <td className="py-2 px-3 font-mono font-bold text-slate-700 whitespace-nowrap">
-                        {formatShortTime(rec.checkOut)}
-                      </td>
-                      <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 font-bold font-mono whitespace-nowrap">
-                          {rec.totalHours} giờ
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center whitespace-nowrap">
-                        {rec.status === 'working' ? (
-                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold whitespace-nowrap animate-pulse">
-                            Đang làm việc
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold whitespace-nowrap">
-                            Đã chốt giờ
-                          </span>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 font-mono text-xs">
+                              <span className="font-bold text-emerald-700">
+                                {formatShortTime(rec.checkIn)}
+                              </span>
+                              <span className="text-slate-400">➔</span>
+                              <span className="font-bold text-slate-700">
+                                {formatShortTime(rec.checkOut)}
+                              </span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-100/80 text-amber-900 font-bold font-mono text-xs">
+                              {rec.totalHours} giờ
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {rec.status === 'working' ? (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold animate-pulse">
+                                Đang làm
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                                Đã chốt
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteAttendance(
+                                  rec.id,
+                                  `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
+                                )
+                              }
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors"
+                              title="Xóa ca này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {rec.note && (
+                          <div className="text-[11px] text-slate-500 italic bg-slate-50 px-2.5 py-1 rounded-xl">
+                            {rec.note}
+                          </div>
                         )}
-                      </td>
-                      <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px] whitespace-nowrap">
-                        {rec.note || '-'}
-                      </td>
-                      <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteAttendance(
-                              rec.id,
-                              `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
-                            )
-                          }
-                          className="p-1 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
-                          title="Xóa bản ghi ca làm này"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                });
-              })()}
-            </tbody>
-          </table>
-        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 2. GIAO DIỆN BẢNG LƯỚI VỚI STICKY HEADER (Desktop / Tablet hoặc khi chọn Dạng Bảng) */}
+                  <div
+                    className={`${
+                      mobileViewMode === 'table' ? 'block' : 'hidden sm:block'
+                    } overflow-x-auto rounded-xl border border-slate-200 ios-scroll ${
+                      isTableExpanded ? 'max-h-none' : 'max-h-[380px] overflow-y-auto'
+                    } print:max-h-none shadow-2xs`}
+                  >
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-100 sticky top-0 z-10 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider shadow-2xs backdrop-blur-xs">
+                          <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">
+                            Ngày Làm (DD/MM/YYYY)
+                          </th>
+                          <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">Thứ</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">
+                            Ca Làm Việc
+                          </th>
+                          <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">Giờ Vào</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">Giờ Ra</th>
+                          <th className="py-2.5 px-3 text-center whitespace-nowrap bg-slate-100">
+                            Tổng Giờ
+                          </th>
+                          <th className="py-2.5 px-3 text-center whitespace-nowrap bg-slate-100">
+                            Trạng Thái
+                          </th>
+                          <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">Ghi Chú</th>
+                          <th className="py-2.5 px-3 text-center whitespace-nowrap bg-slate-100">
+                            Thao Tác
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {displayRecords.map((rec) => (
+                          <tr key={rec.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2 px-3 font-bold text-slate-900 whitespace-nowrap">
+                              {formatDateVN(rec.date)}
+                            </td>
+                            <td className="py-2 px-3 text-slate-600 font-semibold whitespace-nowrap">
+                              {getDayOfWeekName(rec.date)}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold whitespace-nowrap">
+                                  {rec.shiftName || rec.shiftCode}
+                                </span>
+                                {(rec.isHoliday ||
+                                  holidaysList.some(
+                                    (h) => h.date === rec.date && h.active !== false
+                                  )) && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-black whitespace-nowrap">
+                                    🎉 Lễ (×{rec.holidayMultiplier || 2})
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-3 font-mono font-bold text-emerald-700 whitespace-nowrap">
+                              {formatShortTime(rec.checkIn)}
+                            </td>
+                            <td className="py-2 px-3 font-mono font-bold text-slate-700 whitespace-nowrap">
+                              {formatShortTime(rec.checkOut)}
+                            </td>
+                            <td className="py-2 px-3 text-center whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-lg bg-amber-100/70 text-amber-800 font-bold font-mono whitespace-nowrap">
+                                {rec.totalHours} giờ
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 text-center whitespace-nowrap">
+                              {rec.status === 'working' ? (
+                                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold whitespace-nowrap animate-pulse">
+                                  Đang làm việc
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold whitespace-nowrap">
+                                  Đã chốt giờ
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px] whitespace-nowrap">
+                              {rec.note || '-'}
+                            </td>
+                            <td className="py-2 px-3 text-center whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDeleteAttendance(
+                                    rec.id,
+                                    `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
+                                  )
+                                }
+                                className="p-1 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                                title="Xóa bản ghi ca làm này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Ghi chú chân bảng / Tóm tắt số ca */}
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 px-1 no-print">
+                    <span>
+                      {historyTab === 'recent' && completedRecords.length > 7
+                        ? `Đang hiển thị 7 ca gần nhất (Tổng cộng có ${completedRecords.length} ca trong tháng).`
+                        : `Hiển thị toàn bộ ${completedRecords.length} ca làm việc hợp lệ trong tháng.`}
+                    </span>
+                    {historyTab === 'recent' && completedRecords.length > 7 && (
+                      <button
+                        type="button"
+                        onClick={() => setHistoryTab('all')}
+                        className="text-amber-800 hover:underline font-bold cursor-pointer"
+                      >
+                        Xem tất cả {completedRecords.length} ca ➔
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Bảng chi tiết các Yêu Cầu Chấm Bù BỊ QUẢN LÝ TỪ CHỐI (Nếu có) */}
         {summaryData?.rejectedMakeupRequests && summaryData.rejectedMakeupRequests.length > 0 && (
@@ -2515,6 +2747,83 @@ export default function StaffAttendance({
               className="mt-5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all cursor-pointer"
             >
               Đóng Cửa Sổ
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: HƯỚNG DẪN CÀI ĐẶT WEB APP VÀO MÀN HÌNH CHÍNH IPHONE (IOS PWA) ================= */}
+      {showIosGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-slate-200 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setShowIosGuide(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl font-black shadow-md">
+                📱
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  Cài Đặt Vào Màn Hình iPhone (iOS)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Mở toàn màn hình, không có thanh địa chỉ Safari, mượt mà như app gốc
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                  1
+                </span>
+                <p>
+                  Mở trang web bằng trình duyệt <strong>Safari</strong> trên iPhone của bạn.
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                  2
+                </span>
+                <p>
+                  Bấm vào nút <strong>Chia sẻ (Share)</strong>{' '}
+                  <span className="inline-block px-1.5 py-0.5 bg-white border border-slate-300 rounded font-semibold text-[11px]">
+                    [ ⬆️ ]
+                  </span>{' '}
+                  ở thanh công cụ phía dưới cùng của Safari.
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                  3
+                </span>
+                <p>
+                  Cuộn xuống chọn <strong>"Thêm vào MH chính" (Add to Home Screen)</strong> rồi nhấn{' '}
+                  <strong>"Thêm" (Add)</strong> ở góc trên bên phải.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-[11px] text-emerald-800 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                Biểu tượng <strong>Kyodo Food</strong> sẽ xuất hiện trên màn hình iPhone, bấm mở
+                trực tiếp 1 chạm cực nhanh!
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowIosGuide(false)}
+              className="mt-5 w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs transition-colors cursor-pointer shadow-xs"
+            >
+              Đã Hiểu
             </button>
           </div>
         </div>

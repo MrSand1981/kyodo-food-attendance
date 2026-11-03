@@ -7,11 +7,54 @@
       system-ui,
       -apple-system,
       sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+}
+
+/* Tối ưu hóa phản hồi chạm và Safe Area chuẩn Apple iOS (iPhone/iPad) */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Xóa viền xám mặc định khi chạm trên màn hình cảm ứng iOS Safari */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Triệt tiêu độ trễ 300ms khi bấm nút trên Safari */
+button,
+a,
+select,
+input {
+  touch-action: manipulation;
+}
+
+/* Ngăn chặn Safari trên iPhone tự ý phóng to (zoom-in) màn hình khi chạm vào ô nhập liệu */
+@media screen and (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Cuộn quán tính mượt mà như ứng dụng gốc của Apple (iOS Momentum Scrolling) */
+.ios-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hỗ trợ khoảng an toàn thanh Home Bar trên các dòng iPhone tai thỏ / Dynamic Island */
+.safe-pb {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 /* Custom scrollbar */
