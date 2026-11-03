@@ -1556,6 +1556,38 @@ export default function StaffAttendance({
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
+                        ) : rejectedReq ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteMakeup(
+                                  rejectedReq.id,
+                                  `yêu cầu bị từ chối ngày ${formatDateVN(absDate)}`
+                                )
+                              }
+                              className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 cursor-pointer"
+                              title="Xóa bản ghi từ chối này để dọn dẹp"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEntryDate(absDate);
+                                if (absDate.length >= 7) {
+                                  const ym = absDate.substring(0, 7);
+                                  if (ym !== selectedMonth) setSelectedMonth(ym);
+                                }
+                                const formEl = document.getElementById('daily-work-entry-card');
+                                if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                              title="Bấm để gửi lại yêu cầu chấm công bù"
+                            >
+                              ⚡ Gửi Lại
+                            </button>
+                          </div>
                         ) : (
                           <button
                             type="button"
@@ -1891,8 +1923,24 @@ export default function StaffAttendance({
                       )}
                     </div>
                   </div>
-                  <div className="text-[10px] text-slate-400 italic whitespace-nowrap self-end sm:self-center">
-                    Ngày này vẫn tính là ngày nghỉ
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <span className="text-[10px] text-slate-400 italic whitespace-nowrap">
+                      Ngày này vẫn tính là ngày nghỉ
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeleteMakeup(
+                          rej.id,
+                          `thông báo bị từ chối ngày ${formatDateVN(rej.date)}`
+                        )
+                      }
+                      className="px-2 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 shadow-2xs"
+                      title="Xóa bỏ thông báo từ chối này"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Xóa Thông Báo</span>
+                    </button>
                   </div>
                 </div>
               ))}
