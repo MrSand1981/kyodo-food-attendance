@@ -55,6 +55,7 @@ import {
   getVietnamTodayYMD,
   getVietnamCurrentYM,
 } from '../utils/date';
+import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
 export default function ManagerDashboard({
   settings,
@@ -988,7 +989,7 @@ export default function ManagerDashboard({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 safe-pb">
       {/* Top Header */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-3.5 mb-4 border-b border-slate-200 gap-3.5 no-print">
         <div className="shrink-0">
@@ -1002,7 +1003,7 @@ export default function ManagerDashboard({
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v2.13 (Chính Thức)
+              {APP_RELEASE_LABEL}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
@@ -1210,52 +1211,52 @@ export default function ManagerDashboard({
           </div>
 
           {/* Store Monthly Metrics Header (5 Cards: Nhân sự, Tổng giờ, Tổng lương ca, Tạm ứng, Thực chi) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
-            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap block">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3.5 mb-6">
+            <div className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-200 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap block">
                 Nhân Sự
               </span>
-              <div className="text-xl font-black text-slate-900 font-mono mt-1 whitespace-nowrap">
+              <div className="text-lg sm:text-xl font-black text-slate-900 font-mono mt-1 whitespace-nowrap">
                 {report?.summary?.totalEmployees || 0}{' '}
                 <span className="text-xs font-semibold text-slate-500">nhân viên</span>
               </div>
             </div>
 
-            <div className="bg-amber-50/70 rounded-3xl p-4 border border-amber-200/80 shadow-2xs">
-              <span className="text-[11px] font-bold text-amber-800 uppercase whitespace-nowrap block">
+            <div className="bg-amber-50/70 rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-amber-200/80 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] font-bold text-amber-800 uppercase whitespace-nowrap block">
                 Tổng Giờ Làm
               </span>
-              <div className="text-xl font-black text-amber-700 font-mono mt-1 whitespace-nowrap">
+              <div className="text-lg sm:text-xl font-black text-amber-700 font-mono mt-1 whitespace-nowrap">
                 {report?.summary?.storeTotalHours || 0}{' '}
                 <span className="text-xs font-semibold text-amber-600">giờ</span>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-3xl p-4 border border-slate-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-slate-600 uppercase whitespace-nowrap block">
+            <div className="bg-slate-50 rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-200 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase whitespace-nowrap block">
                 Lương Ca Làm
               </span>
-              <div className="text-xl font-black text-slate-800 font-mono mt-1 whitespace-nowrap">
+              <div className="text-lg sm:text-xl font-black text-slate-800 font-mono mt-1 whitespace-nowrap">
                 {Number(report?.summary?.storeTotalSalary || 0).toLocaleString()}{' '}
                 <span className="text-xs font-semibold text-slate-500">đ</span>
               </div>
             </div>
 
-            <div className="bg-amber-50/70 rounded-3xl p-4 border border-amber-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-amber-800 uppercase whitespace-nowrap block">
+            <div className="bg-amber-50/70 rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-amber-200 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] font-bold text-amber-800 uppercase whitespace-nowrap block">
                 Tổng Tạm Ứng
               </span>
-              <div className="text-xl font-black text-amber-700 font-mono mt-1 whitespace-nowrap">
+              <div className="text-lg sm:text-xl font-black text-amber-700 font-mono mt-1 whitespace-nowrap">
                 {Number(report?.summary?.storeTotalAdvance || 0).toLocaleString()}{' '}
                 <span className="text-xs font-semibold text-amber-600">đ</span>
               </div>
             </div>
 
-            <div className="bg-emerald-50/70 rounded-3xl p-4 border border-emerald-200 shadow-2xs">
-              <span className="text-[11px] font-bold text-emerald-800 uppercase whitespace-nowrap block">
+            <div className="col-span-2 sm:col-span-1 bg-emerald-50/70 rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-emerald-200 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-800 uppercase whitespace-nowrap block">
                 Thực Chi (Net)
               </span>
-              <div className="text-xl font-black text-emerald-700 font-mono mt-1 whitespace-nowrap">
+              <div className="text-lg sm:text-xl font-black text-emerald-700 font-mono mt-1 whitespace-nowrap">
                 {Number(
                   report?.summary?.storeTotalNetSalary ?? report?.summary?.storeTotalSalary ?? 0
                 ).toLocaleString()}{' '}
@@ -1450,68 +1451,74 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       <div className="mt-4 space-y-3">
                         {/* 1. SỐ TIỀN LƯƠNG ĐÃ LÀM TRONG THÁNG */}
                         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
                                 1
                               </span>
-                              <div>
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide whitespace-nowrap block">
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
                                   Số Tiền Lương Đã Làm Trong Tháng:
                                 </span>
-                                <p className="text-[11px] text-slate-500 whitespace-nowrap">
+                                <p className="text-[11px] text-slate-500">
                                   {row.totalHours} giờ × {Number(row.hourlyRate).toLocaleString()}{' '}
                                   đ/h ({row.totalShifts || 0} ca)
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-lg font-black font-mono text-slate-900 whitespace-nowrap">
-                                {Number(row.totalSalary).toLocaleString()}
+                            <div className="flex items-baseline justify-between sm:justify-end sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                              <span className="text-xs font-semibold text-slate-500 sm:hidden">
+                                Thành tiền:
                               </span>
-                              <span className="text-xs font-bold text-slate-500 ml-1 whitespace-nowrap">
-                                VNĐ
-                              </span>
+                              <div>
+                                <span className="text-lg font-black font-mono text-slate-900">
+                                  {Number(row.totalSalary).toLocaleString()}
+                                </span>
+                                <span className="text-xs font-bold text-slate-500 ml-1">VNĐ</span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* 2. TỔNG SỐ TIỀN LƯƠNG ĐÃ TẠM ỨNG (KÈM CHI TIẾT TỪNG ĐỢT) */}
                         <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <span className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
                                 2
                               </span>
-                              <div>
-                                <span className="text-xs font-bold text-amber-900 uppercase tracking-wide whitespace-nowrap block">
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-amber-900 uppercase tracking-wide block">
                                   Tổng Số Tiền Lương Đã Tạm Ứng:
                                 </span>
-                                <p className="text-[11px] text-amber-700 font-medium whitespace-nowrap">
+                                <p className="text-[11px] text-amber-700 font-medium">
                                   <strong>{row.advanceCount || 0} lần ứng lương</strong> trong tháng
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-lg font-black font-mono text-amber-800 whitespace-nowrap">
-                                {Number(row.advanceTotal || 0).toLocaleString()}
+                            <div className="flex items-baseline justify-between sm:justify-end sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-amber-200/60">
+                              <span className="text-xs font-semibold text-amber-700 sm:hidden">
+                                Đã tạm ứng:
                               </span>
-                              <span className="text-xs font-bold text-amber-700 ml-1 whitespace-nowrap">
-                                VNĐ
-                              </span>
+                              <div>
+                                <span className="text-lg font-black font-mono text-amber-800">
+                                  {Number(row.advanceTotal || 0).toLocaleString()}
+                                </span>
+                                <span className="text-xs font-bold text-amber-700 ml-1">VNĐ</span>
+                              </div>
                             </div>
                           </div>
 
                           {/* Chi tiết từng đợt tạm ứng */}
                           <div className="mt-2.5 pt-2.5 border-t border-amber-200/60">
-                            <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
                               <span className="text-[11px] font-bold text-amber-800 uppercase">
                                 Chi tiết các đợt ứng ({row.advanceCount || 0} đợt):
                               </span>
                               <button
                                 type="button"
                                 onClick={() => openManagerAdvanceModal(row.employee)}
-                                className="text-[11px] font-extrabold text-amber-900 hover:text-amber-950 bg-amber-200 hover:bg-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                className="text-[11px] font-extrabold text-amber-900 hover:text-amber-950 bg-amber-200 hover:bg-amber-300 px-2.5 py-1 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs w-full sm:w-auto"
                               >
                                 <Plus className="w-3 h-3" />
                                 <span>+ Ghi Nhận Ứng Lương</span>
@@ -1577,28 +1584,31 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
 
                         {/* 3. SỐ TIỀN LƯƠNG CÒN LẠI SAU KHI TRỪ ĐI LƯƠNG TẠM ỨNG (THỰC LĨNH) */}
                         <div className="p-4 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-2 min-w-0">
                               <span className="w-6 h-6 rounded-lg bg-white text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
                                 3
                               </span>
-                              <div>
-                                <span className="text-xs font-black uppercase tracking-wide block whitespace-nowrap">
+                              <div className="min-w-0">
+                                <span className="text-xs font-black uppercase tracking-wide block">
                                   Lương Thực Lĩnh (Sau Trừ Tạm Ứng):
                                 </span>
-                                <p className="text-[11px] text-emerald-100 font-medium whitespace-nowrap">
+                                <p className="text-[11px] text-emerald-100 font-medium">
                                   Lương ca ({Number(row.totalSalary).toLocaleString()} đ) - Tạm ứng
                                   ({Number(row.advanceTotal || 0).toLocaleString()} đ)
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-2xl font-black font-mono text-white whitespace-nowrap">
-                                {Number(row.netSalary ?? row.totalSalary).toLocaleString()}
+                            <div className="flex items-baseline justify-between sm:justify-end sm:text-right shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-emerald-500/50">
+                              <span className="text-xs font-bold text-emerald-200 sm:hidden">
+                                Tổng nhận:
                               </span>
-                              <span className="text-xs font-bold text-emerald-100 ml-1 whitespace-nowrap">
-                                VNĐ
-                              </span>
+                              <div>
+                                <span className="text-xl sm:text-2xl font-black font-mono text-white">
+                                  {Number(row.netSalary ?? row.totalSalary).toLocaleString()}
+                                </span>
+                                <span className="text-xs font-bold text-emerald-100 ml-1">VNĐ</span>
+                              </div>
                             </div>
                           </div>
 
@@ -1746,7 +1756,15 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Chỉ báo hỗ trợ vuốt mượt mà trên Safari iPhone / Di động */}
+            <div className="sm:hidden px-3.5 py-1.5 bg-amber-50/80 border-b border-amber-200/70 text-[11px] text-amber-900 font-semibold flex items-center justify-between">
+              <span>👉 Vuốt ngang bảng để xem đủ 31 ngày</span>
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-md font-mono">
+                {report?.days?.length || 31} Ngày
+              </span>
+            </div>
+
+            <div className="overflow-x-auto ios-scroll overscroll-x-contain touch-pan-x">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">

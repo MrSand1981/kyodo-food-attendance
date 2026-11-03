@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Shield, LogOut, MapPin, RefreshCw, Sparkles, ArrowDownCircle } from 'lucide-react';
 import { api } from '../utils/api';
+import { APP_VERSION } from '../version';
 
 export default function Header({
   currentUser,
@@ -182,7 +183,7 @@ export default function Header({
                   className={`w-3.5 h-3.5 text-amber-700 ${isCheckingUpdate ? 'animate-spin text-amber-800' : ''}`}
                 />
                 <span className="whitespace-nowrap">
-                  Bản v{updateInfo?.currentVersion || '1.5.0'}
+                  Bản v{updateInfo?.currentVersion || APP_VERSION}
                 </span>
               </button>
             )}

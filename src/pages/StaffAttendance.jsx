@@ -47,6 +47,7 @@ import {
   getVietnamTodayYMD,
   getVietnamCurrentYM,
 } from '../utils/date';
+import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
 export default function StaffAttendance({
   employee,
@@ -674,7 +675,7 @@ export default function StaffAttendance({
   const displayName = localEmp.shortName || localEmp.name;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 safe-pb">
       {/* CẢNH BÁO BẢO MẬT: NHẮC ĐỔI MẬT KHẨU KHI DÙNG 1234 */}
       {(localEmp.isDefaultPassword ||
         (!localEmp.passwordChanged && localEmp.password === '1234')) && (
@@ -684,10 +685,10 @@ export default function StaffAttendance({
               <KeyRound className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="font-extrabold text-xs sm:text-sm text-amber-950 flex items-center gap-1.5 whitespace-nowrap">
+              <h4 className="font-extrabold text-xs sm:text-sm text-amber-950 flex items-center gap-1.5">
                 <span>⚠️ Bạn Đang Dùng Mật Khẩu Khởi Tạo (1234)!</span>
               </h4>
-              <p className="text-[11px] text-amber-800 mt-0.5 whitespace-nowrap">
+              <p className="text-[11px] text-amber-800 mt-0.5">
                 Vui lòng đổi sang mật khẩu riêng để bảo vệ tài khoản và số giờ làm.
               </p>
             </div>
@@ -743,7 +744,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v2.13 (Chính Thức)
+                  {APP_RELEASE_LABEL}
                 </span>
               </div>
 
@@ -785,71 +786,74 @@ export default function StaffAttendance({
           </div>
 
           {/* Nút tác vụ tài khoản: Sửa thông tin cá nhân, Xem VietQR, Hướng Dẫn PDF, Đổi MK, Đăng xuất */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-            {/* Nút xem File Hướng Dẫn Sử Dụng PDF */}
-            <a
-              href="/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-              title="Xem và tải file PDF hướng dẫn sử dụng phần mềm dành cho nhân viên"
-            >
-              <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span className="whitespace-nowrap">Hướng Dẫn (PDF)</span>
-            </a>
-
-            {/* Nút hướng dẫn cài Web App vào iPhone (iOS PWA) */}
-            <button
-              type="button"
-              onClick={() => setShowIosGuide(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-              title="Hướng dẫn cài đặt ứng dụng vào màn hình chính iPhone để mở toàn màn hình"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-              <span className="whitespace-nowrap">Cài Vào iPhone</span>
-            </button>
-
-            {/* Nút tự kiểm tra & chỉnh sửa thông tin cá nhân */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full md:w-auto justify-end mt-2 md:mt-0">
+            {/* Nút tự kiểm tra & chỉnh sửa thông tin cá nhân (Ưu tiên hàng đầu) */}
             <button
               type="button"
               onClick={openProfileModal}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              className="px-3 py-2 sm:py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white text-xs font-black transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap min-h-[38px]"
               title="Tự kiểm tra và chỉnh sửa thông tin cá nhân (SĐT, CCCD, Ngày sinh, Số tài khoản ngân hàng...)"
             >
               <UserCheck className="w-3.5 h-3.5 shrink-0" />
               <span className="whitespace-nowrap">Sửa Thông Tin</span>
             </button>
 
-            {localEmp.bankAccount && (
-              <button
-                type="button"
-                onClick={() => setShowPersonalQrModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 border border-slate-200 transition-all cursor-pointer whitespace-nowrap shrink-0"
-                title="Xem mã VietQR tài khoản ngân hàng của bạn"
-              >
-                <QrCode className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="whitespace-nowrap font-bold">
-                  {localEmp.bankCode || 'VietQR'}: {localEmp.bankAccount}
-                </span>
-              </button>
-            )}
-
+            {/* Nút đổi mật khẩu */}
             <button
               onClick={() => {
                 setShowPasswordModal(true);
                 setPwdError('');
                 setPwdMsg('');
               }}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              className="px-3 py-2 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px]"
               title="Đổi mật khẩu tài khoản cá nhân"
             >
               <KeyRound className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="whitespace-nowrap">Đổi MK</span>
             </button>
 
+            {/* Nút VietQR / STK Ngân Hàng */}
+            {localEmp.bankAccount ? (
+              <button
+                type="button"
+                onClick={() => setShowPersonalQrModal(true)}
+                className="px-3 py-2 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-200 transition-all cursor-pointer whitespace-nowrap min-h-[38px]"
+                title="Xem mã VietQR tài khoản ngân hàng của bạn"
+              >
+                <QrCode className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="truncate max-w-[140px] font-bold">
+                  {localEmp.bankCode || 'VietQR'}: {localEmp.bankAccount}
+                </span>
+              </button>
+            ) : null}
+
+            {/* Nút hướng dẫn cài Web App vào iPhone (iOS PWA) */}
+            <button
+              type="button"
+              onClick={() => setShowIosGuide(true)}
+              className="px-2.5 py-2 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap min-h-[38px]"
+              title="Hướng dẫn cài đặt ứng dụng vào màn hình chính iPhone để mở toàn màn hình"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <span className="whitespace-nowrap">Cài Vào iPhone</span>
+            </button>
+
+            {/* Nút xem File Hướng Dẫn Sử Dụng PDF */}
+            <a
+              href="/Huong_Dan_Su_Dung_Kyodo_Food_Nhan_Vien.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 sm:py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap min-h-[38px]"
+              title="Xem và tải file PDF hướng dẫn sử dụng phần mềm dành cho nhân viên"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span className="whitespace-nowrap">Hướng Dẫn (PDF)</span>
+            </a>
+
+            {/* Nút đăng xuất */}
             <button
               onClick={onLogout}
-              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all border border-amber-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              className="px-3 py-2 sm:py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all border border-amber-200 cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[38px]"
             >
               <LogOut className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span className="whitespace-nowrap">Đăng Xuất</span>
