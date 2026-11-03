@@ -1765,8 +1765,20 @@ export default function StaffAttendance({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {summaryData?.records && summaryData.records.length > 0 ? (
-                summaryData.records.map((rec) => {
+              {(() => {
+                const completedRecords = (summaryData?.records || []).filter(
+                  (r) => r.status === 'completed' || r.status === 'working'
+                );
+                if (completedRecords.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={9} className="py-6 text-center text-slate-400 italic">
+                        Chưa có lịch sử làm việc hợp lệ trong {formatMonthVN(selectedMonth)}.
+                      </td>
+                    </tr>
+                  );
+                }
+                return completedRecords.map((rec) => {
                   return (
                     <tr key={rec.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-2 px-3 font-bold text-slate-900 whitespace-nowrap">
@@ -1802,9 +1814,15 @@ export default function StaffAttendance({
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold whitespace-nowrap">
-                          Đã chốt giờ
-                        </span>
+                        {rec.status === 'working' ? (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold whitespace-nowrap animate-pulse">
+                            Đang làm việc
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold whitespace-nowrap">
+                            Đã chốt giờ
+                          </span>
+                        )}
                       </td>
                       <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px] whitespace-nowrap">
                         {rec.note || '-'}
@@ -1826,17 +1844,118 @@ export default function StaffAttendance({
                       </td>
                     </tr>
                   );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="py-6 text-center text-slate-400">
-                    Chưa có lịch sử làm việc trong {formatMonthVN(selectedMonth)}.
-                  </td>
-                </tr>
-              )}
+                });
+              })()}
             </tbody>
           </table>
         </div>
+
+        {/* Bảng chi tiết các Yêu Cầu Chấm Bù BỊ QUẢN LÝ TỪ CHỐI (Nếu có) */}
+        {summaryData?.rejectedMakeupRequests && summaryData.rejectedMakeupRequests.length > 0 && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-rose-50/90 border border-rose-200 no-print">
+            <div className="flex items-center gap-2 mb-2 font-bold text-rose-900 text-xs">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>
+                Yêu Cầu Chấm Bù Bị Quản Lý Từ Chối ({summaryData.rejectedMakeupRequests.length} yêu
+                cầu - Không được tính giờ làm)
+              </span>
+            </div>
+            <div className="space-y-2">
+              {summaryData.rejectedMakeupRequests.map((rej) => (
+                <div
+                  key={rej.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl bg-white border border-rose-200 text-xs gap-2 shadow-2xs"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">
+                        {formatDateVN(rej.date)} ({getDayOfWeekName(rej.date)}):
+                      </span>
+                      <span className="font-mono font-bold text-rose-700">
+                        {formatShortTime(rej.checkIn)} ➔ {formatShortTime(rej.checkOut)} (
+                        {rej.totalHours} giờ)
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-extrabold text-[10px]">
+                        ❌ Bị Từ Chối
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 mt-1">
+                      <span className="font-semibold text-rose-900">Lý do Quản lý từ chối:</span>{' '}
+                      <span className="italic font-medium text-rose-800">
+                        "{rej.rejectReason || 'Quản lý không chấp nhận yêu cầu này'}"
+                      </span>
+                      {rej.note && (
+                        <span className="text-slate-400 ml-2">
+                          (Nhân viên giải trình: "{rej.note}")
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 italic whitespace-nowrap self-end sm:self-center">
+                    Ngày này vẫn tính là ngày nghỉ
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bảng chi tiết các Yêu Cầu Chấm Bù ĐANG CHỜ DUYỆT (Nếu có) */}
+        {summaryData?.pendingMakeupRequests && summaryData.pendingMakeupRequests.length > 0 && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300 no-print">
+            <div className="flex items-center gap-2 mb-2 font-bold text-amber-950 text-xs">
+              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                Yêu Cầu Chấm Bù Đang Chờ Quản Lý Xét Duyệt (
+                {summaryData.pendingMakeupRequests.length} yêu cầu)
+              </span>
+            </div>
+            <div className="space-y-2">
+              {summaryData.pendingMakeupRequests.map((pen) => (
+                <div
+                  key={pen.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl bg-white border border-amber-200 text-xs gap-2 shadow-2xs"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">
+                        {formatDateVN(pen.date)} ({getDayOfWeekName(pen.date)}):
+                      </span>
+                      <span className="font-mono font-bold text-amber-800">
+                        {formatShortTime(pen.checkIn)} ➔ {formatShortTime(pen.checkOut)} (
+                        {pen.totalHours} giờ)
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-extrabold text-[10px] animate-pulse">
+                        ⏳ Chờ Quản Lý Duyệt
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 mt-1">
+                      <span className="font-semibold text-amber-900">Giải trình:</span>{' '}
+                      <span className="italic text-slate-700">
+                        "{pen.note || 'Quên chấm công'}"
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <span className="text-[10px] text-amber-700 italic">
+                      Chưa tính vào tổng giờ
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeleteMakeup(pen.id, `${formatDateVN(pen.date)} (${pen.totalHours}h)`)
+                      }
+                      className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold cursor-pointer transition-colors"
+                      title="Hủy yêu cầu chấm bù"
+                    >
+                      Hủy Yêu Cầu
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Print-only footer for payroll signing */}
         <div className="hidden print-only mt-12 pt-8 border-t border-slate-300">

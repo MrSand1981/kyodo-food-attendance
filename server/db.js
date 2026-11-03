@@ -1757,7 +1757,8 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     leaveRequests: leaveData,
     salaryConfidential: !includeSalary,
     activeShift: activeShift,
-    records: monthRecords,
+    records: monthRecords.filter((r) => r.status === 'completed' || r.status === 'working'),
+    allRecords: monthRecords,
   };
 
   if (includeSalary) {

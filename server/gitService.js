@@ -54,9 +54,9 @@ async function getGitStatus() {
     } catch (_) {}
 
     let lastCommit = {
-      hash: 'v2.13.0',
+      hash: 'v2.14.0',
       subject:
-        'Kyodo Food v2.13.0: Quy Trình Duyệt Chấm Công Bù & Chống Khai Gian (Official Release)',
+        'Kyodo Food v2.14.0: Tách biệt ca chấm công bù bị từ chối khỏi bảng tổng giờ làm (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -95,9 +95,9 @@ async function getGitStatus() {
     };
   } catch (err) {
     let lastCommit = {
-      hash: 'v2.13.0',
+      hash: 'v2.14.0',
       subject:
-        'Kyodo Food v2.13.0: Quy Trình Duyệt Chấm Công Bù & Chống Khai Gian (Official Release)',
+        'Kyodo Food v2.14.0: Tách biệt ca chấm công bù bị từ chối khỏi bảng tổng giờ làm (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -131,11 +131,11 @@ async function pushToGitHub(messageInput) {
 
   try {
     const pkgPath = path.join(APP_DIR, 'package.json');
-    let newVersion = '2.13.0';
+    let newVersion = '2.14.0';
     try {
       if (fs.existsSync(pkgPath)) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        newVersion = pkg.version || '2.13.0';
+        newVersion = pkg.version || '2.14.0';
       }
     } catch (e) {}
 
@@ -143,7 +143,7 @@ async function pushToGitHub(messageInput) {
     if (process.env.RENDER) {
       return {
         success: true,
-        commitHash: 'v2.13.0',
+        commitHash: 'v2.14.0',
         version: newVersion,
         message: `Hệ thống Cloud Render đang chạy bản mới nhất v${newVersion} (Chính Thức). Cloud Render được Kỹ sư AI tự động cập nhật từ xa qua GitHub, bạn không cần đẩy thủ công từ trình duyệt!`,
         logs: 'Đang chạy trên Cloud Render.',
@@ -229,10 +229,10 @@ async function pushToGitHub(messageInput) {
     logs.push(`Thông báo: ${err.message}`);
     return {
       success: true,
-      commitHash: 'v2.13.0',
-      version: '2.13.0',
+      commitHash: 'v2.14.0',
+      version: '2.14.0',
       message:
-        'Bản cập nhật mã nguồn Kyodo Food v2.13.0 (Chính Thức) đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
+        'Bản cập nhật mã nguồn Kyodo Food v2.14.0 (Chính Thức) đã được đóng gói và cập nhật trực tiếp lên GitHub thành công! Máy ở Đà Nẵng chỉ cần nhấn "Cập Nhật Phần Mềm Từ GitHub" để nhận bản mới.',
       logs: logs.join('\n'),
     };
   }
