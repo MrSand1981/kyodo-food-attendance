@@ -61,6 +61,7 @@ export default function ManagerDashboard({
   onSettingsChange,
   shifts,
   onInspectEmployee,
+  onEmployeesChange,
 }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
   const [selectedMonth, setSelectedMonth] = useState(getVietnamCurrentYM());
@@ -212,7 +213,11 @@ export default function ManagerDashboard({
   const loadEmployees = async () => {
     try {
       const res = await api.getEmployees(true);
-      setEmployees(res.employees || []);
+      const list = res.employees || [];
+      setEmployees(list);
+      if (onEmployeesChange) {
+        onEmployeesChange(list);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -290,9 +295,11 @@ export default function ManagerDashboard({
     try {
       setSavingRateId(emp.id);
       await api.updateEmployee(emp.id, { hourlyRate: rateNum });
-      setEmployees((prev) =>
-        prev.map((e) => (e.id === emp.id ? { ...e, hourlyRate: rateNum } : e))
-      );
+      setEmployees((prev) => {
+        const next = prev.map((e) => (e.id === emp.id ? { ...e, hourlyRate: rateNum } : e));
+        if (onEmployeesChange) onEmployeesChange(next);
+        return next;
+      });
       await loadReport();
       setRateSuccessId(emp.id);
       setTimeout(() => setRateSuccessId(null), 3000);
@@ -912,7 +919,7 @@ export default function ManagerDashboard({
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v2.10 (Chính Thức)
+              Bản v2.11 (Chính Thức)
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">

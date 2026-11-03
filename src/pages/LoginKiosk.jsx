@@ -353,7 +353,7 @@ export default function LoginKiosk({
           <MapPin className="w-3.5 h-3.5" />
           <span>Kyodo Food • Cơ Sở Trưng Nữ Vương, Đà Nẵng</span>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span className="font-black text-amber-950">Bản v2.10 (Chính Thức)</span>
+          <span className="font-black text-amber-950">Bản v2.11 (Chính Thức)</span>
         </div>
 
         {activeTab === 'employee' || isEmployeeOnly ? (
@@ -1117,7 +1117,7 @@ export default function LoginKiosk({
           <span className="whitespace-nowrap">
             {checkingUpdate
               ? 'Đang kiểm tra từ GitHub...'
-              : updateMsg || 'Bản v2.10 (Chính Thức) • Kiểm Tra Cập Nhật'}
+              : updateMsg || 'Bản v2.11 (Chính Thức) • Kiểm Tra Cập Nhật'}
           </span>
         </button>
 

@@ -92,8 +92,38 @@ export default function App() {
       }
       setCurrentRole(res.role);
       setCurrentUser(res.user);
+
+      // Nạp lại danh sách nhân viên đầy đủ hồ sơ (với token xác thực vừa lưu)
+      try {
+        const empRes = await api.getEmployees();
+        if (empRes?.employees && empRes.employees.length > 0) {
+          setEmployees(empRes.employees);
+          if (!inspectedEmployeeId) {
+            setInspectedEmployeeId(empRes.employees[0].id);
+          }
+        }
+      } catch (e) {
+        console.error('Lỗi nạp danh sách nhân viên sau khi đăng nhập:', e);
+      }
     }
     return res;
+  };
+
+  const handleSwitchToStaffView = async (targetId = null) => {
+    try {
+      const empRes = await api.getEmployees();
+      if (empRes?.employees && empRes.employees.length > 0) {
+        setEmployees(empRes.employees);
+        const resolvedId = targetId || inspectedEmployeeId || empRes.employees[0].id;
+        setInspectedEmployeeId(resolvedId);
+      } else if (targetId) {
+        setInspectedEmployeeId(targetId);
+      }
+    } catch (e) {
+      console.error('Lỗi cập nhật danh sách nhân viên khi xem góc nhìn:', e);
+      if (targetId) setInspectedEmployeeId(targetId);
+    }
+    setAdminActiveTab('staff-view');
   };
 
   const handleLogout = () => {
@@ -189,12 +219,7 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={() => {
-                  if (!inspectedEmployeeId && employees.length > 0) {
-                    setInspectedEmployeeId(employees[0].id);
-                  }
-                  setAdminActiveTab('staff-view');
-                }}
+                onClick={() => handleSwitchToStaffView()}
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                   adminActiveTab === 'staff-view'
                     ? 'bg-linear-to-r from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-600/30'
@@ -302,9 +327,9 @@ export default function App() {
                   settings={settings}
                   onSettingsChange={loadInitialData}
                   shifts={shifts}
+                  onEmployeesChange={(updated) => setEmployees(updated)}
                   onInspectEmployee={(emp) => {
-                    setInspectedEmployeeId(emp.id);
-                    setAdminActiveTab('staff-view');
+                    handleSwitchToStaffView(emp.id);
                   }}
                 />
               ) : (

@@ -98,6 +98,7 @@ export const api = {
 
   // Nhân viên (Server tự động phân quyền theo Token)
   getEmployees: () => request('/employees'),
+  getEmployee: (id) => request(`/employees/${encodeURIComponent(id)}`),
   addEmployee: (data) => request('/employees', { method: 'POST', body: JSON.stringify(data) }),
   updateEmployee: (id, data) =>
     request(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

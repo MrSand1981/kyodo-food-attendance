@@ -200,11 +200,20 @@ export default function StaffAttendance({
       setLoading(true);
       setErrorMsg('');
 
-      const activeRes = await api.getActiveShift(employee.id);
-      setActiveShift(activeRes.activeShift);
+      const [activeRes, summaryRes, empRes] = await Promise.all([
+        api.getActiveShift(employee.id),
+        api.getMySummary(employee.id, selectedMonth),
+        api.getEmployee(employee.id).catch(() => null),
+      ]);
+      setActiveShift(activeRes?.activeShift || null);
+      setSummaryData(summaryRes?.data || null);
 
-      const summaryRes = await api.getMySummary(employee.id, selectedMonth);
-      setSummaryData(summaryRes.data);
+      if (empRes?.success && empRes?.employee) {
+        setLocalEmp(empRes.employee);
+        if (onUpdateEmployee) {
+          onUpdateEmployee(empRes.employee);
+        }
+      }
     } catch (err) {
       console.error('Lỗi tải thông tin chấm công:', err);
       setErrorMsg('Không thể đồng bộ dữ liệu với máy chủ. Vui lòng thử lại!');
@@ -700,7 +709,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v2.10 (Chính Thức)
+                  Bản v2.11 (Chính Thức)
                 </span>
               </div>
 

@@ -378,6 +378,35 @@ app.get('/api/employees', (req, res) => {
   }
 });
 
+// Lấy chi tiết hồ sơ 1 nhân viên (Đồng bộ SĐT, Ngày sinh, CCCD, Địa chỉ, Ngân hàng)
+app.get('/api/employees/:id', requireAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const isSelfOrAdmin =
+      req.user.role === 'admin' || req.user.id === id || req.user.username === id;
+
+    if (!isSelfOrAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xem thông tin chi tiết của nhân viên khác!',
+      });
+    }
+
+    const emp = db.getEmployeeByIdOrUsername(id);
+    if (!emp) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy nhân viên' });
+    }
+
+    const result = { ...emp };
+    if (req.user.role !== 'admin') {
+      delete result.password;
+    }
+    res.json({ success: true, employee: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.post('/api/employees/change-password', requireAuth, (req, res) => {
   try {
     const { employeeId, oldPassword, newPassword } = req.body;
@@ -458,9 +487,28 @@ app.post('/api/employees', requireAdmin, (req, res) => {
   }
 });
 
-app.put('/api/employees/:id', requireAdmin, (req, res) => {
+app.put('/api/employees/:id', requireAuth, (req, res) => {
   try {
-    const updated = db.updateEmployee(req.params.id, req.body);
+    const { id } = req.params;
+    const isSelfOrAdmin =
+      req.user.role === 'admin' || req.user.id === id || req.user.username === id;
+
+    if (!isSelfOrAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền chỉnh sửa thông tin của tài khoản khác!',
+      });
+    }
+
+    const updatePayload = { ...req.body };
+    if (req.user.role !== 'admin') {
+      delete updatePayload.hourlyRate;
+      delete updatePayload.role;
+      delete updatePayload.active;
+      delete updatePayload.id;
+    }
+
+    const updated = db.updateEmployee(id, updatePayload);
     if (!updated)
       return res.status(404).json({ success: false, message: 'Không tìm thấy nhân viên' });
     res.json({ success: true, employee: updated });
