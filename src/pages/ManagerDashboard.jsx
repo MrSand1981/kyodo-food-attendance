@@ -919,7 +919,7 @@ export default function ManagerDashboard({
               <span>Cơ sở duy nhất: Trưng Nữ Vương</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
-              Bản v2.11 (Chính Thức)
+              Bản v2.12 (Chính Thức)
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
@@ -1563,6 +1563,25 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     Tháng này có <strong>{report?.days?.length || 31} ngày</strong> • Toàn bộ ngày
                     hiển thị trực diện trên màn hình
                   </p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-600">
+                    <span className="inline-flex items-center gap-1 font-semibold">
+                      <span className="w-3.5 h-3.5 rounded bg-amber-500 text-white font-black text-[9px] inline-flex items-center justify-center">
+                        9
+                      </span>
+                      <span>Đã làm việc</span>
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-blue-800">
+                      <span className="w-3.5 h-3.5 rounded bg-blue-100 border border-blue-200 text-blue-800 font-black text-[9px] inline-flex items-center justify-center">
+                        N
+                      </span>
+                      <span>Ngày nghỉ (Tự động tính qua ngày hôm sau khi không chấm công)</span>
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-slate-400">
+                      <span>- : Hôm nay / Chưa tới ngày</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1717,8 +1736,24 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                               >
                                 {cellData.hours}
                               </span>
+                            ) : cellData?.isDayOff ? (
+                              <span
+                                className="inline-flex items-center justify-center w-5 h-5 rounded bg-blue-100 hover:bg-blue-200 text-blue-800 font-black text-[9px] border border-blue-200/80 shadow-2xs transition-colors cursor-help"
+                                title={`${d.dateVN || formatDateVN(d.date)} (${d.dayOfWeek}): Ngày nghỉ (Qua ngày hôm sau tự động tính khi không chấm công)`}
+                              >
+                                N
+                              </span>
                             ) : (
-                              <span className="text-slate-300 text-[10px] select-none">-</span>
+                              <span
+                                className="text-slate-300 text-[10px] select-none"
+                                title={
+                                  cellData?.isToday
+                                    ? `${d.dateVN || formatDateVN(d.date)} (${d.dayOfWeek}): Hôm nay (Đang diễn ra ca làm việc)`
+                                    : `${d.dateVN || formatDateVN(d.date)} (${d.dayOfWeek}): Chưa tới ngày làm việc`
+                                }
+                              >
+                                -
+                              </span>
                             )}
                           </td>
                         );

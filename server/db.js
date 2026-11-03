@@ -1398,6 +1398,104 @@ function countLeaveDaysInMonth(leaveList = [], yearMonth) {
   return uniqueDates.size;
 }
 
+/**
+ * Quy tắc tính ngày nghỉ Kyodo Food:
+ * - Ngày nào nếu nhân viên không phát sinh chấm công thì qua ngày hôm sau sẽ tính ngày trước đó là ngày nghỉ.
+ * - Nếu nhân viên chấm công bù thì lại loại trừ tính ngày đó là ngày nghỉ.
+ * - Ngày hôm nay (today) đang diễn ra ca làm nên chưa tính là ngày nghỉ.
+ * - Ngày trong tương lai chỉ tính nếu có đơn xin nghỉ phép hợp lệ.
+ */
+function calculateMonthlyAbsenceDays(
+  yearMonth,
+  workedDates,
+  leaveList = [],
+  todayYMD = getVietnamTodayYMD()
+) {
+  if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) {
+    return {
+      totalLeaveDays: 0,
+      leaveDates: [],
+      absenceDates: [],
+      registeredLeaveDates: [],
+    };
+  }
+
+  const [yearStr, monthStr] = yearMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const workedSet = new Set();
+  if (workedDates instanceof Set) {
+    workedDates.forEach((d) => workedSet.add(d));
+  } else if (Array.isArray(workedDates)) {
+    workedDates.forEach((d) => workedSet.add(d));
+  }
+
+  const registeredSet = new Set();
+  if (Array.isArray(leaveList)) {
+    leaveList.forEach((l) => {
+      const startStr = l.date;
+      const endStr = l.endDate || l.date;
+      if (!startStr) return;
+
+      const dStart = new Date(startStr);
+      const dEnd = new Date(endStr);
+      if (isNaN(dStart.getTime())) return;
+
+      const cur = new Date(dStart);
+      const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
+
+      let count = 0;
+      while (cur <= stop && count <= 31) {
+        const y = cur.getFullYear();
+        const m = String(cur.getMonth() + 1).padStart(2, '0');
+        const d = String(cur.getDate()).padStart(2, '0');
+        const ymd = `${y}-${m}-${d}`;
+        if (ymd.startsWith(yearMonth)) {
+          registeredSet.add(ymd);
+        }
+        cur.setDate(cur.getDate() + 1);
+        count++;
+      }
+    });
+  }
+
+  const absenceDates = [];
+  const registeredLeaveDates = [];
+  const allLeaveDatesSet = new Set();
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = String(d).padStart(2, '0');
+    const mStr = String(month).padStart(2, '0');
+    const dateFormatted = `${year}-${mStr}-${dStr}`;
+
+    // 1. Nếu ngày này nhân viên đã có chấm công (hoặc chấm công bù): LOẠI TRỪ khỏi ngày nghỉ!
+    if (workedSet.has(dateFormatted)) {
+      continue;
+    }
+
+    // 2. Nếu ngày này là ngày trong quá khứ (< todayYMD):
+    // Qua ngày hôm sau tự động tính ngày trước đó là ngày nghỉ!
+    if (dateFormatted < todayYMD) {
+      absenceDates.push(dateFormatted);
+      allLeaveDatesSet.add(dateFormatted);
+    } else if (dateFormatted > todayYMD && registeredSet.has(dateFormatted)) {
+      // 3. Nếu ngày trong tương lai có đơn xin nghỉ phép trước
+      registeredLeaveDates.push(dateFormatted);
+      allLeaveDatesSet.add(dateFormatted);
+    }
+    // Chú ý: dateFormatted === todayYMD không tính là ngày nghỉ vì hôm nay đang diễn ra ca làm!
+  }
+
+  return {
+    totalLeaveDays: allLeaveDatesSet.size,
+    leaveDates: Array.from(allLeaveDatesSet).sort(),
+    absenceDates: absenceDates.sort(),
+    registeredLeaveDates: registeredLeaveDates.sort(),
+  };
+}
+
 // ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN TỔNG GIỜ LÀM) ----------------
 function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false) {
   const db = ensureDbFile();
@@ -1473,7 +1571,8 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
 
   const advData = getSalaryAdvances(emp.id, currentYM);
   const leaveData = getLeaveRequests(emp.id, currentYM);
-  const totalLeaveDays = countLeaveDaysInMonth(leaveData, currentYM);
+  const absenceInfo = calculateMonthlyAbsenceDays(currentYM, daysWorkedSet, leaveData);
+  const totalLeaveDays = absenceInfo.totalLeaveDays;
 
   const summary = {
     employee: {
@@ -1503,6 +1602,9 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     totalDays: daysWorkedSet.size,
     totalShifts: shiftCount,
     totalLeaveDays: totalLeaveDays,
+    leaveDates: absenceInfo.leaveDates,
+    absenceDates: absenceInfo.absenceDates,
+    registeredLeaveDates: absenceInfo.registeredLeaveDates,
     advanceCount: advData.totalCount,
     advanceTotal: advData.totalAmount,
     advances: advData.records,
@@ -1604,8 +1706,24 @@ function getMasterMonthlyReport(yearMonth) {
           ? 25000
           : 22000;
 
+    const todayYMD = getVietnamTodayYMD();
+    const workedDatesSet = new Set();
+    empRecords.forEach((log) => {
+      if (log.status === 'completed' || log.status === 'working') {
+        workedDatesSet.add(log.date);
+      }
+    });
+
+    const leaveData = getLeaveRequests(emp.id, currentYM);
+    const absenceInfo = calculateMonthlyAbsenceDays(currentYM, workedDatesSet, leaveData, todayYMD);
+    const leaveDatesSet = new Set(absenceInfo.leaveDates);
+
     days.forEach((dayInfo) => {
       const dayLogs = empRecords.filter((a) => a.date === dayInfo.date);
+      const isPast = dayInfo.date < todayYMD;
+      const isToday = dayInfo.date === todayYMD;
+      const isDayOff = leaveDatesSet.has(dayInfo.date);
+
       if (dayLogs.length > 0) {
         let dayHours = 0;
         dayLogs.forEach((log) => {
@@ -1632,6 +1750,10 @@ function getMasterMonthlyReport(yearMonth) {
           isHoliday: dayInfo.isHoliday,
           holidayName: dayInfo.holidayName,
           holidayMultiplier: dayInfo.holidayMultiplier,
+          isWorked: dayHours > 0 || dayLogs.length > 0,
+          isDayOff: false, // Có chấm công hoặc chấm công bù -> Loại trừ tuyệt đối khỏi ngày nghỉ!
+          isPastDay: isPast,
+          isToday: isToday,
         };
       } else {
         dailyData[dayInfo.day] = {
@@ -1640,6 +1762,10 @@ function getMasterMonthlyReport(yearMonth) {
           isHoliday: dayInfo.isHoliday,
           holidayName: dayInfo.holidayName,
           holidayMultiplier: dayInfo.holidayMultiplier,
+          isWorked: false,
+          isDayOff: isDayOff, // true nếu qua ngày hôm sau chưa phát sinh chấm công
+          isPastDay: isPast,
+          isToday: isToday,
         };
       }
     });
@@ -1656,8 +1782,7 @@ function getMasterMonthlyReport(yearMonth) {
     const advanceCount = advData.totalCount || 0;
     const netSalary = empTotalSalary - advanceTotal;
 
-    const leaveData = getLeaveRequests(emp.id, currentYM);
-    const leaveDaysCount = countLeaveDaysInMonth(leaveData, currentYM);
+    const leaveDaysCount = absenceInfo.totalLeaveDays;
 
     storeTotalHours += empTotalHours;
     storeRegularHours += empRegularHours;
@@ -1687,6 +1812,8 @@ function getMasterMonthlyReport(yearMonth) {
       eveningShifts: eveningShifts,
       totalShifts: morningShifts + eveningShifts + otherShifts,
       leaveDaysCount: leaveDaysCount,
+      leaveDates: absenceInfo.leaveDates,
+      absenceDates: absenceInfo.absenceDates,
       leaves: leaveData,
       hourlyRate: hourlyRate,
       regularSalary: empRegularSalary,
@@ -2077,6 +2204,8 @@ module.exports = {
   requestLeave,
   getLeaveRequests,
   deleteLeaveRequest,
+  countLeaveDaysInMonth,
+  calculateMonthlyAbsenceDays,
   getEmployeeMonthlySummary,
   getMasterMonthlyReport,
   getSettings,

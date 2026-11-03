@@ -709,7 +709,7 @@ export default function StaffAttendance({
                   Cơ sở Trưng Nữ Vương
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-black whitespace-nowrap">
-                  Bản v2.11 (Chính Thức)
+                  Bản v2.12 (Chính Thức)
                 </span>
               </div>
 
@@ -845,7 +845,10 @@ export default function StaffAttendance({
       )}
 
       {/* ================= PHẦN 1: NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (COMPACT TOOLBAR) ================= */}
-      <div className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 mb-3 no-print">
+      <div
+        id="daily-work-entry-card"
+        className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 mb-3 no-print scroll-mt-6"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-2">
             <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
@@ -1344,6 +1347,54 @@ export default function StaffAttendance({
                 </div>
               </div>
             </div>
+
+            {/* Danh sách ngày nghỉ tự động tính do chưa chấm công */}
+            {summaryData?.absenceDates && summaryData.absenceDates.length > 0 && (
+              <div className="mb-3 p-3 rounded-xl bg-amber-50/90 border border-amber-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                  <span className="text-[11px] font-black text-amber-950 flex items-center gap-1.5 whitespace-nowrap">
+                    <CalendarDays className="w-3.5 h-3.5 text-amber-600" />
+                    Ngày Nghỉ Tự Động Tính ({summaryData.absenceDates.length} ngày chưa có ca làm):
+                  </span>
+                  <span className="text-[10px] text-amber-800 italic">
+                    (Qua ngày hôm sau tự động tính nghỉ, nếu chấm công bù sẽ tự trừ)
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {summaryData.absenceDates.map((absDate) => (
+                    <div
+                      key={absDate}
+                      className="flex items-center justify-between bg-white p-2 rounded-xl border border-amber-200 shadow-2xs"
+                    >
+                      <div>
+                        <span className="font-mono font-bold text-slate-800 text-xs block">
+                          {formatDateVN(absDate)}
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          Chưa phát sinh ca chấm công
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEntryDate(absDate);
+                          if (absDate.length >= 7) {
+                            const ym = absDate.substring(0, 7);
+                            if (ym !== selectedMonth) setSelectedMonth(ym);
+                          }
+                          const formEl = document.getElementById('daily-work-entry-card');
+                          if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                        title="Bấm để khai báo ca làm việc bù cho ngày này"
+                      >
+                        ⚡ Chấm Công Bù
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Lịch sử thông báo nghỉ */}
             <div className="overflow-x-auto rounded-xl border border-slate-200">

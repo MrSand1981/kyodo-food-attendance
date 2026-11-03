@@ -10,6 +10,7 @@ import {
   calculateHours,
   getShiftNameFromTime,
   countLeaveDaysInMonth,
+  calculateMonthlyAbsenceDays,
   calculateMonthlySalary,
   formatVND,
   formatVNDWithUnit,
@@ -160,6 +161,78 @@ describe('Business Rules', () => {
         { date: '2026-11-10', endDate: '2026-11-12' },
       ];
       expect(countLeaveDaysInMonth(leaves, '2026-11')).toBe(5); // 1-2 (2 days) + 10-12 (3 days) = 5
+    });
+  });
+
+  describe('calculateMonthlyAbsenceDays', () => {
+    it('should count past days with no attendance as days off when transitioning to next day', () => {
+      // Month: 2026-11, Worked only Day 1, Today is Day 3 (2026-11-03)
+      // Day 1: Worked -> NOT off
+      // Day 2: Past with no attendance -> DAY OFF
+      // Day 3: Today -> NOT off yet
+      const res = calculateMonthlyAbsenceDays('2026-11', ['2026-11-01'], [], '2026-11-03');
+      expect(res.totalLeaveDays).toBe(1);
+      expect(res.absenceDates).toEqual(['2026-11-02']);
+      expect(res.leaveDates).toEqual(['2026-11-02']);
+    });
+
+    it('should not count today as a day off yet because work is in progress', () => {
+      // If today is 2026-11-03 and no shifts logged yet today, today is not off
+      const res = calculateMonthlyAbsenceDays(
+        '2026-11',
+        ['2026-11-01', '2026-11-02'],
+        [],
+        '2026-11-03'
+      );
+      expect(res.totalLeaveDays).toBe(0);
+      expect(res.leaveDates).toEqual([]);
+    });
+
+    it('should exclude day from days off when makeup attendance (chấm công bù) is recorded', () => {
+      // Before makeup: Day 2 is counted as day off
+      const before = calculateMonthlyAbsenceDays('2026-11', ['2026-11-01'], [], '2026-11-03');
+      expect(before.totalLeaveDays).toBe(1);
+      expect(before.absenceDates).toContain('2026-11-02');
+
+      // After employee adds makeup shift for Day 2 (2026-11-02)
+      const after = calculateMonthlyAbsenceDays(
+        '2026-11',
+        ['2026-11-01', '2026-11-02'],
+        [],
+        '2026-11-03'
+      );
+      expect(after.totalLeaveDays).toBe(0);
+      expect(after.absenceDates).not.toContain('2026-11-02');
+      expect(after.leaveDates).toEqual([]);
+    });
+
+    it('should combine past auto absence and future registered leave without double counting', () => {
+      const futureLeaves = [{ date: '2026-11-10', endDate: '2026-11-11' }];
+      const res = calculateMonthlyAbsenceDays(
+        '2026-11',
+        ['2026-11-01'],
+        futureLeaves,
+        '2026-11-03'
+      );
+      // Past day off: 2026-11-02 (1 day)
+      // Future registered: 2026-11-10, 2026-11-11 (2 days)
+      expect(res.totalLeaveDays).toBe(3);
+      expect(res.absenceDates).toEqual(['2026-11-02']);
+      expect(res.registeredLeaveDates).toEqual(['2026-11-10', '2026-11-11']);
+      expect(res.leaveDates).toEqual(['2026-11-02', '2026-11-10', '2026-11-11']);
+    });
+
+    it('should exclude registered leave date if employee actually worked or submitted makeup shift on that date', () => {
+      const leaves = [{ date: '2026-11-02', endDate: '2026-11-02' }];
+      // Employee registered leave for Nov 2, but then actually worked or submitted makeup attendance on Nov 2
+      const res = calculateMonthlyAbsenceDays(
+        '2026-11',
+        ['2026-11-01', '2026-11-02'],
+        leaves,
+        '2026-11-03'
+      );
+      expect(res.totalLeaveDays).toBe(0);
+      expect(res.leaveDates).toEqual([]);
     });
   });
 
