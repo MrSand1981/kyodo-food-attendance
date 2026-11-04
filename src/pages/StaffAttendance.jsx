@@ -46,6 +46,9 @@ import {
   getAdvanceCycleExplanation,
   getVietnamTodayYMD,
   getVietnamCurrentYM,
+  addDaysYMD,
+  countDaysBetween,
+  getDayOfWeekNameSafe,
 } from '../utils/date';
 import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
@@ -138,12 +141,19 @@ export default function StaffAttendance({
   const [advReason, setAdvReason] = useState('');
   const [advLoading, setAdvLoading] = useState(false);
 
-  // Modal xin ngày nghỉ phép
+  // Modal xin ngày nghỉ phép (chủ động đăng ký sớm)
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveDate, setLeaveDate] = useState(getVietnamTodayYMD());
+  const [leaveEndDate, setLeaveEndDate] = useState(getVietnamTodayYMD());
+  const [isMultiDayLeave, setIsMultiDayLeave] = useState(false);
   const [leaveShift, setLeaveShift] = useState('Cả Ngày');
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveLoading, setLeaveLoading] = useState(false);
+
+  const leaveDateInputRef = useRef(null);
+  const leaveEndDateInputRef = useRef(null);
+  const advDateInputRef = useRef(null);
+  const dobInputRef = useRef(null);
 
   // Form: Nhập thời gian làm việc từng ngày (2 ca: Sáng 8-17h, Chiều 17-22h | Định dạng 24h từ 0-23h, không có AM/PM)
   const [entryDate, setEntryDate] = useState(getVietnamTodayYMD());
@@ -409,7 +419,34 @@ export default function StaffAttendance({
     }
   };
 
-  // Xử lý XIN NGÀY NGHỈ
+  // Huy hiệu hiển thị trạng thái ngày đăng ký (Hôm nay / Đăng ký sớm)
+  const getRelativeDayBadge = (dateStr) => {
+    if (!dateStr) return null;
+    const today = getVietnamTodayYMD();
+    if (dateStr === today) {
+      return (
+        <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-900 text-[10px] font-black whitespace-nowrap">
+          Hôm Nay
+        </span>
+      );
+    }
+    if (dateStr > today) {
+      const days = countDaysBetween(today, dateStr) - 1;
+      return (
+        <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-black whitespace-nowrap flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-emerald-600 shrink-0" />
+          Đăng ký sớm {days === 1 ? 'ngày mai' : `trước ${days} ngày`}
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold whitespace-nowrap">
+        Ngày trong quá khứ
+      </span>
+    );
+  };
+
+  // Xử lý XIN NGÀY NGHỈ (HỖ TRỢ ĐĂNG KÝ SỚM & KHOẢNG NGÀY)
   const handleLeaveSubmit = async (e) => {
     e.preventDefault();
     if (!leaveDate) {
@@ -417,17 +454,22 @@ export default function StaffAttendance({
       return;
     }
 
+    const finalEndDate =
+      isMultiDayLeave && leaveEndDate && leaveEndDate >= leaveDate ? leaveEndDate : leaveDate;
+
     try {
       setLeaveLoading(true);
       const res = await api.requestLeave({
         employeeId: employee.id,
         date: leaveDate,
+        endDate: finalEndDate,
         shift: leaveShift,
         reason: leaveReason.trim() || 'Có việc cá nhân',
       });
-      setFeedbackMsg(`📅 ${res.message}`);
+      setFeedbackMsg(`📅 ${res.message || 'Đã lưu thông báo nghỉ thành công!'}`);
       setShowLeaveModal(false);
       setLeaveReason('');
+      setIsMultiDayLeave(false);
       await loadData();
     } catch (err) {
       alert(err.message || 'Lỗi khi gửi đơn xin nghỉ!');
@@ -969,7 +1011,14 @@ export default function StaffAttendance({
               <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
                 1. Ngày Làm Việc (DD/MM/YYYY):
               </label>
-              <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all cursor-pointer shadow-2xs group overflow-hidden">
+              <div
+                onClick={() => {
+                  try {
+                    dateInputRef.current?.showPicker();
+                  } catch (_) {}
+                }}
+                className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all cursor-pointer shadow-2xs group overflow-hidden"
+              >
                 <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-2 w-full pointer-events-none">
                   <Calendar className="w-4 h-4 text-amber-600 shrink-0" />
                   <span className="font-mono font-black text-slate-900 text-xs tracking-wide">
@@ -987,6 +1036,13 @@ export default function StaffAttendance({
                   required
                   max={getVietnamTodayYMD()}
                   value={entryDate}
+                  onClick={(e) => {
+                    try {
+                      if (typeof e.currentTarget.showPicker === 'function') {
+                        e.currentTarget.showPicker();
+                      }
+                    } catch (_) {}
+                  }}
                   onChange={(e) => {
                     const d = e.target.value;
                     const today = getVietnamTodayYMD();
@@ -1476,7 +1532,12 @@ export default function StaffAttendance({
 
               <button
                 type="button"
-                onClick={() => setShowLeaveModal(true)}
+                onClick={() => {
+                  setLeaveDate(getVietnamTodayYMD());
+                  setLeaveEndDate(getVietnamTodayYMD());
+                  setIsMultiDayLeave(false);
+                  setShowLeaveModal(true);
+                }}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 <CalendarDays className="w-3.5 h-3.5 shrink-0" />
@@ -1634,7 +1695,15 @@ export default function StaffAttendance({
                     {summaryData.leaveRequests.map((leave) => (
                       <tr key={leave.id} className="hover:bg-slate-50">
                         <td className="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">
-                          {formatDateVN(leave.date)}
+                          {leave.endDate && leave.endDate !== leave.date ? (
+                            <span className="flex items-center gap-1 font-mono text-[11px] text-blue-900">
+                              <span>{formatDateVN(leave.date)}</span>
+                              <span className="text-blue-500 font-bold">➔</span>
+                              <span>{formatDateVN(leave.endDate)}</span>
+                            </span>
+                          ) : (
+                            formatDateVN(leave.date)
+                          )}
                         </td>
                         <td className="py-2 px-3 whitespace-nowrap">
                           <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px] whitespace-nowrap">
@@ -2371,7 +2440,14 @@ export default function StaffAttendance({
                   1. Chọn Ngày Ứng Lương:{' '}
                   <span className="text-amber-800 font-mono">({formatDateVN(advDate)})</span>
                 </label>
-                <div className="relative cursor-pointer group">
+                <div
+                  onClick={() => {
+                    try {
+                      advDateInputRef.current?.showPicker();
+                    } catch (_) {}
+                  }}
+                  className="relative cursor-pointer group"
+                >
                   <Calendar className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 pointer-events-none z-10" />
                   <input
                     type="text"
@@ -2380,10 +2456,18 @@ export default function StaffAttendance({
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-mono font-black text-amber-900 text-xs shadow-2xs group-hover:border-amber-400 transition-colors pointer-events-none"
                   />
                   <input
+                    ref={advDateInputRef}
                     type="date"
                     required
                     value={advDate}
                     onChange={(e) => setAdvDate(e.target.value)}
+                    onClick={(e) => {
+                      try {
+                        if (typeof e.currentTarget.showPicker === 'function') {
+                          e.currentTarget.showPicker();
+                        }
+                      } catch (_) {}
+                    }}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                     title="Nhấn để chọn ngày ứng lương (DD/MM/YYYY)"
                   />
@@ -2473,18 +2557,31 @@ export default function StaffAttendance({
         </div>
       )}
 
-      {/* ================= MODAL: THÔNG BÁO NGHỈ LÀM (KHÔNG CẦN DUYỆT) ================= */}
+      {/* ================= MODAL: THÔNG BÁO NGHỈ LÀM (CHỦ ĐỘNG ĐĂNG KÝ SỚM) ================= */}
       {showLeaveModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                  <CalendarDays className="w-4 h-4" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-5 h-5 stroke-[2.5]" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900">Đăng Ký Ngày Nghỉ</h3>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                      Đăng Ký Ngày Nghỉ
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                      Đăng Ký Sớm
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Chủ động đăng ký trước để cửa hàng tiện sắp xếp ca làm việc
+                  </p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowLeaveModal(false)}
                 className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
               >
@@ -2492,35 +2589,255 @@ export default function StaffAttendance({
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 mb-4">
-              Đăng ký ngày và ca nghỉ của bạn cho cửa hàng để thuận tiện theo dõi và tổng hợp số
-              ngày nghỉ trong tháng.
-            </p>
-
             <form onSubmit={handleLeaveSubmit} className="space-y-4 text-xs">
+              {/* Chế độ: Nghỉ 1 Ngày hay Nghỉ Nhiều Ngày */}
+              <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-100 border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMultiDayLeave(false);
+                    setLeaveEndDate(leaveDate);
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    !isMultiDayLeave
+                      ? 'bg-white text-blue-800 shadow-2xs border border-blue-200'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  📅 Nghỉ 1 Ngày
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMultiDayLeave(true);
+                    if (!leaveEndDate || leaveEndDate < leaveDate) {
+                      setLeaveEndDate(leaveDate);
+                    }
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    isMultiDayLeave
+                      ? 'bg-white text-blue-800 shadow-2xs border border-blue-200'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  📆 Nghỉ Nhiều Ngày (Khoảng Ngày)
+                </button>
+              </div>
+
+              {/* Nút bấm chọn nhanh ngày sắp tới */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Chọn Nhanh Ngày Sắp Tới:
+                  </span>
+                  {getRelativeDayBadge(leaveDate)}
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { label: 'Hôm Nay', date: getVietnamTodayYMD(), sub: 'Hiện tại' },
+                    {
+                      label: 'Ngày Mai',
+                      date: addDaysYMD(getVietnamTodayYMD(), 1),
+                      sub: '+1 ngày',
+                    },
+                    {
+                      label: 'Ngày Mốt',
+                      date: addDaysYMD(getVietnamTodayYMD(), 2),
+                      sub: '+2 ngày',
+                    },
+                    {
+                      label: 'Tuần Tới',
+                      date: addDaysYMD(getVietnamTodayYMD(), 7),
+                      sub: '+7 ngày',
+                    },
+                  ].map((preset) => {
+                    const isSelected = leaveDate === preset.date;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setLeaveDate(preset.date);
+                          if (!isMultiDayLeave) setLeaveEndDate(preset.date);
+                        }}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-slate-50 hover:bg-blue-50 text-slate-700 border-slate-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <span className="block text-xs font-black leading-tight">
+                          {preset.label}
+                        </span>
+                        <span
+                          className={`block text-[10px] font-mono mt-0.5 ${
+                            isSelected ? 'text-blue-100' : 'text-slate-500'
+                          }`}
+                        >
+                          {formatDateVN(preset.date).substring(0, 5)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Ô Chọn Ngày Bắt Đầu */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                  1. Chọn Ngày Nghỉ:{' '}
-                  <span className="text-blue-800 font-mono">({formatDateVN(leaveDate)})</span>
+                <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider">
+                  {isMultiDayLeave ? '1. Từ Ngày (Bắt Đầu):' : '1. Chọn Ngày Nghỉ:'}
                 </label>
-                <div className="relative cursor-pointer group">
-                  <Calendar className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none z-10" />
+                <div
+                  onClick={() => {
+                    try {
+                      leaveDateInputRef.current?.showPicker();
+                    } catch (_) {}
+                  }}
+                  className="relative flex items-center justify-between rounded-2xl bg-slate-50 hover:bg-blue-50/50 border-2 border-slate-200 hover:border-blue-500 p-2.5 transition-all cursor-pointer shadow-2xs group"
+                >
+                  <div className="flex items-center gap-2.5 pointer-events-none">
+                    <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-blue-900 text-sm">
+                          {formatDateVN(leaveDate) || 'DD/MM/YYYY'}
+                        </span>
+                        {leaveDate && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                            {getDayOfWeekName(leaveDate)}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium block">
+                        Bấm vào đây để mở lịch chọn ngày bất kỳ
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      try {
+                        leaveDateInputRef.current?.showPicker();
+                      } catch (_) {}
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Mở Lịch</span>
+                  </button>
+
                   <input
-                    type="text"
-                    readOnly
-                    value={formatDateVN(leaveDate) || 'DD/MM/YYYY'}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-mono font-black text-blue-900 text-xs shadow-2xs group-hover:border-blue-400 transition-colors pointer-events-none"
-                  />
-                  <input
+                    ref={leaveDateInputRef}
                     type="date"
                     required
                     value={leaveDate}
-                    onChange={(e) => setLeaveDate(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v) {
+                        setLeaveDate(v);
+                        if (isMultiDayLeave && leaveEndDate < v) {
+                          setLeaveEndDate(v);
+                        }
+                      }
+                    }}
+                    onClick={(e) => {
+                      try {
+                        if (typeof e.currentTarget.showPicker === 'function') {
+                          e.currentTarget.showPicker();
+                        }
+                      } catch (_) {}
+                    }}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
-                    title="Nhấn để chọn ngày nghỉ (DD/MM/YYYY)"
+                    title="Bấm để mở lịch chọn ngày nghỉ (DD/MM/YYYY)"
                   />
                 </div>
               </div>
+
+              {/* Nếu chọn Nghỉ Nhiều Ngày -> Thêm ô Đến Ngày */}
+              {isMultiDayLeave && (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px] tracking-wider">
+                    Đến Ngày (Kết Thúc):
+                  </label>
+                  <div
+                    onClick={() => {
+                      try {
+                        leaveEndDateInputRef.current?.showPicker();
+                      } catch (_) {}
+                    }}
+                    className="relative flex items-center justify-between rounded-2xl bg-slate-50 hover:bg-blue-50/50 border-2 border-slate-200 hover:border-blue-500 p-2.5 transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-2.5 pointer-events-none">
+                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-blue-900 text-sm">
+                            {formatDateVN(leaveEndDate) || 'DD/MM/YYYY'}
+                          </span>
+                          {leaveEndDate && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                              {getDayOfWeekName(leaveEndDate)}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium block">
+                          Bấm vào đây để chọn ngày kết thúc
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try {
+                          leaveEndDateInputRef.current?.showPicker();
+                        } catch (_) {}
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Mở Lịch</span>
+                    </button>
+
+                    <input
+                      ref={leaveEndDateInputRef}
+                      type="date"
+                      required
+                      min={leaveDate}
+                      value={leaveEndDate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) setLeaveEndDate(v);
+                      }}
+                      onClick={(e) => {
+                        try {
+                          if (typeof e.currentTarget.showPicker === 'function') {
+                            e.currentTarget.showPicker();
+                          }
+                        } catch (_) {}
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
+                      title="Bấm để mở lịch chọn ngày kết thúc (DD/MM/YYYY)"
+                    />
+                  </div>
+
+                  {/* Thống kê khoảng ngày */}
+                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-blue-900 font-bold text-xs mt-2">
+                    <span>Tổng thời gian nghỉ:</span>
+                    <span className="font-mono font-black text-blue-800 bg-white px-2 py-0.5 rounded-lg border border-blue-300">
+                      {countDaysBetween(leaveDate, leaveEndDate)} ngày ({formatDateVN(leaveDate)} ➔{' '}
+                      {formatDateVN(leaveEndDate)})
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
@@ -2547,8 +2864,28 @@ export default function StaffAttendance({
                   placeholder="Ví dụ: Về quê có việc gia đình, đi khám bệnh..."
                   value={leaveReason}
                   onChange={(e) => setLeaveReason(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
+                {/* Gợi ý lý do nhanh */}
+                <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold">Gợi ý nhanh:</span>
+                  {[
+                    'Việc gia đình',
+                    'Khám bệnh / Ốm',
+                    'Về quê',
+                    'Bận việc học / Thi cử',
+                    'Đột xuất bận việc',
+                  ].map((presetReason) => (
+                    <button
+                      key={presetReason}
+                      type="button"
+                      onClick={() => setLeaveReason(presetReason)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-blue-100 hover:text-blue-900 text-slate-700 font-bold text-[10px] border border-slate-200 transition-all cursor-pointer"
+                    >
+                      + {presetReason}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -2562,9 +2899,16 @@ export default function StaffAttendance({
                 <button
                   type="submit"
                   disabled={leaveLoading}
-                  className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+                  className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-md shadow-blue-600/20 transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  {leaveLoading ? 'Đang lưu...' : 'Xác Nhận Đăng Ký Nghỉ'}
+                  {leaveLoading ? (
+                    'Đang lưu...'
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>Xác Nhận Đăng Ký Nghỉ</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -2904,7 +3248,14 @@ export default function StaffAttendance({
                       </span>
                     )}
                   </label>
-                  <div className="relative cursor-pointer group">
+                  <div
+                    onClick={() => {
+                      try {
+                        dobInputRef.current?.showPicker();
+                      } catch (_) {}
+                    }}
+                    className="relative cursor-pointer group"
+                  >
                     <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 pointer-events-none z-10" />
                     <input
                       type="text"
@@ -2913,9 +3264,17 @@ export default function StaffAttendance({
                       className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono font-black text-amber-900 text-xs shadow-2xs group-hover:border-amber-400 transition-colors pointer-events-none"
                     />
                     <input
+                      ref={dobInputRef}
                       type="date"
                       value={profileForm.dob}
                       onChange={(e) => setProfileForm({ ...profileForm, dob: e.target.value })}
+                      onClick={(e) => {
+                        try {
+                          if (typeof e.currentTarget.showPicker === 'function') {
+                            e.currentTarget.showPicker();
+                          }
+                        } catch (_) {}
+                      }}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                       title="Nhấn để chọn ngày sinh (DD/MM/YYYY)"
                     />

@@ -298,12 +298,12 @@ export function calculateMonthlyAbsenceDays(
     if (dateFormatted < todayYMD) {
       absenceDates.push(dateFormatted);
       allLeaveDatesSet.add(dateFormatted);
-    } else if (dateFormatted > todayYMD && registeredSet.has(dateFormatted)) {
-      // 3. Nếu ngày trong tương lai có đơn xin nghỉ phép trước
+    } else if (registeredSet.has(dateFormatted)) {
+      // 3. Nếu nhân viên chủ động đăng ký nghỉ (cho hôm nay hoặc tương lai)
       registeredLeaveDates.push(dateFormatted);
       allLeaveDatesSet.add(dateFormatted);
     }
-    // Chú ý: dateFormatted === todayYMD không tính là ngày nghỉ vì hôm nay đang diễn ra ca làm!
+    // Chú ý: dateFormatted === todayYMD nếu chưa có đơn đăng ký thì không tính vì hôm nay đang diễn ra ca làm!
   }
 
   return {
@@ -313,3 +313,50 @@ export function calculateMonthlyAbsenceDays(
     registeredLeaveDates: registeredLeaveDates.sort(),
   };
 }
+
+/**
+ * Thêm số ngày vào ngày định dạng YYYY-MM-DD
+ */
+export function addDaysYMD(ymdStr, daysToAdd) {
+  if (!ymdStr) return '';
+  const [y, m, d] = ymdStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + daysToAdd);
+  const nextY = dt.getFullYear();
+  const nextM = String(dt.getMonth() + 1).padStart(2, '0');
+  const nextD = String(dt.getDate()).padStart(2, '0');
+  return `${nextY}-${nextM}-${nextD}`;
+}
+
+/**
+ * Đếm số ngày giữa hai ngày (inclusive)
+ */
+export function countDaysBetween(startDate, endDate) {
+  if (!startDate) return 0;
+  if (!endDate || endDate === startDate) return 1;
+  const [y1, m1, d1] = startDate.split('-').map(Number);
+  const [y2, m2, d2] = endDate.split('-').map(Number);
+  const t1 = new Date(y1, m1 - 1, d1).getTime();
+  const t2 = new Date(y2, m2 - 1, d2).getTime();
+  if (t2 < t1) return 1;
+  const diffTime = Math.abs(t2 - t1);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+
+/**
+ * Lấy tên thứ trong tuần an toàn
+ */
+export function getDayOfWeekNameSafe(dateStr) {
+  if (!dateStr) return '';
+  const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  if (dateStr.includes('-')) {
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      const [y, m, d] = parts.map(Number);
+      const dt = new Date(y, m - 1, d);
+      return days[dt.getDay()];
+    }
+  }
+  const dt = new Date(dateStr);
+  return days[dt.getDay()] || '';
+}
+

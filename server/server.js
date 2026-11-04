@@ -847,7 +847,10 @@ app.post('/api/leaves', requireAuth, (req, res) => {
     res.json({
       success: true,
       record,
-      message: `Đã lưu thông báo nghỉ làm ngày ${formatDateVN(date)} thành công!`,
+      message:
+        endDate && endDate !== date
+          ? `Đã lưu thông báo nghỉ làm từ ${formatDateVN(date)} đến ${formatDateVN(endDate)} thành công!`
+          : `Đã lưu thông báo nghỉ làm ngày ${formatDateVN(date)} thành công!`,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

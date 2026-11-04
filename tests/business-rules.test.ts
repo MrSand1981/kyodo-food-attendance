@@ -234,6 +234,33 @@ describe('Business Rules', () => {
       expect(res.totalLeaveDays).toBe(0);
       expect(res.leaveDates).toEqual([]);
     });
+
+    it('should count proactive early leave registration for tomorrow or future dates correctly', () => {
+      // Today is 2026-11-04, employee proactively registers leave early for tomorrow (2026-11-05) and day after (2026-11-06)
+      const earlyLeaves = [{ date: '2026-11-05', endDate: '2026-11-06' }];
+      const res = calculateMonthlyAbsenceDays(
+        '2026-11',
+        ['2026-11-01', '2026-11-02', '2026-11-03'],
+        earlyLeaves,
+        '2026-11-04'
+      );
+      expect(res.registeredLeaveDates).toEqual(['2026-11-05', '2026-11-06']);
+      expect(res.totalLeaveDays).toBe(2);
+      expect(res.absenceDates).toEqual([]);
+    });
+
+    it('should count proactive leave registration for today if submitted', () => {
+      // Today is 2026-11-04, employee submits leave registration for today
+      const todayLeave = [{ date: '2026-11-04', endDate: '2026-11-04' }];
+      const res = calculateMonthlyAbsenceDays(
+        '2026-11',
+        ['2026-11-01', '2026-11-02', '2026-11-03'],
+        todayLeave,
+        '2026-11-04'
+      );
+      expect(res.registeredLeaveDates).toEqual(['2026-11-04']);
+      expect(res.totalLeaveDays).toBe(1);
+    });
   });
 
   describe('calculateMonthlySalary', () => {

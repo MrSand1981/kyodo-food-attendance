@@ -471,12 +471,12 @@ export function calculateMonthlyAbsenceDays(
     if (dateFormatted < todayYMD) {
       absenceDates.push(dateFormatted);
       allLeaveDatesSet.add(dateFormatted);
-    } else if (dateFormatted > todayYMD && registeredSet.has(dateFormatted)) {
-      // 3. Nếu ngày trong tương lai có đơn xin nghỉ phép trước
+    } else if (registeredSet.has(dateFormatted)) {
+      // 3. Nếu nhân viên chủ động đăng ký nghỉ (cho hôm nay hoặc tương lai)
       registeredLeaveDates.push(dateFormatted);
       allLeaveDatesSet.add(dateFormatted);
     }
-    // Chú ý: dateFormatted === todayYMD không tính là ngày nghỉ vì hôm nay đang diễn ra ca làm!
+    // Chú ý: dateFormatted === todayYMD nếu chưa đăng ký nghỉ thì không tính vì hôm nay đang diễn ra ca làm!
   }
 
   return {

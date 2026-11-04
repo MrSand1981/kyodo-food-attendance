@@ -2664,7 +2664,15 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                           {leave.employeeShortName || leave.employeeName} ({leave.employeeCode})
                         </td>
                         <td className="py-3 px-4 text-slate-600 font-semibold whitespace-nowrap">
-                          {formatDateVN(leave.date)}
+                          {leave.endDate && leave.endDate !== leave.date ? (
+                            <span className="flex items-center gap-1 font-mono text-[11px] text-blue-900">
+                              <span>{formatDateVN(leave.date)}</span>
+                              <span className="text-blue-500 font-bold">➔</span>
+                              <span>{formatDateVN(leave.endDate)}</span>
+                            </span>
+                          ) : (
+                            formatDateVN(leave.date)
+                          )}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold whitespace-nowrap">
@@ -2967,6 +2975,12 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                           required
                           value={holidayForm.date}
                           onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })}
+                          onClick={(e) => {
+                            try {
+                              if (typeof e.currentTarget.showPicker === 'function')
+                                e.currentTarget.showPicker();
+                            } catch (_) {}
+                          }}
                           className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                           title="Nhấn để chọn ngày áp dụng (DD/MM/YYYY)"
                         />
@@ -4093,6 +4107,12 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                       type="date"
                       value={empForm.dob}
                       onChange={(e) => setEmpForm({ ...empForm, dob: e.target.value })}
+                      onClick={(e) => {
+                        try {
+                          if (typeof e.currentTarget.showPicker === 'function')
+                            e.currentTarget.showPicker();
+                        } catch (_) {}
+                      }}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                       title="Nhấn để chọn ngày sinh (DD/MM/YYYY)"
                     />
@@ -4373,6 +4393,12 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     required
                     value={mgrAdvDate}
                     onChange={(e) => setMgrAdvDate(e.target.value)}
+                    onClick={(e) => {
+                      try {
+                        if (typeof e.currentTarget.showPicker === 'function')
+                          e.currentTarget.showPicker();
+                      } catch (_) {}
+                    }}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                     title="Nhấn để chọn ngày tạm ứng (DD/MM/YYYY)"
                   />
@@ -4512,6 +4538,12 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     required
                     value={editAdvDate}
                     onChange={(e) => setEditAdvDate(e.target.value)}
+                    onClick={(e) => {
+                      try {
+                        if (typeof e.currentTarget.showPicker === 'function')
+                          e.currentTarget.showPicker();
+                      } catch (_) {}
+                    }}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
                     title="Nhấn để chọn ngày tạm ứng (DD/MM/YYYY)"
                   />
