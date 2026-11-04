@@ -412,6 +412,7 @@ function ensureDbFile() {
 
   if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
   if (!parsed.leaveRequests) parsed.leaveRequests = [];
+  if (!parsed.cashHandovers) parsed.cashHandovers = [];
   if (!parsed.employees) parsed.employees = [];
   if (!parsed.holidays || !Array.isArray(parsed.holidays) || parsed.holidays.length === 0) {
     parsed.holidays = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
@@ -1512,6 +1513,112 @@ function deleteLeaveRequest(id) {
   return true;
 }
 
+// ---------------- BÀN GIAO TIỀN MẶT CA LÀM (CASH HANDOVERS) ----------------
+function createCashHandover({
+  giverId,
+  receiverId,
+  receiverName,
+  date,
+  time,
+  shift,
+  totalAmount,
+  totalBills,
+  amountInWords,
+  breakdown,
+  note,
+}) {
+  const db = ensureDbFile();
+  let giver = db.employees.find(
+    (e) => (e.id === giverId || e.username === giverId || e.code === giverId) && e.active !== false
+  );
+  if (!giver && (giverId === 'admin' || giverId === 'quanly' || !giverId)) {
+    giver = {
+      id: 'admin',
+      username: 'admin',
+      code: 'ADMIN',
+      name: 'Quản Lý Cửa Hàng',
+      shortName: 'Quản Lý',
+    };
+  }
+  if (!giver) throw new Error('Nhân viên bàn giao không tồn tại trên hệ thống!');
+
+  let actualReceiverName = receiverName || '';
+  if (receiverId) {
+    const receiver = db.employees.find(
+      (e) => e.id === receiverId || e.username === receiverId || e.code === receiverId
+    );
+    if (receiver) {
+      actualReceiverName = receiver.shortName || receiver.name;
+    }
+  }
+
+  const cleanDate = date || getVietnamTodayYMD();
+  const cleanTime =
+    time ||
+    new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date());
+
+  const newHandover = {
+    id: `handover-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    branch: 'Trưng Nữ Vương',
+    date: cleanDate,
+    time: cleanTime,
+    shift: shift || 'Giao ca',
+    giverId: giver.id,
+    giverCode: giver.username || giver.code,
+    giverName: giver.shortName || giver.name,
+    receiverId: receiverId || '',
+    receiverName: actualReceiverName || 'Quản lý / Ca sau',
+    totalAmount: Math.round(Number(totalAmount) || 0),
+    totalBills: Math.round(Number(totalBills) || 0),
+    amountInWords: String(amountInWords || '').trim(),
+    breakdown: breakdown || {},
+    note: String(note || 'Bàn giao tiền ca làm việc').trim(),
+    createdAt: new Date().toISOString(),
+  };
+
+  if (!db.cashHandovers) db.cashHandovers = [];
+  db.cashHandovers.push(newHandover);
+  saveDatabase(db);
+  return newHandover;
+}
+
+function getCashHandovers(employeeId = null, yearMonth = null) {
+  const db = ensureDbFile();
+  let list = db.cashHandovers || [];
+  if (employeeId) {
+    const search = String(employeeId).trim().toLowerCase();
+    list = list.filter(
+      (h) =>
+        (h.giverId && h.giverId.toLowerCase() === search) ||
+        (h.giverCode && h.giverCode.toLowerCase() === search) ||
+        (h.receiverId && h.receiverId.toLowerCase() === search)
+    );
+  }
+  if (yearMonth) {
+    list = list.filter((h) => h.date && h.date.startsWith(yearMonth));
+  }
+  list = list.sort(
+    (a, b) =>
+      new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
+  );
+  return list;
+}
+
+function deleteCashHandover(id) {
+  const db = ensureDbFile();
+  if (!db.cashHandovers) return false;
+  const idx = db.cashHandovers.findIndex((h) => h.id === id);
+  if (idx === -1) return false;
+  db.cashHandovers.splice(idx, 1);
+  saveDatabase(db);
+  return true;
+}
+
 // Đếm tổng số ngày nghỉ thực tế trong tháng (không trùng lặp)
 function countLeaveDaysInMonth(leaveList = [], yearMonth) {
   if (!leaveList || !Array.isArray(leaveList)) return 0;
@@ -1755,6 +1862,7 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
     advanceTotal: advData.totalAmount,
     advances: advData.records,
     leaveRequests: leaveData,
+    cashHandovers: getCashHandovers(emp.id, currentYM),
     salaryConfidential: !includeSalary,
     activeShift: activeShift,
     records: monthRecords.filter((r) => r.status === 'completed' || r.status === 'working'),
@@ -2379,6 +2487,9 @@ module.exports = {
   requestLeave,
   getLeaveRequests,
   deleteLeaveRequest,
+  createCashHandover,
+  getCashHandovers,
+  deleteCashHandover,
   countLeaveDaysInMonth,
   calculateMonthlyAbsenceDays,
   getEmployeeMonthlySummary,

@@ -228,6 +228,24 @@ export const api = {
     return `${BASE_URL}/attendance/export-excel${query}${tokenParam}`;
   },
 
+  // Bàn giao tiền mặt ca làm việc (Cash Handovers)
+  getCashHandovers: (employeeId = '', month = '') => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    if (month) params.append('month', month);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request(`/cash-handovers${qs}`);
+  },
+  createCashHandover: (data) =>
+    request('/cash-handovers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteCashHandover: (id) =>
+    request(`/cash-handovers/${id}`, {
+      method: 'DELETE',
+    }),
+
   // Quản lý Ngày Lễ (Lương x2)
   getHolidays: (year) => request(year ? `/holidays?year=${year}` : '/holidays'),
   addHoliday: (data) =>

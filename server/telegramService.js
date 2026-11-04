@@ -206,6 +206,29 @@ async function testTelegram(botToken, chatId) {
   return sendTelegramRaw(botToken, chatId, testMessage);
 }
 
+// 6. Thông báo Bàn Giao Tiền Mặt Ca Làm Việc
+async function notifyCashHandover({ handover }) {
+  const config = getTelegramConfig();
+  if (!config.enabled) return;
+
+  const msg = [
+    `💰 <b>KYODO FOOD - BÀN GIAO TIỀN CA LÀM</b>`,
+    `━━━━━━━━━━━━━━━━━━`,
+    `📍 <b>Cơ sở:</b> Trưng Nữ Vương, Đà Nẵng`,
+    `👤 <b>Người giao:</b> <b>${handover.giverName}</b> (${handover.giverCode})`,
+    `👥 <b>Người nhận:</b> <b>${handover.receiverName}</b>`,
+    `⏰ <b>Ca:</b> ${handover.shift} (${formatDateVN(handover.date)} lúc ${handover.time})`,
+    `💵 <b>Tổng tiền giao:</b> <code>${new Intl.NumberFormat('vi-VN').format(handover.totalAmount)} đ</code> (${handover.totalBills} tờ)`,
+    `✍️ <b>Bằng chữ:</b> <i>${handover.amountInWords}</i>`,
+    handover.note ? `📝 <b>Ghi chú:</b> ${handover.note}` : '',
+    `━━━━━━━━━━━━━━━━━━`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return sendNotification(msg);
+}
+
 module.exports = {
   getTelegramConfig,
   sendTelegramRaw,
@@ -214,5 +237,6 @@ module.exports = {
   notifyLeaveRequest,
   notifyAttendance,
   notifyAdminPasswordReset,
+  notifyCashHandover,
   testTelegram,
 };

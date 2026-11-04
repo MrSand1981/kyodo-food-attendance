@@ -42,7 +42,14 @@ import {
   Mail,
   Send,
   MessageCircle,
+  Calculator,
+  Banknote,
+  Coins,
+  Share2,
+  ArrowRight,
 } from 'lucide-react';
+import CashCounterModal from '../components/CashCounterModal';
+import { DENOMINATIONS, formatVND, convertVNDToWords } from '../utils/currency';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
 import {
@@ -73,6 +80,12 @@ export default function ManagerDashboard({
   const [allAdvances, setAllAdvances] = useState([]);
   const [allLeaves, setAllLeaves] = useState([]);
   const [allMakeupRequests, setAllMakeupRequests] = useState([]);
+  const [allCashHandovers, setAllCashHandovers] = useState([]);
+  const [cashHandoversTotalAmount, setCashHandoversTotalAmount] = useState(0);
+  const [cashHandoversTotalBills, setCashHandoversTotalBills] = useState(0);
+  const [showCashCounterModal, setShowCashCounterModal] = useState(false);
+  const [viewHandoverDetailItem, setViewHandoverDetailItem] = useState(null);
+  const [copySlipSuccessId, setCopySlipSuccessId] = useState(null);
   const [reviewingMakeup, setReviewingMakeup] = useState(null);
   const [reviewTargetEmp, setReviewTargetEmp] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -230,19 +243,23 @@ export default function ManagerDashboard({
     }
   };
 
-  // Tải danh sách tạm ứng, nghỉ phép & chấm công bù toàn cửa hàng
+  // Tải danh sách tạm ứng, nghỉ phép, chấm công bù & bàn giao tiền két toàn cửa hàng
   const loadAdvancesAndLeaves = async () => {
     try {
-      const [advRes, leaveRes, makeupRes] = await Promise.all([
+      const [advRes, leaveRes, makeupRes, cashRes] = await Promise.all([
         api.getSalaryAdvances('', selectedMonth),
         api.getLeaveRequests('', selectedMonth),
         api.getMakeupRequests('', selectedMonth),
+        api.getCashHandovers('', selectedMonth),
       ]);
       setAllAdvances(advRes.records || []);
       setAllLeaves(leaveRes.records || []);
       setAllMakeupRequests(makeupRes.requests || []);
+      setAllCashHandovers(cashRes?.records || []);
+      setCashHandoversTotalAmount(cashRes?.totalAmount || 0);
+      setCashHandoversTotalBills(cashRes?.totalBills || 0);
     } catch (err) {
-      console.error('Lỗi tải tạm ứng, nghỉ phép và chấm công bù:', err);
+      console.error('Lỗi tải tạm ứng, nghỉ phép, chấm công bù và bàn giao két tiền:', err);
     }
   };
 
@@ -601,6 +618,68 @@ export default function ManagerDashboard({
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  // Xóa biên bản bàn giao tiền mặt
+  const handleDeleteHandoverByManager = async (item) => {
+    if (
+      !window.confirm(
+        `Bạn có chắc chắn muốn xóa biên bản bàn giao ${formatVND(item.totalAmount)} của ngày ${formatDateVN(
+          item.date
+        )} (${item.giverName} ➔ ${item.receiverName})?`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await api.deleteCashHandover(item.id);
+      if (res && res.success) {
+        setMessage(`Đã xóa biên bản bàn giao tiền của ${item.giverName}`);
+        await loadAdvancesAndLeaves();
+      } else {
+        setError(res?.message || 'Không thể xóa biên bản này');
+      }
+    } catch (err) {
+      setError(err.message || 'Lỗi khi xóa biên bản');
+    }
+  };
+
+  // Sao chép báo cáo chi tiết 1 biên bản bàn giao tiền mặt
+  const handleCopyHandoverSlip = (item) => {
+    let text = `🤝 BIÊN BẢN BÀN GIAO TIỀN CA - KYODO FOOD\n`;
+    text += `📍 Cơ sở: ${item.branch || 'Trưng Nữ Vương'}\n`;
+    text += `⏰ Thời gian: ${item.time || ''} ngày ${formatDateVN(item.date)}\n`;
+    text += `🔄 Ca làm: ${item.shift || 'Giao ca'}\n`;
+    text += `👤 Người giao: ${item.giverName} (${item.giverCode || ''})\n`;
+    text += `🎯 Người nhận: ${item.receiverName}\n`;
+    text += `------------------------------------\n`;
+
+    const b = item.breakdown || {};
+    let hasAny = false;
+    DENOMINATIONS.forEach((d) => {
+      const c = b[d.value] || b[String(d.value)] || 0;
+      if (c > 0) {
+        hasAny = true;
+        text += `• ${d.label.padEnd(10, ' ')} : ${String(c).padStart(3, ' ')} tờ = ${formatVND(c * d.value)}\n`;
+      }
+    });
+    if (!hasAny) {
+      text += `(Không có chi tiết mệnh giá)\n`;
+    }
+
+    text += `------------------------------------\n`;
+    text += `💵 TỔNG SỐ TỜ: ${item.totalBills || 0} tờ\n`;
+    text += `💰 TỔNG TIỀN: ${formatVND(item.totalAmount)}\n`;
+    text += `✍️ Bằng chữ: ${item.amountInWords || convertVNDToWords(item.totalAmount)}\n`;
+    if (item.note) {
+      text += `📝 Ghi chú: ${item.note}\n`;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySlipSuccessId(item.id);
+      setMessage(`Đã sao chép biên bản bàn giao tiền của ${item.giverName} để gửi Zalo!`);
+      setTimeout(() => setCopySlipSuccessId(null), 2500);
+    });
   };
 
   // Upload logo
@@ -2376,28 +2455,38 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
       {/* ================= TAB 3: QUẢN LÝ TẠM ỨNG LƯƠNG, NGHỈ PHÉP & CHẤM CÔNG BÙ ================= */}
       {activeTab === 'advances-leaves' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
             <div>
               <h3 className="text-lg font-bold text-slate-900 whitespace-nowrap">
-                Quản Lý Tạm Ứng, Nghỉ Phép & Phê Duyệt Chấm Bù
+                Quản Lý Tạm Ứng, Nghỉ Phép & Bàn Giao Két Tiền
               </h3>
               <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
-                Xét duyệt chấm bù chống khai gian, tổng hợp tạm ứng lương và lịch nghỉ phép của nhân
-                viên.
+                Xét duyệt chấm bù chống khai gian, kiểm soát bàn giao tiền két và tổng hợp tạm ứng lương.
               </p>
             </div>
 
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
-            >
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCashCounterModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <Calculator className="w-4 h-4" />
+                <span>Két Tiền & Giao Ca</span>
+              </button>
+
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
+              >
               <option value="2026-11">Tháng 11/2026</option>
               <option value="2026-12">Tháng 12/2026</option>
               <option value="2027-01">Tháng 01/2027</option>
               <option value="2026-10">Tháng 10/2026</option>
             </select>
           </div>
+        </div>
 
           {/* ================= SECTION 0: DUYỆT YÊU CẦU CHẤM CÔNG BÙ ================= */}
           <div className="bg-white rounded-3xl p-6 border-2 border-amber-400 shadow-sm">
@@ -2710,6 +2799,164 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             ) : (
               <p className="text-xs text-slate-400 italic py-4">
                 Không có thông báo nghỉ nào trong {formatMonthVN(selectedMonth)}.
+              </p>
+            )}
+          </div>
+
+          {/* ================= SECTION 3: QUẢN LÝ & LỊCH SỬ BÀN GIAO TIỀN CA (KÉT BÁN HÀNG) ================= */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black shadow-2xs">
+                  <Calculator className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span>Lịch Sử & Bàn Giao Tiền Ca Sau (Két Bán Hàng)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                      1k - 500k
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Tổng hợp toàn bộ biên bản bàn giao tiền mặt giữa các ca làm việc trong {formatMonthVN(selectedMonth)}.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCashCounterModal(true)}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-black shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Đếm Tiền & Bàn Giao Mới</span>
+              </button>
+            </div>
+
+            {/* 3 Thẻ thống kê tổng hợp tiền bàn giao */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 block">
+                  Tổng Tiền Mặt Đã Bàn Giao:
+                </span>
+                <span className="text-xl sm:text-2xl font-black font-mono text-emerald-950 mt-1 block">
+                  {formatVND(cashHandoversTotalAmount)}
+                </span>
+                <span className="text-[10px] text-emerald-700 mt-0.5 block italic">
+                  Trong {formatMonthVN(selectedMonth)}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Tổng Lượt Bàn Giao Ca:
+                </span>
+                <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 mt-1 block">
+                  {allCashHandovers.length}{' '}
+                  <span className="text-xs font-normal text-slate-500">lượt giao ca</span>
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Biên bản đã lưu trữ
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Tổng Số Tờ Tiền:
+                </span>
+                <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 mt-1 block">
+                  {cashHandoversTotalBills}{' '}
+                  <span className="text-xs font-normal text-slate-500">tờ</span>
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Từ mệnh giá 1k đến 500k
+                </span>
+              </div>
+            </div>
+
+            {/* Bảng danh sách biên bản bàn giao */}
+            {allCashHandovers.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4 whitespace-nowrap">Thời Gian & Ngày</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ca Làm Việc</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Người Giao Ca</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Người Nhận Ca</th>
+                      <th className="py-3 px-4 text-right whitespace-nowrap">Tổng Tiền Bàn Giao</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Số Tờ</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ghi Chú</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {allCashHandovers.map((h) => (
+                      <tr key={h.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                          {h.time || ''} • {formatDateVN(h.date)}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-black border border-emerald-200">
+                            {h.shift || 'Giao ca'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="font-bold text-slate-900">{h.giverName}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">
+                            {h.giverCode}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap font-bold text-emerald-800">
+                          {h.receiverName}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-black text-emerald-900 text-sm whitespace-nowrap">
+                          {formatVND(h.totalAmount)}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-600 whitespace-nowrap">
+                          {h.totalBills || 0}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 italic max-w-xs truncate">
+                          {h.note || '-'}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setViewHandoverDetailItem(h)}
+                              className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+                              title="Xem chi tiết số tờ từng loại mệnh giá"
+                            >
+                              Chi tiết
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopyHandoverSlip(h)}
+                              className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                              title="Sao chép phiếu gửi Zalo"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteHandoverByManager(h)}
+                              className="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-700 transition-colors cursor-pointer"
+                              title="Xóa biên bản này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic py-4">
+                Không có biên bản giao tiền nào trong {formatMonthVN(selectedMonth)}.
               </p>
             )}
           </div>
@@ -5162,6 +5409,106 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: MÁY TÍNH & BÀN GIAO KÉT TIỀN (QUẢN LÝ) ================= */}
+      <CashCounterModal
+        isOpen={showCashCounterModal}
+        onClose={() => {
+          setShowCashCounterModal(false);
+          loadAdvancesAndLeaves();
+        }}
+        employee={{
+          id: 'admin',
+          username: 'admin',
+          name: 'Quản Lý Cửa Hàng',
+          shortName: 'Quản Lý',
+          role: 'admin',
+        }}
+        employees={employees}
+        onHandoverSuccess={() => loadAdvancesAndLeaves()}
+      />
+
+      {/* ================= MODAL: XEM CHI TIẾT MỆNH GIÁ BÀN GIAO TIỀN ================= */}
+      {viewHandoverDetailItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-3 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div>
+                <h4 className="text-sm font-black text-slate-900">Chi Tiết Mệnh Giá Bàn Giao</h4>
+                <p className="text-[11px] text-slate-500">
+                  {viewHandoverDetailItem.giverName} ➔ {viewHandoverDetailItem.receiverName} •{' '}
+                  {formatDateVN(viewHandoverDetailItem.date)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewHandoverDetailItem(null)}
+                className="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Bảng kê mệnh giá */}
+            <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1 text-xs">
+              {DENOMINATIONS.map((d) => {
+                const b = viewHandoverDetailItem.breakdown || {};
+                const count = b[d.value] || b[String(d.value)] || 0;
+                if (count === 0) return null;
+                const subtotal = count * d.value;
+
+                return (
+                  <div
+                    key={d.value}
+                    className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100"
+                  >
+                    <span className="font-black font-mono text-slate-800">{d.label}</span>
+                    <span className="text-slate-500 font-mono font-semibold">
+                      {count} <span className="text-[10px]">tờ</span>
+                    </span>
+                    <span className="font-black font-mono text-slate-900">
+                      {formatVND(subtotal)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-emerald-800 block">
+                  Tổng Tiền Bàn Giao:
+                </span>
+                <span className="text-xs text-emerald-600 italic">
+                  {viewHandoverDetailItem.amountInWords ||
+                    convertVNDToWords(viewHandoverDetailItem.totalAmount)}
+                </span>
+              </div>
+              <span className="text-base font-black font-mono text-emerald-900">
+                {formatVND(viewHandoverDetailItem.totalAmount)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => handleCopyHandoverSlip(viewHandoverDetailItem)}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Copy className="w-3 h-3" />
+                <span>{copySlipSuccessId === viewHandoverDetailItem.id ? 'Đã Sao Chép!' : 'Sao Chép Báo Cáo'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewHandoverDetailItem(null)}
+                className="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

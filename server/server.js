@@ -866,6 +866,98 @@ app.delete('/api/leaves/:id', requireAdmin, (req, res) => {
   }
 });
 
+// ---------------- 4.0 BÀN GIAO TIỀN MẶT CA LÀM (CASH HANDOVERS) ----------------
+app.get('/api/cash-handovers', requireAuth, (req, res) => {
+  try {
+    const { employeeId, month } = req.query;
+    const records = db.getCashHandovers(employeeId || null, month || null);
+    const totalAmount = records.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+    const totalBills = records.reduce((sum, r) => sum + (r.totalBills || 0), 0);
+
+    res.json({
+      success: true,
+      records,
+      totalAmount,
+      totalBills,
+      totalCount: records.length,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/cash-handovers', requireAuth, (req, res) => {
+  try {
+    const {
+      giverId,
+      receiverId,
+      receiverName,
+      date,
+      time,
+      shift,
+      totalAmount,
+      totalBills,
+      amountInWords,
+      breakdown,
+      note,
+    } = req.body;
+
+    const actualGiverId = req.user.role === 'admin' ? giverId || req.user.id : req.user.id;
+
+    const record = db.createCashHandover({
+      giverId: actualGiverId,
+      receiverId,
+      receiverName,
+      date,
+      time,
+      shift,
+      totalAmount,
+      totalBills,
+      amountInWords,
+      breakdown,
+      note,
+    });
+
+    // Bắn thông báo Telegram & Zalo
+    try {
+      telegramService.notifyCashHandover({ handover: record }).catch(() => {});
+      zaloService.notifyCashHandover({ handover: record }).catch(() => {});
+    } catch (_) {}
+
+    res.json({
+      success: true,
+      record,
+      message: `Đã lưu biên bản bàn giao ${new Intl.NumberFormat('vi-VN').format(record.totalAmount)} đ cho ${record.receiverName} thành công!`,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/cash-handovers/:id', requireAuth, (req, res) => {
+  try {
+    const record = (db.getCashHandovers() || []).find((h) => h.id === req.params.id);
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Bản ghi không tồn tại' });
+    }
+
+    if (
+      req.user.role !== 'admin' &&
+      req.user.id !== record.giverId &&
+      req.user.username !== record.giverCode
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không có quyền xóa bản ghi bàn giao tiền này' });
+    }
+
+    const ok = db.deleteCashHandover(req.params.id);
+    res.json({ success: ok, message: 'Đã xóa biên bản bàn giao tiền thành công' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 4.1 QUẢN LÝ NGÀY LỄ TRONG NĂM (HỆ SỐ LƯƠNG X2)
 app.get('/api/holidays', (req, res) => {
   try {

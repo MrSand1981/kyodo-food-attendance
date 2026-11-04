@@ -280,6 +280,27 @@ Hệ thống đã sẵn sàng tự động gửi tin nhắn mỗi khi nhân viê
   throw new Error('Vui lòng chọn hình thức kết nối Zalo (Webhook hoặc Zalo OA)');
 }
 
+// 6. Thông báo Bàn Giao Tiền Mặt Ca Làm Việc
+async function notifyCashHandover({ handover }) {
+  const config = getZaloConfig();
+  if (!config.enabled) return;
+
+  const text = [
+    `💰 KYODO FOOD - BÀN GIAO TIỀN CA LÀM`,
+    `📍 Cơ sở: Trưng Nữ Vương, Đà Nẵng`,
+    `👤 Người giao: ${handover.giverName} (${handover.giverCode})`,
+    `👥 Người nhận: ${handover.receiverName}`,
+    `⏰ Ca: ${handover.shift} (${formatDateVN(handover.date)} lúc ${handover.time})`,
+    `💵 Tổng tiền giao: ${new Intl.NumberFormat('vi-VN').format(handover.totalAmount)} đ (${handover.totalBills} tờ)`,
+    `✍️ Bằng chữ: ${handover.amountInWords}`,
+    handover.note ? `📝 Ghi chú: ${handover.note}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return sendZaloNotification(text);
+}
+
 module.exports = {
   getZaloConfig,
   sendViaWebhook,
@@ -289,5 +310,6 @@ module.exports = {
   notifyLeaveRequest,
   notifyAttendance,
   notifyAdminPasswordReset,
+  notifyCashHandover,
   testZalo,
 };
