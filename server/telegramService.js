@@ -2,6 +2,16 @@
 // Dịch vụ gửi thông báo tự động qua Telegram Bot cho Quản lý Kyodo Food
 const db = require('./db');
 
+function formatDateVN(dateInput) {
+  if (!dateInput) return '';
+  const s = String(dateInput).split('T')[0].trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return s;
+}
+
 function getTelegramConfig() {
   const settings = db.getSettings();
   return (
@@ -77,7 +87,7 @@ async function notifySalaryAdvance({ employee, amount, date, reason }) {
 🏪 <b>Cơ sở:</b> Kyodo Food - Trưng Nữ Vương, Đà Nẵng
 👤 <b>Nhân viên:</b> <b>${empName}</b> (${empCode})
 💰 <b>Số tiền ứng:</b> <b>${formattedAmount} đ</b>
-📅 <b>Ngày ứng:</b> ${date}
+📅 <b>Ngày ứng:</b> ${formatDateVN(date)}
 📝 <b>Lý do:</b> <i>${reason || 'Ứng chi tiêu cá nhân'}</i>
 ⏰ <b>Thời gian gửi:</b> ${now}
 ━━━━━━━━━━━━━━━━━━
@@ -103,7 +113,10 @@ async function notifyLeaveRequest({ employee, date, endDate, shift, reason }) {
 
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
-  const dateRange = endDate && endDate !== date ? `${date} ➔ ${endDate}` : date;
+  const dateRange =
+    endDate && endDate !== date
+      ? `${formatDateVN(date)} ➔ ${formatDateVN(endDate)}`
+      : formatDateVN(date);
 
   const text = `📅 <b>THÔNG BÁO XIN NGHỈ LÀM!</b>
 ━━━━━━━━━━━━━━━━━━
@@ -132,7 +145,7 @@ async function notifyAttendance({ employee, date, shiftName, startTime, endTime,
 ━━━━━━━━━━━━━━━━━━
 🏪 <b>Cơ sở:</b> Kyodo Food - Trưng Nữ Vương, Đà Nẵng
 👤 <b>Nhân viên:</b> <b>${empName}</b> (${empCode})
-📅 <b>Ngày làm:</b> ${date}
+📅 <b>Ngày làm:</b> ${formatDateVN(date)}
 ⏰ <b>Khung giờ:</b> ${startTime} - ${endTime} (${shiftName || 'Ca làm'})
 ⏱️ <b>Tổng giờ làm:</b> <b>${hours} tiếng</b>
 ━━━━━━━━━━━━━━━━━━`;

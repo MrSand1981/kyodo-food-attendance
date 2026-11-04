@@ -16,6 +16,17 @@ const telegramService = require('./telegramService');
 const zaloService = require('./zaloService');
 const { generateToken, extractUserMiddleware, requireAuth, requireAdmin } = require('./auth');
 
+// Hàm chuẩn hóa định dạng ngày tháng sang DD/MM/YYYY theo chuẩn Việt Nam
+function formatDateVN(dateInput) {
+  if (!dateInput) return '';
+  const s = String(dateInput).split('T')[0].trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return s;
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -673,7 +684,7 @@ app.post('/api/attendance/makeup-requests/:id/approve', requireAdmin, (req, res)
     const record = db.approveMakeupAttendance(req.params.id, req.user);
     res.json({
       success: true,
-      message: `Đã chấp nhận chấm công bù cho nhân viên ${record.employeeName} ngày ${record.date} (${record.totalHours}h)!`,
+      message: `Đã chấp nhận chấm công bù cho nhân viên ${record.employeeName} ngày ${formatDateVN(record.date)} (${record.totalHours}h)!`,
       record,
     });
   } catch (err) {
@@ -688,7 +699,7 @@ app.post('/api/attendance/makeup-requests/:id/reject', requireAdmin, (req, res) 
     const record = db.rejectMakeupAttendance(req.params.id, req.user, reason);
     res.json({
       success: true,
-      message: `Đã từ chối yêu cầu chấm công bù của nhân viên ${record.employeeName} ngày ${record.date}.`,
+      message: `Đã từ chối yêu cầu chấm công bù của nhân viên ${record.employeeName} ngày ${formatDateVN(record.date)}.`,
       record,
     });
   } catch (err) {
@@ -836,7 +847,7 @@ app.post('/api/leaves', requireAuth, (req, res) => {
     res.json({
       success: true,
       record,
-      message: `Đã lưu thông báo nghỉ làm ngày ${date} thành công!`,
+      message: `Đã lưu thông báo nghỉ làm ngày ${formatDateVN(date)} thành công!`,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

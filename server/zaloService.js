@@ -2,6 +2,16 @@
 // Dịch vụ gửi thông báo tự động qua Zalo (Hỗ trợ Zalo Webhook & Zalo Official Account OpenAPI)
 const db = require('./db');
 
+function formatDateVN(dateInput) {
+  if (!dateInput) return '';
+  const s = String(dateInput).split('T')[0].trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return s;
+}
+
 function getZaloConfig() {
   const settings = db.getSettings();
   return (
@@ -111,7 +121,7 @@ async function notifySalaryAdvance({ employee, amount, date, reason }) {
 Cơ sở: Trưng Nữ Vương, Đà Nẵng
 Nhân viên: ${empName} (${empCode})
 Số tiền ứng: ${formattedAmount} đ
-Ngày ứng: ${date}
+Ngày ứng: ${formatDateVN(date)}
 Lý do: ${reason || 'Chi tiêu cá nhân'}
 Thời gian: ${now}
 ------------------------------
@@ -121,7 +131,7 @@ Quản lý vui lòng đăng nhập web để đối chiếu và duyệt chi.`;
     event: 'SALARY_ADVANCE',
     employee: { name: empName, code: empCode },
     amount,
-    date,
+    date: formatDateVN(date),
     reason,
   });
 }
@@ -142,7 +152,10 @@ async function notifyLeaveRequest({ employee, date, endDate, shift, reason }) {
 
   const empName = employee?.name || employee?.fullName || 'Nhân viên';
   const empCode = employee?.username || employee?.code || '';
-  const dateRange = endDate && endDate !== date ? `${date} đến ${endDate}` : date;
+  const dateRange =
+    endDate && endDate !== date
+      ? `${formatDateVN(date)} đến ${formatDateVN(endDate)}`
+      : formatDateVN(date);
 
   const text = `[KYODO FOOD] THÔNG BÁO XIN NGHỈ LÀM!
 ------------------------------
@@ -176,14 +189,14 @@ async function notifyAttendance({ employee, date, shiftName, startTime, endTime,
 ------------------------------
 Cơ sở: Trưng Nữ Vương, Đà Nẵng
 Nhân viên: ${empName} (${empCode})
-Ngày làm: ${date}
+Ngày làm: ${formatDateVN(date)}
 Ca làm: ${shiftName || 'Ca làm'} (${startTime} - ${endTime})
 Tổng giờ: ${hours} tiếng`;
 
   return sendZaloNotification(text, {
     event: 'DAILY_ATTENDANCE',
     employee: { name: empName, code: empCode },
-    date,
+    date: formatDateVN(date),
     hours,
   });
 }

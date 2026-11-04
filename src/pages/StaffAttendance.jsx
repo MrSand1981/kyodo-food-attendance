@@ -964,43 +964,23 @@ export default function StaffAttendance({
         )}
         <form onSubmit={handleDailyEntrySubmit} className="text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 items-end">
-            {/* 1. Ngày Làm Việc (Mặc định hôm nay, bấm vào lịch chọn quá khứ, khóa tương lai) */}
+            {/* 1. Ngày Làm Việc (Chuẩn Việt Nam: DD/MM/YYYY) */}
             <div className="col-span-2 sm:col-span-1">
               <label className="block font-bold text-slate-700 mb-1 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                1. Ngày Làm Việc:
+                1. Ngày Làm Việc (DD/MM/YYYY):
               </label>
-              <div
-                onClick={() => {
-                  try {
-                    if (dateInputRef.current) {
-                      if (typeof dateInputRef.current.showPicker === 'function') {
-                        dateInputRef.current.showPicker();
-                      } else {
-                        dateInputRef.current.focus();
-                      }
-                    }
-                  } catch (_) {}
-                }}
-                className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all cursor-pointer shadow-2xs group"
-              >
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    try {
-                      if (dateInputRef.current?.showPicker) {
-                        dateInputRef.current.showPicker();
-                      } else {
-                        dateInputRef.current?.focus();
-                      }
-                    } catch (_) {}
-                  }}
-                  className="pl-3 pr-1 py-2 text-amber-600 hover:text-amber-700 cursor-pointer flex items-center justify-center shrink-0"
-                  title="Bấm vào biểu tượng lịch để chọn ngày làm việc"
-                >
-                  <Calendar className="w-4 h-4" />
-                </button>
+              <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all cursor-pointer shadow-2xs group overflow-hidden">
+                <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-2 w-full pointer-events-none">
+                  <Calendar className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="font-mono font-black text-slate-900 text-xs tracking-wide">
+                    {formatDateVN(entryDate) || 'DD/MM/YYYY'}
+                  </span>
+                  {entryDate && (
+                    <span className="text-[10px] text-amber-800 font-bold bg-amber-100/80 px-1.5 py-0.5 rounded whitespace-nowrap ml-auto">
+                      {getDayOfWeekName(entryDate)}
+                    </span>
+                  )}
+                </div>
                 <input
                   ref={dateInputRef}
                   type="date"
@@ -1028,8 +1008,8 @@ export default function StaffAttendance({
                       }
                     }
                   }}
-                  className="w-full py-2 pr-3 bg-transparent font-mono font-bold text-slate-900 text-xs focus:outline-hidden cursor-pointer"
-                  title="Bấm để chọn ngày làm việc (chỉ chọn ngày hiện tại hoặc ngày trong quá khứ)"
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
+                  title="Bấm để chọn ngày làm việc (Định dạng Ngày/Tháng/Năm - DD/MM/YYYY)"
                 />
               </div>
             </div>
