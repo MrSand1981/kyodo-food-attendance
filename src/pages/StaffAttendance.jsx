@@ -34,7 +34,10 @@ import {
   QrCode,
   UserCheck,
   Edit3,
+  Calculator,
+  Coins,
 } from 'lucide-react';
+import CashCounterModal from '../components/CashCounterModal';
 import { api } from '../utils/api';
 import { VIETNAM_BANKS, getVietQRUrl } from '../utils/banks';
 import {
@@ -154,6 +157,9 @@ export default function StaffAttendance({
   const leaveEndDateInputRef = useRef(null);
   const advDateInputRef = useRef(null);
   const dobInputRef = useRef(null);
+
+  // Modal Máy tính & Đếm tiền mặt két bán hàng (1k - 500k)
+  const [showCashCounterModal, setShowCashCounterModal] = useState(false);
 
   // Form: Nhập thời gian làm việc từng ngày (2 ca: Sáng 8-17h, Chiều 17-22h | Định dạng 24h từ 0-23h, không có AM/PM)
   const [entryDate, setEntryDate] = useState(getVietnamTodayYMD());
@@ -827,8 +833,19 @@ export default function StaffAttendance({
             </div>
           </div>
 
-          {/* Nút tác vụ tài khoản: Sửa thông tin cá nhân, Xem VietQR, Hướng Dẫn PDF, Đổi MK, Đăng xuất */}
+          {/* Nút tác vụ tài khoản: Sửa thông tin cá nhân, Đếm tiền mặt, Xem VietQR, Hướng Dẫn PDF, Đổi MK, Đăng xuất */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full md:w-auto justify-end mt-2 md:mt-0">
+            {/* Nút Máy Tính / Đếm Tiền Mặt (1k - 500k) */}
+            <button
+              type="button"
+              onClick={() => setShowCashCounterModal(true)}
+              className="px-3 py-2 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-black transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap min-h-[38px]"
+              title="Phần mềm tính tiền & đếm tiền mặt két bán hàng theo mệnh giá từ 1.000 đến 500.000 VNĐ"
+            >
+              <Calculator className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Đếm Tiền (1k - 500k)</span>
+            </button>
+
             {/* Nút tự kiểm tra & chỉnh sửa thông tin cá nhân (Ưu tiên hàng đầu) */}
             <button
               type="button"
@@ -934,6 +951,37 @@ export default function StaffAttendance({
           </button>
         </div>
       )}
+
+      {/* ================= TIỆN ÍCH BÁN HÀNG: ĐẾM TIỀN MẶT KÉT BÁN HÀNG ================= */}
+      <div className="mb-3 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 border border-emerald-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Calculator className="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-black text-slate-900">
+                Phần Mềm Tính Tiền & Kiểm Đếm Tiền Mặt
+              </h4>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-950 text-[10px] font-black uppercase">
+                1.000đ - 500.000đ
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Chỉ cần nhập số tờ từng loại mệnh giá, hệ thống sẽ tự động tính tổng số tiền và đọc thành chữ để bàn giao ca.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowCashCounterModal(true)}
+          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap self-stretch sm:self-auto"
+        >
+          <Calculator className="w-4 h-4" />
+          <span>Mở Bảng Đếm Tiền</span>
+        </button>
+      </div>
 
       {/* ================= PHẦN 1: NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (COMPACT TOOLBAR) ================= */}
       <div
@@ -3411,6 +3459,13 @@ export default function StaffAttendance({
           </div>
         </div>
       )}
+
+      {/* ================= MODAL: MÁY TÍNH & ĐẾM TIỀN MẶT KÉT BÁN HÀNG (1K - 500K) ================= */}
+      <CashCounterModal
+        isOpen={showCashCounterModal}
+        onClose={() => setShowCashCounterModal(false)}
+        employee={employee}
+      />
 
       {/* Modal / Popup Đếm Ngược Tự Động Đăng Xuất Sau Khi Chấm Công (Bảo Mật Máy Dùng Chung) */}
     </div>
