@@ -1,5 +1,5 @@
 // src/pages/ManagerDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Users,
@@ -61,6 +61,8 @@ import {
   getAdvanceCycleExplanation,
   getVietnamTodayYMD,
   getVietnamCurrentYM,
+  getDayOfWeekNameSafe,
+  addDaysYMD,
 } from '../utils/date';
 import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
@@ -83,9 +85,65 @@ export default function ManagerDashboard({
   const [allCashHandovers, setAllCashHandovers] = useState([]);
   const [cashHandoversTotalAmount, setCashHandoversTotalAmount] = useState(0);
   const [cashHandoversTotalBills, setCashHandoversTotalBills] = useState(0);
+  const [mgrCashDateFilter, setMgrCashDateFilter] = useState(''); // '' = tất cả các ngày trong tháng, hoặc 'YYYY-MM-DD'
   const [showCashCounterModal, setShowCashCounterModal] = useState(false);
   const [viewHandoverDetailItem, setViewHandoverDetailItem] = useState(null);
   const [copySlipSuccessId, setCopySlipSuccessId] = useState(null);
+
+  const todayStr = getVietnamTodayYMD();
+  const yesterdayStr = addDaysYMD(todayStr, -1);
+
+  // Gom nhóm bàn giao theo ngày để quản lý đối chiếu
+  const groupedMgrDailyHandovers = useMemo(() => {
+    let filtered = allCashHandovers;
+    if (mgrCashDateFilter) {
+      filtered = filtered.filter((h) => h.date === mgrCashDateFilter);
+    }
+
+    const map = new Map();
+    filtered.forEach((item) => {
+      const d = item.date || 'unknown';
+      if (!map.has(d)) {
+        map.set(d, {
+          date: d,
+          totalAmount: 0,
+          totalBills: 0,
+          shifts: [],
+        });
+      }
+      const grp = map.get(d);
+      grp.totalAmount += Number(item.totalAmount) || 0;
+      grp.totalBills += Number(item.totalBills) || 0;
+      grp.shifts.push(item);
+    });
+
+    const sortedDays = Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+    sortedDays.forEach((dayGrp) => {
+      dayGrp.shifts.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+    });
+
+    return sortedDays;
+  }, [allCashHandovers, mgrCashDateFilter]);
+
+  // Thống kê đối chiếu tổng hợp quản lý
+  const mgrCashSummary = useMemo(() => {
+    let totalAmt = 0;
+    let totalB = 0;
+    let shiftCount = 0;
+
+    groupedMgrDailyHandovers.forEach((dayGrp) => {
+      totalAmt += dayGrp.totalAmount;
+      totalB += dayGrp.totalBills;
+      shiftCount += dayGrp.shifts.length;
+    });
+
+    return {
+      daysCount: groupedMgrDailyHandovers.length,
+      shiftCount,
+      totalAmount: totalAmt,
+      totalBills: totalB,
+    };
+  }, [groupedMgrDailyHandovers]);
   const [reviewingMakeup, setReviewingMakeup] = useState(null);
   const [reviewTargetEmp, setReviewTargetEmp] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -678,6 +736,39 @@ export default function ManagerDashboard({
     navigator.clipboard.writeText(text).then(() => {
       setCopySlipSuccessId(item.id);
       setMessage(`Đã sao chép biên bản bàn giao tiền của ${item.giverName} để gửi Zalo!`);
+      setTimeout(() => setCopySlipSuccessId(null), 2500);
+    });
+  };
+
+  // Quản lý sao chép biên bản đối chiếu tiền két toàn bộ các ca trong một ngày
+  const handleCopyDailyReconciliationByManager = (dayGrp) => {
+    const dayName = getDayOfWeekNameSafe(dayGrp.date);
+    const dateFormatted = formatDateVN(dayGrp.date);
+
+    let text = `📊 BIÊN BẢN ĐỐI CHIẾU TIỀN KÉT THEO NGÀY - KYODO FOOD\n`;
+    text += `📍 Cơ sở: Trưng Nữ Vương, Đà Nẵng\n`;
+    text += `📅 Ngày đối chiếu: ${dayName}, ${dateFormatted}\n`;
+    text += `------------------------------------\n`;
+
+    dayGrp.shifts.forEach((item, idx) => {
+      text += `${idx + 1}. Ca ${item.shift || 'Giao ca'} (${item.time || ''}):\n`;
+      text += `   • Người giao: ${item.giverName} (${item.giverCode || ''})\n`;
+      text += `   • Người nhận: ${item.receiverName}\n`;
+      text += `   • Tiền bàn giao: ${formatVND(item.totalAmount)} (${item.totalBills || 0} tờ)\n`;
+      if (item.note) {
+        text += `   • Ghi chú: ${item.note}\n`;
+      }
+      text += `\n`;
+    });
+
+    text += `------------------------------------\n`;
+    text += `💰 TỔNG TIỀN BÀN GIAO TRONG NGÀY: ${formatVND(dayGrp.totalAmount)}\n`;
+    text += `💵 TỔNG SỐ TỜ TRONG NGÀY: ${dayGrp.totalBills} tờ (${dayGrp.shifts.length} ca bàn giao)\n`;
+    text += `✍️ Bằng chữ: ${convertVNDToWords(dayGrp.totalAmount)}\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySlipSuccessId(`day-${dayGrp.date}`);
+      setMessage(`Đã sao chép biên bản đối chiếu ngày ${dateFormatted} để gửi Zalo!`);
       setTimeout(() => setCopySlipSuccessId(null), 2500);
     });
   };
@@ -2818,7 +2909,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                     </span>
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Tổng hợp toàn bộ biên bản bàn giao tiền mặt giữa các ca làm việc trong {formatMonthVN(selectedMonth)}.
+                    Thống kê và đối chiếu toàn bộ biên bản bàn giao tiền két theo từng ngày trong {formatMonthVN(selectedMonth)}.
                   </p>
                 </div>
               </div>
@@ -2833,30 +2924,118 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               </button>
             </div>
 
+            {/* BỘ LỌC ĐỐI CHIẾU THEO NGÀY */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mr-1">
+                  Đối chiếu ngày:
+                </span>
+
+                <div className="flex items-center gap-1 bg-white p-0.5 rounded-xl border border-slate-200 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setMgrCashDateFilter('')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      !mgrCashDateFilter
+                        ? 'bg-emerald-600 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Tất cả các ngày
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMgrCashDateFilter(todayStr)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      mgrCashDateFilter === todayStr
+                        ? 'bg-emerald-600 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hôm nay ({formatDateVN(todayStr).slice(0, 5)})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMgrCashDateFilter(yesterdayStr)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      mgrCashDateFilter === yesterdayStr
+                        ? 'bg-emerald-600 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hôm qua ({formatDateVN(yesterdayStr).slice(0, 5)})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-xl border border-slate-200 shadow-2xs">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="date"
+                    value={mgrCashDateFilter}
+                    onChange={(e) => setMgrCashDateFilter(e.target.value)}
+                    className="text-xs text-slate-800 font-semibold cursor-pointer outline-hidden"
+                    title="Chọn ngày cụ thể trong lịch để đối chiếu"
+                  />
+                  {mgrCashDateFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setMgrCashDateFilter('')}
+                      className="text-slate-400 hover:text-slate-600 text-xs ml-1"
+                      title="Xem lại tất cả các ngày"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500 font-medium">
+                {mgrCashDateFilter ? (
+                  <span>
+                    Đang xem riêng ngày:{' '}
+                    <strong className="text-emerald-800">
+                      {getDayOfWeekNameSafe(mgrCashDateFilter)}, {formatDateVN(mgrCashDateFilter)}
+                    </strong>
+                  </span>
+                ) : (
+                  <span>
+                    Đang gom nhóm toàn bộ{' '}
+                    <strong className="text-emerald-800">{groupedMgrDailyHandovers.length} ngày</strong> có phát sinh giao két
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* 3 Thẻ thống kê tổng hợp tiền bàn giao */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 block">
-                  Tổng Tiền Mặt Đã Bàn Giao:
+                  {mgrCashDateFilter ? 'Tổng Tiền Ngày Này:' : 'Tổng Tiền Bàn Giao Tháng:'}
                 </span>
                 <span className="text-xl sm:text-2xl font-black font-mono text-emerald-950 mt-1 block">
-                  {formatVND(cashHandoversTotalAmount)}
+                  {formatVND(mgrCashSummary.totalAmount)}
                 </span>
                 <span className="text-[10px] text-emerald-700 mt-0.5 block italic">
-                  Trong {formatMonthVN(selectedMonth)}
+                  {mgrCashDateFilter
+                    ? `${getDayOfWeekNameSafe(mgrCashDateFilter)}, ${formatDateVN(mgrCashDateFilter)}`
+                    : `Trong ${formatMonthVN(selectedMonth)}`}
                 </span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
-                  Tổng Lượt Bàn Giao Ca:
+                  {mgrCashDateFilter ? 'Số Ca Giao Trong Ngày:' : 'Tổng Lượt Bàn Giao Ca:'}
                 </span>
                 <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 mt-1 block">
-                  {allCashHandovers.length}{' '}
+                  {mgrCashSummary.shiftCount}{' '}
                   <span className="text-xs font-normal text-slate-500">lượt giao ca</span>
                 </span>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  Biên bản đã lưu trữ
+                  {!mgrCashDateFilter
+                    ? `${groupedMgrDailyHandovers.length} ngày phát sinh giao ca`
+                    : 'Đã hoàn tất kiểm két'}
                 </span>
               </div>
 
@@ -2865,98 +3044,182 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                   Tổng Số Tờ Tiền:
                 </span>
                 <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 mt-1 block">
-                  {cashHandoversTotalBills}{' '}
+                  {mgrCashSummary.totalBills}{' '}
                   <span className="text-xs font-normal text-slate-500">tờ</span>
                 </span>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  Từ mệnh giá 1k đến 500k
+                  Mệnh giá 1.000đ – 500.000đ
                 </span>
               </div>
             </div>
 
-            {/* Bảng danh sách biên bản bàn giao */}
-            {allCashHandovers.length > 0 ? (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="py-3 px-4 whitespace-nowrap">Thời Gian & Ngày</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Ca Làm Việc</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Người Giao Ca</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Người Nhận Ca</th>
-                      <th className="py-3 px-4 text-right whitespace-nowrap">Tổng Tiền Bàn Giao</th>
-                      <th className="py-3 px-4 text-center whitespace-nowrap">Số Tờ</th>
-                      <th className="py-3 px-4 whitespace-nowrap">Ghi Chú</th>
-                      <th className="py-3 px-4 text-center whitespace-nowrap">Thao Tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {allCashHandovers.map((h) => (
-                      <tr key={h.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
-                          {h.time || ''} • {formatDateVN(h.date)}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-black border border-emerald-200">
-                            {h.shift || 'Giao ca'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="font-bold text-slate-900">{h.giverName}</span>
-                          <span className="text-[10px] text-slate-400 block font-mono">
-                            {h.giverCode}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap font-bold text-emerald-800">
-                          {h.receiverName}
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono font-black text-emerald-900 text-sm whitespace-nowrap">
-                          {formatVND(h.totalAmount)}
-                        </td>
-                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-600 whitespace-nowrap">
-                          {h.totalBills || 0}
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 italic max-w-xs truncate">
-                          {h.note || '-'}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setViewHandoverDetailItem(h)}
-                              className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
-                              title="Xem chi tiết số tờ từng loại mệnh giá"
-                            >
-                              Chi tiết
-                            </button>
+            {/* DANH SÁCH GOM NHÓM THEO TỪNG NGÀY ĐỂ ĐỐI CHIẾU */}
+            {groupedMgrDailyHandovers.length > 0 ? (
+              <div className="space-y-4">
+                {groupedMgrDailyHandovers.map((dayGrp) => {
+                  const isToday = dayGrp.date === todayStr;
+                  const isDayCopied = copySlipSuccessId === `day-${dayGrp.date}`;
+                  const dayName = getDayOfWeekNameSafe(dayGrp.date);
 
-                            <button
-                              type="button"
-                              onClick={() => handleCopyHandoverSlip(h)}
-                              className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
-                              title="Sao chép phiếu gửi Zalo"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
+                  return (
+                    <div
+                      key={dayGrp.date}
+                      className="rounded-3xl border-2 border-emerald-200 bg-white shadow-xs overflow-hidden"
+                    >
+                      {/* HEADER NGÀY ĐỐI CHIẾU */}
+                      <div className="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border-b border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <Calendar className="w-4 h-4 stroke-[2.5]" />
+                          </span>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteHandoverByManager(h)}
-                              className="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-700 transition-colors cursor-pointer"
-                              title="Xóa biên bản này"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h5 className="text-sm font-black text-slate-900">
+                                {dayName}, Ngày {formatDateVN(dayGrp.date)}
+                              </h5>
+                              {isToday && (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase shadow-2xs">
+                                  Hôm Nay
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {dayGrp.shifts.length} ca bàn giao • {dayGrp.totalBills} tờ tiền
+                            </p>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                          <div className="text-right">
+                            <span className="px-3.5 py-1.5 rounded-xl bg-white border border-emerald-300 font-mono font-black text-emerald-900 text-sm sm:text-base shadow-2xs block">
+                              {formatVND(dayGrp.totalAmount)}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyDailyReconciliationByManager(dayGrp)}
+                            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-98 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                            title="Sao chép toàn bộ các ca trong ngày để đối chiếu Zalo"
+                          >
+                            {isDayCopied ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-emerald-400">Đã chép ngày!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Sao Chép Đối Chiếu Ngày</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* BẢNG CÁC CA TRONG NGÀY */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                            <tr>
+                              <th className="py-2.5 px-4 whitespace-nowrap">Giờ Bàn Giao</th>
+                              <th className="py-2.5 px-4 whitespace-nowrap">Ca Làm Việc</th>
+                              <th className="py-2.5 px-4 whitespace-nowrap">Người Giao Ca</th>
+                              <th className="py-2.5 px-4 whitespace-nowrap">Người Nhận Ca</th>
+                              <th className="py-2.5 px-4 text-right whitespace-nowrap">Số Tiền Bàn Giao</th>
+                              <th className="py-2.5 px-4 text-center whitespace-nowrap">Số Tờ</th>
+                              <th className="py-2.5 px-4 whitespace-nowrap">Ghi Chú</th>
+                              <th className="py-2.5 px-4 text-center whitespace-nowrap">Thao Tác</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {dayGrp.shifts.map((h) => (
+                              <tr key={h.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="py-2.5 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-slate-400" />
+                                    <span>{h.time || ''}</span>
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-4 whitespace-nowrap">
+                                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-black border border-emerald-200">
+                                    {h.shift || 'Giao ca'}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-4 whitespace-nowrap">
+                                  <span className="font-bold text-slate-900">{h.giverName}</span>
+                                  <span className="text-[10px] text-slate-400 block font-mono">
+                                    {h.giverCode}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-4 whitespace-nowrap font-bold text-emerald-800">
+                                  {h.receiverName}
+                                </td>
+                                <td className="py-2.5 px-4 text-right font-mono font-black text-emerald-900 text-sm whitespace-nowrap">
+                                  {formatVND(h.totalAmount)}
+                                </td>
+                                <td className="py-2.5 px-4 text-center font-mono font-bold text-slate-600 whitespace-nowrap">
+                                  {h.totalBills || 0}
+                                </td>
+                                <td className="py-2.5 px-4 text-slate-500 italic max-w-xs truncate">
+                                  {h.note || '-'}
+                                </td>
+                                <td className="py-2.5 px-4 whitespace-nowrap text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewHandoverDetailItem(h)}
+                                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+                                      title="Xem chi tiết số tờ từng loại mệnh giá"
+                                    >
+                                      Chi tiết
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyHandoverSlip(h)}
+                                      className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                                      title="Sao chép phiếu gửi Zalo"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteHandoverByManager(h)}
+                                      className="p-1 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-700 transition-colors cursor-pointer"
+                                      title="Xóa biên bản này"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* TỔNG KẾT BẰNG CHỮ ĐỐI CHIẾU NGÀY */}
+                      <div className="px-4 py-2 bg-emerald-50/60 border-t border-emerald-100 text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <span>
+                          <strong>Tổng đối chiếu ngày {formatDateVN(dayGrp.date)}:</strong> {formatVND(dayGrp.totalAmount)} ({dayGrp.shifts.length} ca bàn giao • {dayGrp.totalBills} tờ)
+                        </span>
+                        <span className="italic font-medium text-slate-600">
+                          {convertVNDToWords(dayGrp.totalAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs text-slate-400 italic py-4">
-                Không có biên bản giao tiền nào trong {formatMonthVN(selectedMonth)}.
+                Không có biên bản giao tiền nào{' '}
+                {mgrCashDateFilter
+                  ? `trong ngày ${formatDateVN(mgrCashDateFilter)}`
+                  : `trong ${formatMonthVN(selectedMonth)}`}.
               </p>
             )}
           </div>

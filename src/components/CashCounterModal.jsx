@@ -26,7 +26,14 @@ import {
   Layers,
 } from 'lucide-react';
 import { DENOMINATIONS, formatVND, convertVNDToWords } from '../utils/currency';
-import { formatDateVN, formatMonthVN, getVietnamTodayYMD, getVietnamCurrentYM } from '../utils/date';
+import {
+  formatDateVN,
+  formatMonthVN,
+  getVietnamTodayYMD,
+  getVietnamCurrentYM,
+  getDayOfWeekNameSafe,
+  addDaysYMD,
+} from '../utils/date';
 import { api } from '../utils/api';
 
 const STORAGE_KEY = 'kyodo_cash_counter_counts_v1';
@@ -76,13 +83,17 @@ export default function CashCounterModal({
   const [formError, setFormError] = useState('');
   const [lastSubmittedHandover, setLastSubmittedHandover] = useState(null);
 
-  // Tab Lịch Sử
+  // Tab Lịch Sử: Thống kê & Đối chiếu theo ngày
   const [selectedMonth, setSelectedMonth] = useState(getVietnamCurrentYM());
+  const [selectedDateFilter, setSelectedDateFilter] = useState(''); // '' = tất cả các ngày trong tháng, hoặc 'YYYY-MM-DD'
   const [historyList, setHistoryList] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [viewDetailItem, setViewDetailItem] = useState(null);
   const [onlyMyHandovers, setOnlyMyHandovers] = useState(false);
   const [copySlipSuccessId, setCopySlipSuccessId] = useState(null);
+
+  const todayStr = getVietnamTodayYMD();
+  const yesterdayStr = addDaysYMD(todayStr, -1);
 
   // Tự động lưu counts vào localStorage
   useEffect(() => {
@@ -190,20 +201,57 @@ export default function CashCounterModal({
       return { totalAmount, totalBills, largeAmount, smallAmount, largeBills, smallBills };
     }, [counts]);
 
-  // Thống kê tháng trong tab Lịch Sử
-  const historyStats = useMemo(() => {
+  // Gom nhóm danh sách bàn giao theo ngày để tiện đối chiếu theo ngày
+  const groupedDailyHandovers = useMemo(() => {
+    let filtered = historyList;
+    if (selectedDateFilter) {
+      filtered = filtered.filter((h) => h.date === selectedDateFilter);
+    }
+
+    const map = new Map();
+    filtered.forEach((item) => {
+      const d = item.date || 'unknown';
+      if (!map.has(d)) {
+        map.set(d, {
+          date: d,
+          totalAmount: 0,
+          totalBills: 0,
+          shifts: [],
+        });
+      }
+      const grp = map.get(d);
+      grp.totalAmount += Number(item.totalAmount) || 0;
+      grp.totalBills += Number(item.totalBills) || 0;
+      grp.shifts.push(item);
+    });
+
+    const sortedDays = Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+    sortedDays.forEach((dayGrp) => {
+      dayGrp.shifts.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+    });
+
+    return sortedDays;
+  }, [historyList, selectedDateFilter]);
+
+  // Thống kê đối chiếu tổng hợp
+  const historySummary = useMemo(() => {
     let totalAmt = 0;
     let totalB = 0;
-    historyList.forEach((item) => {
-      totalAmt += Number(item.totalAmount) || 0;
-      totalB += Number(item.totalBills) || 0;
+    let shiftCount = 0;
+
+    groupedDailyHandovers.forEach((dayGrp) => {
+      totalAmt += dayGrp.totalAmount;
+      totalB += dayGrp.totalBills;
+      shiftCount += dayGrp.shifts.length;
     });
+
     return {
-      count: historyList.length,
+      daysCount: groupedDailyHandovers.length,
+      shiftCount,
       totalAmount: totalAmt,
       totalBills: totalB,
     };
-  }, [historyList]);
+  }, [groupedDailyHandovers]);
 
   // Sao chép báo cáo kiểm tiền hiện tại để gửi Zalo / Telegram
   const handleCopyReport = () => {
@@ -284,6 +332,38 @@ export default function CashCounterModal({
 
     navigator.clipboard.writeText(text).then(() => {
       setCopySlipSuccessId(item.id);
+      setTimeout(() => setCopySlipSuccessId(null), 2500);
+    });
+  };
+
+  // Sao chép báo cáo đối chiếu toàn bộ các ca trong một ngày để gửi Zalo / Telegram
+  const handleCopyDailyReconciliation = (dayGrp) => {
+    const dayName = getDayOfWeekNameSafe(dayGrp.date);
+    const dateFormatted = formatDateVN(dayGrp.date);
+
+    let text = `📊 BIÊN BẢN ĐỐI CHIẾU TIỀN KÉT THEO NGÀY - KYODO FOOD\n`;
+    text += `📍 Cơ sở: Trưng Nữ Vương, Đà Nẵng\n`;
+    text += `📅 Ngày đối chiếu: ${dayName}, ${dateFormatted}\n`;
+    text += `------------------------------------\n`;
+
+    dayGrp.shifts.forEach((item, idx) => {
+      text += `${idx + 1}. Ca ${item.shift || 'Giao ca'} (${item.time || ''}):\n`;
+      text += `   • Người giao: ${item.giverName} (${item.giverCode || ''})\n`;
+      text += `   • Người nhận: ${item.receiverName}\n`;
+      text += `   • Tiền bàn giao: ${formatVND(item.totalAmount)} (${item.totalBills || 0} tờ)\n`;
+      if (item.note) {
+        text += `   • Ghi chú: ${item.note}\n`;
+      }
+      text += `\n`;
+    });
+
+    text += `------------------------------------\n`;
+    text += `💰 TỔNG TIỀN BÀN GIAO TRONG NGÀY: ${formatVND(dayGrp.totalAmount)}\n`;
+    text += `💵 TỔNG SỐ TỜ TRONG NGÀY: ${dayGrp.totalBills} tờ (${dayGrp.shifts.length} ca bàn giao)\n`;
+    text += `✍️ Bằng chữ: ${convertVNDToWords(dayGrp.totalAmount)}\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySlipSuccessId(`day-${dayGrp.date}`);
       setTimeout(() => setCopySlipSuccessId(null), 2500);
     });
   };
@@ -495,56 +575,104 @@ export default function CashCounterModal({
           </p>
         </div>
 
-        {/* ================= KHUNG TỔNG KẾT TIỀN MẶT (STICKY HEADER) ================= */}
-        <div className="mb-3.5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-lg shadow-emerald-700/20 shrink-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/15 pb-2.5">
-            <div>
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 block">
-                Tổng Tiền Mặt Hiện Có Trong Két:
-              </span>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight flex items-baseline gap-1 mt-0.5">
-                <span>{formatVND(totalAmount)}</span>
+        {/* ================= KHUNG TỔNG KẾT TIỀN MẶT KHI ĐANG ĐẾM / GIAO CA ================= */}
+        {activeTab === 'counter' && (
+          <div className="mb-3.5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-lg shadow-emerald-700/20 shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/15 pb-2.5">
+              <div>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 block">
+                  Tổng Tiền Mặt Hiện Có Trong Két:
+                </span>
+                <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight flex items-baseline gap-1 mt-0.5">
+                  <span>{formatVND(totalAmount)}</span>
+                </div>
+              </div>
+
+              <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-xs">
+                <span className="text-[11px] font-bold text-emerald-100">Tổng Số Tờ:</span>
+                <span className="text-lg font-black font-mono text-white">
+                  {totalBills} <span className="text-xs font-normal text-emerald-200">tờ</span>
+                </span>
               </div>
             </div>
 
-            <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-xs">
-              <span className="text-[11px] font-bold text-emerald-100">Tổng Số Tờ:</span>
-              <span className="text-lg font-black font-mono text-white">
-                {totalBills} <span className="text-xs font-normal text-emerald-200">tờ</span>
+            {/* Đọc số tiền bằng chữ tiếng Việt */}
+            <div className="pt-2 flex items-start gap-1.5 text-xs text-emerald-100 leading-snug">
+              <span className="font-bold text-emerald-300 shrink-0">Bằng chữ:</span>
+              <span className="font-medium italic text-white drop-shadow-2xs">
+                {convertVNDToWords(totalAmount)}
               </span>
             </div>
-          </div>
 
-          {/* Đọc số tiền bằng chữ tiếng Việt */}
-          <div className="pt-2 flex items-start gap-1.5 text-xs text-emerald-100 leading-snug">
-            <span className="font-bold text-emerald-300 shrink-0">Bằng chữ:</span>
-            <span className="font-medium italic text-white drop-shadow-2xs">
-              {convertVNDToWords(totalAmount)}
-            </span>
+            {/* Phân tách Tiền Chẵn & Tiền Lẻ */}
+            <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-white/10 text-[11px]">
+              <div className="flex items-center justify-between bg-black/15 px-2.5 py-1 rounded-lg">
+                <span className="text-emerald-200 flex items-center gap-1">
+                  <Banknote className="w-3.5 h-3.5" />
+                  <span>Tiền chẵn (≥100k):</span>
+                </span>
+                <span className="font-mono font-bold text-white">
+                  {formatVND(largeAmount)} ({largeBills} tờ)
+                </span>
+              </div>
+              <div className="flex items-center justify-between bg-black/15 px-2.5 py-1 rounded-lg">
+                <span className="text-emerald-200 flex items-center gap-1">
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>Tiền lẻ (≤50k):</span>
+                </span>
+                <span className="font-mono font-bold text-white">
+                  {formatVND(smallAmount)} ({smallBills} tờ)
+                </span>
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Phân tách Tiền Chẵn & Tiền Lẻ */}
-          <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-white/10 text-[11px]">
-            <div className="flex items-center justify-between bg-black/15 px-2.5 py-1 rounded-lg">
-              <span className="text-emerald-200 flex items-center gap-1">
-                <Banknote className="w-3.5 h-3.5" />
-                <span>Tiền chẵn (≥100k):</span>
-              </span>
-              <span className="font-mono font-bold text-white">
-                {formatVND(largeAmount)} ({largeBills} tờ)
-              </span>
+        {/* ================= KHUNG TỔNG KẾT & ĐỐI CHIẾU TIỀN KÉT THEO NGÀY (KHI XEM LỊCH SỬ) ================= */}
+        {activeTab === 'history' && (
+          <div className="mb-3.5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 text-white shadow-lg shadow-slate-900/30 shrink-0 border border-emerald-500/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/15 pb-2.5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300 block">
+                    {selectedDateFilter
+                      ? `Tổng Hợp Đối Chiếu Két Ngày ${formatDateVN(selectedDateFilter)} (${getDayOfWeekNameSafe(selectedDateFilter)}):`
+                      : `Tổng Bàn Giao Két Trong ${formatMonthVN(selectedMonth)}:`}
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight flex items-baseline gap-1 mt-0.5 text-white">
+                  <span>{formatVND(historySummary.totalAmount)}</span>
+                </div>
+              </div>
+
+              <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-xs">
+                <span className="text-[11px] font-bold text-emerald-200">
+                  {selectedDateFilter ? 'Thống Kê Ngày Này:' : 'Thống Kê Toàn Tháng:'}
+                </span>
+                <span className="text-sm sm:text-base font-black font-mono text-white">
+                  {historySummary.shiftCount} <span className="text-xs font-normal text-emerald-200">ca</span>
+                  {' • '}
+                  {historySummary.totalBills} <span className="text-xs font-normal text-emerald-200">tờ</span>
+                  {!selectedDateFilter && (
+                    <>
+                      {' • '}
+                      {historySummary.daysCount} <span className="text-xs font-normal text-emerald-200">ngày</span>
+                    </>
+                  )}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between bg-black/15 px-2.5 py-1 rounded-lg">
-              <span className="text-emerald-200 flex items-center gap-1">
-                <Coins className="w-3.5 h-3.5" />
-                <span>Tiền lẻ (≤50k):</span>
-              </span>
-              <span className="font-mono font-bold text-white">
-                {formatVND(smallAmount)} ({smallBills} tờ)
+
+            {/* Đọc số tiền bằng chữ tiếng Việt */}
+            <div className="pt-2 flex items-start gap-1.5 text-xs text-emerald-100 leading-snug">
+              <span className="font-bold text-emerald-300 shrink-0">Bằng chữ:</span>
+              <span className="font-medium italic text-white drop-shadow-2xs">
+                {convertVNDToWords(historySummary.totalAmount)}
               </span>
             </div>
           </div>
-        </div>
+        )}
 
         {/* ================= NỘI DUNG CHÍNH THEO TAB ================= */}
         {activeTab === 'counter' && !showHandoverForm && (
@@ -986,42 +1114,99 @@ export default function CashCounterModal({
           </div>
         )}
 
-        {/* ================= TAB 2: LỊCH SỬ BÀN GIAO TIỀN ================= */}
+        {/* ================= TAB 2: LỊCH SỬ & ĐỐI CHIẾU BÀN GIAO TIỀN THEO NGÀY ================= */}
         {activeTab === 'history' && (
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {/* Bộ lọc tháng & phạm vi */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-slate-500">Tháng:</span>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
-                >
-                  <option value="2026-11">Tháng 11/2026</option>
-                  <option value="2026-12">Tháng 12/2026</option>
-                  <option value="2027-01">Tháng 01/2027</option>
-                  <option value="2026-10">Tháng 10/2026</option>
-                </select>
+            {/* Bộ lọc tháng & Lọc theo ngày đối chiếu */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100 text-xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Chọn tháng */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Tháng:</span>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => {
+                      setSelectedMonth(e.target.value);
+                      setSelectedDateFilter('');
+                    }}
+                    className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
+                  >
+                    <option value="2026-11">Tháng 11/2026</option>
+                    <option value="2026-12">Tháng 12/2026</option>
+                    <option value="2027-01">Tháng 01/2027</option>
+                    <option value="2026-10">Tháng 10/2026</option>
+                  </select>
+                </div>
+
+                {/* Các nút bấm chọn nhanh ngày đối chiếu */}
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDateFilter('')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      !selectedDateFilter
+                        ? 'bg-white text-emerald-800 shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Tất cả các ngày
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDateFilter(todayStr)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      selectedDateFilter === todayStr
+                        ? 'bg-emerald-600 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hôm nay ({formatDateVN(todayStr).slice(0, 5)})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDateFilter(yesterdayStr)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      selectedDateFilter === yesterdayStr
+                        ? 'bg-emerald-600 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hôm qua ({formatDateVN(yesterdayStr).slice(0, 5)})
+                  </button>
+                </div>
+
+                {/* Chọn ngày cụ thể */}
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={selectedDateFilter}
+                    onChange={(e) => setSelectedDateFilter(e.target.value)}
+                    className="px-2 py-1 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 cursor-pointer"
+                    title="Chọn một ngày cụ thể trong lịch để đối chiếu"
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Bộ lọc phạm vi ca & Tải lại */}
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setOnlyMyHandovers(!onlyMyHandovers)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${
                     onlyMyHandovers
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  {onlyMyHandovers ? 'Chỉ ca của tôi' : 'Tất cả ca cửa hàng'}
+                  {onlyMyHandovers ? 'Chỉ ca của tôi' : 'Tất cả ca'}
                 </button>
 
                 <button
                   type="button"
                   onClick={loadHistory}
-                  className="p-1 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
                   title="Tải lại danh sách"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -1029,130 +1214,230 @@ export default function CashCounterModal({
               </div>
             </div>
 
-            {/* Thống kê tổng hợp trong tháng */}
+            {/* Thống kê đối chiếu tổng hợp theo bộ lọc */}
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-2.5 rounded-2xl bg-emerald-50/70 border border-emerald-200">
                 <span className="text-[10px] font-bold text-emerald-700 block uppercase">
-                  Tổng Bàn Giao
+                  {selectedDateFilter ? 'Tổng Tiền Ngày' : 'Tổng Tháng'}
                 </span>
                 <span className="text-sm sm:text-base font-black font-mono text-emerald-900 mt-0.5 block">
-                  {formatVND(historyStats.totalAmount)}
+                  {formatVND(historySummary.totalAmount)}
                 </span>
               </div>
+
               <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-500 block uppercase">Số Ca Giao</span>
+                <span className="text-[10px] font-bold text-slate-500 block uppercase">
+                  {selectedDateFilter ? 'Số Ca Giao Ngày' : 'Số Ca Trong Tháng'}
+                </span>
                 <span className="text-sm sm:text-base font-black font-mono text-slate-800 mt-0.5 block">
-                  {historyStats.count} <span className="text-[10px] font-normal">lượt</span>
+                  {historySummary.shiftCount} <span className="text-[10px] font-normal">ca</span>
+                  {!selectedDateFilter && (
+                    <span className="text-[10px] font-normal text-slate-400">
+                      {' '}({historySummary.daysCount} ngày)
+                    </span>
+                  )}
                 </span>
               </div>
+
               <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase">Tổng Số Tờ</span>
                 <span className="text-sm sm:text-base font-black font-mono text-slate-800 mt-0.5 block">
-                  {historyStats.totalBills} <span className="text-[10px] font-normal">tờ</span>
+                  {historySummary.totalBills} <span className="text-[10px] font-normal">tờ</span>
                 </span>
               </div>
             </div>
 
-            {/* Danh sách các lần giao tiền */}
+            {/* Danh sách các ngày gom nhóm để đối chiếu */}
             {historyLoading ? (
               <div className="text-center py-8 text-xs text-slate-400">
-                Đang tải dữ liệu lịch sử bàn giao...
+                Đang tải dữ liệu đối chiếu bàn giao...
               </div>
-            ) : historyList.length === 0 ? (
-              <div className="text-center py-10 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
-                Chưa có biên bản giao tiền nào trong {formatMonthVN(selectedMonth)}.
+            ) : groupedDailyHandovers.length === 0 ? (
+              <div className="text-center py-10 bg-slate-50/60 rounded-3xl border border-dashed border-slate-200 text-xs text-slate-400 space-y-1">
+                <Calendar className="w-8 h-8 text-slate-300 mx-auto mb-1 stroke-1" />
+                <p className="font-bold text-slate-600">
+                  Chưa có biên bản giao tiền nào{' '}
+                  {selectedDateFilter
+                    ? `trong ngày ${formatDateVN(selectedDateFilter)}`
+                    : `trong ${formatMonthVN(selectedMonth)}`}.
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Nhân viên có thể vào tab "Bảng Đếm Tiền Mặt" rồi bấm "Giao Tiền Ca Sau" để lưu biên bản.
+                </p>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {historyList.map((item) => {
-                  const isSuccessCopied = copySlipSuccessId === item.id;
-                  const isCurrentAuthor =
-                    employee?.id === item.giverId ||
-                    employee?.username === item.giverCode ||
-                    employee?.role === 'admin';
+              <div className="space-y-3.5">
+                {groupedDailyHandovers.map((dayGrp) => {
+                  const isToday = dayGrp.date === todayStr;
+                  const isDayCopied = copySlipSuccessId === `day-${dayGrp.date}`;
+                  const dayName = getDayOfWeekNameSafe(dayGrp.date);
 
                   return (
                     <div
-                      key={item.id}
-                      className="p-3 rounded-2xl bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-xs space-y-2"
+                      key={dayGrp.date}
+                      className="rounded-3xl border-2 border-emerald-200/90 bg-white shadow-xs overflow-hidden"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
-                            {item.shift || 'Giao ca'}
+                      {/* HEADER NGÀY ĐỐI CHIẾU */}
+                      <div className="p-3 sm:p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-emerald-50 border-b border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <Calendar className="w-3.5 h-3.5 stroke-[2.5]" />
                           </span>
-                          <span className="text-xs font-mono font-bold text-slate-700">
-                            {item.time || ''} • {formatDateVN(item.date)}
-                          </span>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                                {dayName}, Ngày {formatDateVN(dayGrp.date)}
+                              </h4>
+                              {isToday && (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase shadow-2xs">
+                                  Hôm Nay
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {dayGrp.shifts.length} ca bàn giao • {dayGrp.totalBills} tờ tiền
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                          <span className="text-sm sm:text-base font-black font-mono text-emerald-700">
-                            {formatVND(item.totalAmount)}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            ({item.totalBills || 0} tờ)
-                          </span>
-                        </div>
-                      </div>
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <div className="text-right">
+                            <span className="px-3 py-1 rounded-xl bg-white border border-emerald-300 font-mono font-black text-emerald-800 text-xs sm:text-sm shadow-2xs block">
+                              {formatVND(dayGrp.totalAmount)}
+                            </span>
+                          </div>
 
-                      {/* Người giao ➔ Người nhận */}
-                      <div className="flex items-center justify-between text-xs text-slate-600">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-900">{item.giverName}</span>
-                          <ArrowRight className="w-3 h-3 text-slate-400" />
-                          <span className="font-bold text-emerald-800">{item.receiverName}</span>
-                        </div>
-
-                        {item.note && (
-                          <span className="text-[11px] text-slate-400 italic truncate max-w-[200px]">
-                            {item.note}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Tác vụ với biên bản */}
-                      <div className="flex items-center justify-between pt-1 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => setViewDetailItem(item)}
-                          className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Chi tiết mệnh giá</span>
-                        </button>
-
-                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => handleCopyHandoverSlip(item)}
-                            className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                            title="Sao chép phiếu này để dán Zalo"
+                            onClick={() => handleCopyDailyReconciliation(dayGrp)}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-98 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                            title="Sao chép toàn bộ các ca trong ngày để đối chiếu Zalo"
                           >
-                            {isSuccessCopied ? (
+                            {isDayCopied ? (
                               <>
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                <span className="text-emerald-600">Đã chép</span>
+                                <Check className="w-3 h-3 text-emerald-400" />
+                                <span className="text-emerald-400">Đã chép ngày!</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="w-3 h-3" />
-                                <span>Sao chép</span>
+                                <span>Sao Chép Đối Chiếu Ngày</span>
                               </>
                             )}
                           </button>
-
-                          {isCurrentAuthor && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteHandover(item)}
-                              className="p-1 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-600 transition-colors cursor-pointer"
-                              title="Xóa biên bản này"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                         </div>
+                      </div>
+
+                      {/* DANH SÁCH CÁC CA TRONG NGÀY */}
+                      <div className="p-2.5 sm:p-3 space-y-2 bg-slate-50/50">
+                        {dayGrp.shifts.map((item, idx) => {
+                          const isSuccessCopied = copySlipSuccessId === item.id;
+                          const isCurrentAuthor =
+                            employee?.id === item.giverId ||
+                            employee?.username === item.giverCode ||
+                            employee?.role === 'admin';
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="p-3 rounded-2xl bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-2xs space-y-2"
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                                    {item.shift || 'Giao ca'}
+                                  </span>
+                                  <span className="text-xs font-mono font-bold text-slate-700 flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-slate-400" />
+                                    <span>{item.time || ''}</span>
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                                  <span className="text-sm sm:text-base font-black font-mono text-emerald-700">
+                                    {formatVND(item.totalAmount)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    ({item.totalBills || 0} tờ)
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Người giao ➔ Người nhận */}
+                              <div className="flex items-center justify-between text-xs text-slate-600">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-slate-900">{item.giverName}</span>
+                                  <ArrowRight className="w-3 h-3 text-slate-400" />
+                                  <span className="font-bold text-emerald-800">{item.receiverName}</span>
+                                </div>
+
+                                {item.note && (
+                                  <span className="text-[11px] text-slate-400 italic truncate max-w-[200px]">
+                                    {item.note}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Tác vụ với biên bản */}
+                              <div className="flex items-center justify-between pt-1 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewDetailItem(item)}
+                                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>Chi tiết mệnh giá</span>
+                                </button>
+
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyHandoverSlip(item)}
+                                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                                    title="Sao chép phiếu này để dán Zalo"
+                                  >
+                                    {isSuccessCopied ? (
+                                      <>
+                                        <Check className="w-3 h-3 text-emerald-600" />
+                                        <span className="text-emerald-600">Đã chép</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Sao chép</span>
+                                      </>
+                                    )}
+                                  </button>
+
+                                  {isCurrentAuthor && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteHandover(item)}
+                                      className="p-1 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-600 transition-colors cursor-pointer"
+                                      title="Xóa biên bản này"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* TỔNG KẾT BẰNG CHỮ ĐỐI CHIẾU NGÀY */}
+                      <div className="px-3 py-1.5 bg-emerald-50/60 border-t border-emerald-100 text-[11px] text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <span>
+                          <strong>Tổng két ngày {formatDateVN(dayGrp.date)}:</strong> {formatVND(dayGrp.totalAmount)} ({dayGrp.shifts.length} ca • {dayGrp.totalBills} tờ)
+                        </span>
+                        <span className="italic font-medium text-slate-600">
+                          {convertVNDToWords(dayGrp.totalAmount)}
+                        </span>
                       </div>
                     </div>
                   );
