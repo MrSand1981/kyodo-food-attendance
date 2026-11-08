@@ -8,13 +8,18 @@ WshShell.CurrentDirectory = strDir
 ' ==============================================================================
 ' 1. KIEM TRA VA KICH HOAT CUA SO DA TON TAI (SINGLE-INSTANCE: CHI MO 1 CUA SO DUY NHAT)
 ' ==============================================================================
-focusExe = strDir & "\bin\FocusApp.exe"
-If fso.FileExists(focusExe) Then
-    ret = WshShell.Run(Chr(34) & focusExe & Chr(34), 0, True)
-    If ret = 0 Then
-        WScript.Quit
-    End If
+On Error Resume Next
+If WshShell.AppActivate("Kyodo Food App") Then
+    WScript.Sleep 50
+    WshShell.SendKeys "% r"
+    WScript.Quit
 End If
+If WshShell.AppActivate("Kyodo Food") Then
+    WScript.Sleep 50
+    WshShell.SendKeys "% r"
+    WScript.Quit
+End If
+Err.Clear
 
 ' ==============================================================================
 ' 2. XAC DINH CHE DO KET NOI: CLOUD ONLINE HAY LOCALHOST (CO HUONG DAN VA HOI THONG MINH)

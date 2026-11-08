@@ -1,6 +1,6 @@
 ; Script Inno Setup 6 cho phan mem Kyodo Food Cham Cong (Bao gom ca 2 phien ban)
 #define MyAppName "Kyodo Food"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "2.20.0"
 #define MyAppPublisher "Kyodo Food"
 #define MyAppURL "https://kyodofood.vn"
 
