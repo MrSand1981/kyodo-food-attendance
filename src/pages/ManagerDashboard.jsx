@@ -63,6 +63,7 @@ import {
   getVietnamCurrentYM,
   getDayOfWeekNameSafe,
   addDaysYMD,
+  getUpcomingLeaves,
 } from '../utils/date';
 import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
@@ -81,6 +82,7 @@ export default function ManagerDashboard({
   const [employees, setEmployees] = useState([]);
   const [allAdvances, setAllAdvances] = useState([]);
   const [allLeaves, setAllLeaves] = useState([]);
+  const [allGlobalLeaves, setAllGlobalLeaves] = useState([]);
   const [allMakeupRequests, setAllMakeupRequests] = useState([]);
   const [allCashHandovers, setAllCashHandovers] = useState([]);
   const [cashHandoversTotalAmount, setCashHandoversTotalAmount] = useState(0);
@@ -90,8 +92,43 @@ export default function ManagerDashboard({
   const [viewHandoverDetailItem, setViewHandoverDetailItem] = useState(null);
   const [copySlipSuccessId, setCopySlipSuccessId] = useState(null);
 
+  // State kiểm soát & thông báo chú ý lịch nghỉ tương lai của nhân viên
+  const [showUpcomingLeavesModal, setShowUpcomingLeavesModal] = useState(false);
+  const [hasShownInitialLeaveAlert, setHasShownInitialLeaveAlert] = useState(false);
+  const [copiedDispatchMsg, setCopiedDispatchMsg] = useState(false);
+  const [leaveDispatchNotes, setLeaveDispatchNotes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kyodo_leave_dispatch_notes_v1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [showMgrAddLeaveModal, setShowMgrAddLeaveModal] = useState(false);
+  const [mgrLeaveEmpId, setMgrLeaveEmpId] = useState('');
+  const [mgrLeaveDate, setMgrLeaveDate] = useState(() => addDaysYMD(getVietnamTodayYMD(), 1));
+  const [mgrLeaveEndDate, setMgrLeaveEndDate] = useState(() => addDaysYMD(getVietnamTodayYMD(), 1));
+  const [mgrLeaveIsMulti, setMgrLeaveIsMulti] = useState(false);
+  const [mgrLeaveShift, setMgrLeaveShift] = useState('Cả Ngày');
+  const [mgrLeaveReason, setMgrLeaveReason] = useState('');
+  const [mgrLeaveLoading, setMgrLeaveLoading] = useState(false);
+
   const todayStr = getVietnamTodayYMD();
   const yesterdayStr = addDaysYMD(todayStr, -1);
+
+  // Danh sách ngày nghỉ sắp tới (chưa kết thúc) để hiện thông báo chú ý & điều phối nhân sự
+  const upcomingLeaves = useMemo(() => {
+    const source = allGlobalLeaves.length > 0 ? allGlobalLeaves : allLeaves;
+    return getUpcomingLeaves(source, todayStr);
+  }, [allGlobalLeaves, allLeaves, todayStr]);
+
+  // Mỗi lần Quản lý đăng nhập vào trang Quản lý: nếu có nhân viên sắp nghỉ thì tự động hiện Thông Báo Chú Ý
+  useEffect(() => {
+    if (!hasShownInitialLeaveAlert && upcomingLeaves.length > 0) {
+      setShowUpcomingLeavesModal(true);
+      setHasShownInitialLeaveAlert(true);
+    }
+  }, [upcomingLeaves, hasShownInitialLeaveAlert]);
 
   // Gom nhóm bàn giao theo ngày để quản lý đối chiếu
   const groupedMgrDailyHandovers = useMemo(() => {
@@ -304,20 +341,110 @@ export default function ManagerDashboard({
   // Tải danh sách tạm ứng, nghỉ phép, chấm công bù & bàn giao tiền két toàn cửa hàng
   const loadAdvancesAndLeaves = async () => {
     try {
-      const [advRes, leaveRes, makeupRes, cashRes] = await Promise.all([
+      const [advRes, leaveRes, globalLeaveRes, makeupRes, cashRes] = await Promise.all([
         api.getSalaryAdvances('', selectedMonth),
         api.getLeaveRequests('', selectedMonth),
+        api.getLeaveRequests('', ''), // Tải toàn bộ thông báo nghỉ để kiểm soát lịch nghỉ tương lai của mọi tháng
         api.getMakeupRequests('', selectedMonth),
         api.getCashHandovers('', selectedMonth),
       ]);
       setAllAdvances(advRes.records || []);
       setAllLeaves(leaveRes.records || []);
+      setAllGlobalLeaves(globalLeaveRes?.records || leaveRes?.records || []);
       setAllMakeupRequests(makeupRes.requests || []);
       setAllCashHandovers(cashRes?.records || []);
       setCashHandoversTotalAmount(cashRes?.totalAmount || 0);
       setCashHandoversTotalBills(cashRes?.totalBills || 0);
     } catch (err) {
       console.error('Lỗi tải tạm ứng, nghỉ phép, chấm công bù và bàn giao két tiền:', err);
+    }
+  };
+
+  // Lưu ghi chú phân công / điều phối người làm thay cho từng lịch nghỉ (lưu localStorage, không can thiệp dữ liệu gốc)
+  const handleUpdateDispatchNote = (leaveId, noteText) => {
+    setLeaveDispatchNotes((prev) => {
+      const next = { ...prev, [leaveId]: noteText };
+      try {
+        localStorage.setItem('kyodo_leave_dispatch_notes_v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  // Sao chép lịch nghỉ sắp tới & kế hoạch điều phối ca gửi nhóm Zalo / Telegram
+  const handleCopyUpcomingLeavesZalo = () => {
+    if (!upcomingLeaves || upcomingLeaves.length === 0) return;
+
+    const lines = upcomingLeaves.map((item, idx) => {
+      const empName = item.employeeShortName || item.employeeName || 'Nhân viên';
+      const empCode = item.employeeCode ? ` (${item.employeeCode})` : '';
+      const dateText = item.isMultiDay
+        ? `${getDayOfWeekNameSafe(item.date)} ${formatDateVN(item.date)} ➔ ${getDayOfWeekNameSafe(item.endDate)} ${formatDateVN(item.endDate)} (${item.totalDays} ngày)`
+        : `${getDayOfWeekNameSafe(item.date)}, ${formatDateVN(item.date)}`;
+      const dispatchNote = (leaveDispatchNotes[item.id] || '').trim();
+      const dispatchStr = dispatchNote
+        ? `✅ Phân công thay ca: ${dispatchNote}`
+        : `⚠️ Điều phối: Đang sắp xếp người trực thay`;
+
+      return [
+        `${idx + 1}. 👤 Nhân viên nghỉ: ${empName}${empCode}`,
+        `   • Ngày nghỉ: ${dateText} [${item.countdownLabel}]`,
+        `   • Ca nghỉ: ${item.shift || 'Cả ngày'}`,
+        `   • Lý do: ${item.reason || 'Có việc cá nhân'}`,
+        `   • ${dispatchStr}`,
+      ].join('\n');
+    });
+
+    const fullText = [
+      `📢 THÔNG BÁO LỊCH NGHỈ & ĐIỀU PHỐI CA LÀM - KYODO FOOD`,
+      `🏢 Cơ sở: Trưng Nữ Vương, Đà Nẵng`,
+      `📅 Ngày cập nhật: ${formatDateVN(todayStr)}`,
+      `----------------------------------------`,
+      `Danh sách ${upcomingLeaves.length} lịch đăng ký nghỉ sắp tới:`,
+      ...lines,
+      `----------------------------------------`,
+      `👉 Các bạn nhân viên vui lòng theo dõi lịch điều phối và phối hợp trực thay ca để cửa hàng vận hành chu đáo nhé!`,
+    ].join('\n');
+
+    navigator.clipboard.writeText(fullText);
+    setCopiedDispatchMsg(true);
+    setMessage('📋 Đã sao chép Thông báo Lịch Nghỉ & Điều Phối Ca! Bạn có thể dán ngay vào nhóm Zalo.');
+    setTimeout(() => setCopiedDispatchMsg(false), 3000);
+  };
+
+  // Quản lý chủ động ghi nhận lịch nghỉ tương lai khi nhân viên báo qua điện thoại/Zalo
+  const handleMgrCreateLeave = async (e) => {
+    e.preventDefault();
+    const targetEmpId = mgrLeaveEmpId || employees[0]?.id;
+    if (!targetEmpId) {
+      setError('Vui lòng chọn nhân viên xin nghỉ!');
+      return;
+    }
+    if (!mgrLeaveDate) {
+      setError('Vui lòng chọn ngày nghỉ!');
+      return;
+    }
+    const finalEnd = mgrLeaveIsMulti && mgrLeaveEndDate >= mgrLeaveDate ? mgrLeaveEndDate : mgrLeaveDate;
+    try {
+      setMgrLeaveLoading(true);
+      const res = await api.requestLeave({
+        employeeId: targetEmpId,
+        date: mgrLeaveDate,
+        endDate: finalEnd,
+        shift: mgrLeaveShift,
+        reason: mgrLeaveReason.trim() || 'Nhân viên báo nghỉ trước',
+      });
+      setMessage(`✅ ${res.message || 'Đã ghi nhận lịch nghỉ và đưa vào bảng điều phối thành công!'}`);
+      setShowMgrAddLeaveModal(false);
+      setMgrLeaveReason('');
+      setMgrLeaveIsMulti(false);
+      await Promise.all([loadAdvancesAndLeaves(), loadReport()]);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi ghi nhận lịch nghỉ');
+    } finally {
+      setMgrLeaveLoading(false);
     }
   };
 
@@ -1175,6 +1302,17 @@ export default function ManagerDashboard({
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black whitespace-nowrap">
               {APP_RELEASE_LABEL}
             </span>
+            {upcomingLeaves.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowUpcomingLeavesModal(true)}
+                className="px-2.5 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm shadow-rose-500/30 transition-all cursor-pointer animate-pulse whitespace-nowrap"
+                title="Bấm để mở Thông Báo Chú Ý lịch nghỉ sắp tới của nhân viên"
+              >
+                <Bell className="w-3.5 h-3.5 shrink-0" />
+                <span>Chú Ý: {upcomingLeaves.length} lịch nghỉ sắp tới!</span>
+              </button>
+            )}
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
             Bảng Chấm Công & Quản Trị Nhân Sự
@@ -1229,10 +1367,11 @@ export default function ManagerDashboard({
                   allMakeupRequests.filter((r) => r.status === 'pending').length}
                 )
               </span>
-              {allMakeupRequests.filter((r) => r.status === 'pending').length > 0 && (
+              {(allMakeupRequests.filter((r) => r.status === 'pending').length > 0 ||
+                upcomingLeaves.length > 0) && (
                 <span
-                  className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block shrink-0"
-                  title="Có yêu cầu chấm bù đang chờ duyệt"
+                  className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block shrink-0"
+                  title="Có lịch nghỉ sắp tới hoặc yêu cầu chấm bù cần kiểm tra"
                 />
               )}
             </span>
@@ -1294,6 +1433,256 @@ export default function ManagerDashboard({
           </button>
         </div>
       )}
+
+      {/* ================= BẢNG CHÚ Ý KIỂM SOÁT & ĐIỀU PHỐI LỊCH NGHỈ TƯƠNG LAI CỦA NHÂN VIÊN ================= */}
+      <div className="mb-5 no-print">
+        {upcomingLeaves.length > 0 ? (
+          <div className="rounded-3xl bg-linear-to-r from-rose-50 via-amber-50 to-orange-50 border-2 border-rose-400/90 shadow-md overflow-hidden animate-in fade-in">
+            {/* Banner Header */}
+            <div className="px-4 sm:px-5 py-3.5 bg-linear-to-r from-rose-600 via-amber-600 to-orange-600 text-white flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 shadow-inner">
+                  <Bell className="w-5 h-5 text-white animate-bounce" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-md bg-white text-rose-700 text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                      🔔 Thông Báo Chú Ý Điều Phối
+                    </span>
+                    <h3 className="text-sm sm:text-base font-black text-white tracking-tight">
+                      Có {upcomingLeaves.length} Lịch Nhân Viên Báo Nghỉ Trong Tương Lai Cần Điều Phối!
+                    </h3>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-rose-100 mt-0.5 font-medium">
+                    Chưa đến (hoặc đang trong) ngày nghỉ của nhân viên. Quản lý vui lòng kiểm soát ngày nghỉ, tên nhân viên và sắp xếp người làm thay hợp lý.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCopyUpcomingLeavesZalo}
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-rose-700 text-xs font-black shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  {copiedDispatchMsg ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">Đã Sao Chép Zalo!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Sao Chép Lịch Điều Phối (Zalo)</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUpcomingLeavesModal(true)}
+                  className="px-3 py-2 rounded-xl bg-rose-800/60 hover:bg-rose-900/80 text-white border border-white/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Xem Hộp Thoại Chú Ý</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!mgrLeaveEmpId && employees[0]?.id) setMgrLeaveEmpId(employees[0].id);
+                    setShowMgrAddLeaveModal(true);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-amber-900/50 hover:bg-amber-950/70 text-white border border-white/25 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Ghi Nhận Lịch Nghỉ</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Danh sách chi tiết từng nhân viên sắp nghỉ & ô điều phối người làm thay */}
+            <div className="p-3.5 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {upcomingLeaves.map((item) => {
+                const empObj = employees.find(
+                  (e) =>
+                    e.id === item.employeeId ||
+                    e.username === item.employeeCode ||
+                    e.code === item.employeeCode
+                );
+                const empDisplayName =
+                  item.employeeShortName ||
+                  item.employeeName ||
+                  empObj?.shortName ||
+                  empObj?.name ||
+                  'Nhân viên';
+                const empCode = item.employeeCode || empObj?.username || empObj?.code || '';
+                const otherEmployees = employees.filter(
+                  (e) => e.id !== item.employeeId && e.username !== empCode
+                );
+                const currentDispatchNote = leaveDispatchNotes[item.id] || '';
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl p-3.5 sm:p-4 border border-rose-200/90 shadow-2xs flex flex-col justify-between gap-3 hover:border-rose-400 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-2xl bg-rose-100 border border-rose-200 text-rose-700 font-black text-sm flex items-center justify-center shrink-0">
+                          {empDisplayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm font-black text-slate-900">
+                              {empDisplayName}
+                            </span>
+                            {empCode && (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-mono font-bold">
+                                {empCode}
+                              </span>
+                            )}
+                            {empObj?.phone && (
+                              <span className="text-[11px] text-slate-500 font-semibold flex items-center gap-0.5">
+                                <Phone className="w-3 h-3 text-slate-400" />
+                                {empObj.phone}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 text-[11px] font-black">
+                              Ca nghỉ: {item.shift}
+                            </span>
+                            <span className="text-[11px] text-slate-600 italic">
+                              Lý do: &ldquo;{item.reason}&rdquo;
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Huy hiệu đếm ngược ngày nghỉ */}
+                      <div className="flex flex-col items-end shrink-0 gap-1">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-black whitespace-nowrap shadow-2xs ${
+                            item.urgency === 'today'
+                              ? 'bg-rose-600 text-white animate-pulse'
+                              : item.urgency === 'tomorrow'
+                                ? 'bg-amber-600 text-white'
+                                : item.urgency === 'soon'
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : 'bg-indigo-100 text-indigo-900 border border-indigo-200'
+                          }`}
+                        >
+                          {item.urgency === 'today'
+                            ? `🚨 ${item.countdownLabel}`
+                            : item.urgency === 'tomorrow'
+                              ? `⚡ ${item.countdownLabel}`
+                              : `⏳ ${item.countdownLabel}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteLeaveByManager(item.id, empDisplayName, item.date)
+                          }
+                          className="text-[10px] font-bold text-slate-400 hover:text-rose-600 flex items-center gap-0.5 cursor-pointer"
+                          title="Xóa lịch nghỉ này nếu nhân viên hủy nghỉ và đi làm lại"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Hủy lịch nghỉ</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Khung Ngày Nghỉ (DD/MM/YYYY) nổi bật */}
+                    <div className="px-3 py-2 rounded-xl bg-rose-50/80 border border-rose-200/70 flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-rose-950">
+                        <CalendarDays className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>Ngày nghỉ:</span>
+                        {item.isMultiDay ? (
+                          <span className="font-black text-rose-700">
+                            {getDayOfWeekNameSafe(item.date)}, {formatDateVN(item.date)} ➔{' '}
+                            {getDayOfWeekNameSafe(item.endDate)}, {formatDateVN(item.endDate)} (
+                            {item.totalDays} ngày)
+                          </span>
+                        ) : (
+                          <span className="font-black text-rose-700 text-xs sm:text-sm">
+                            {getDayOfWeekNameSafe(item.date)}, {formatDateVN(item.date)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Khung Điều Phối Nhân Sự Làm Thay */}
+                    <div className="pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <label className="text-[11px] font-black text-slate-700 uppercase flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Điều phối người làm thay:</span>
+                        </label>
+                        {otherEmployees.length > 0 && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {otherEmployees.map((other) => {
+                              const otherName = other.shortName || other.name;
+                              const quickVal = `${otherName} (${other.username || other.code}) trực thay`;
+                              const isSelected = currentDispatchNote === quickVal;
+                              return (
+                                <button
+                                  key={other.id}
+                                  type="button"
+                                  onClick={() =>
+                                    handleUpdateDispatchNote(
+                                      item.id,
+                                      isSelected ? '' : quickVal
+                                    )
+                                  }
+                                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                  }`}
+                                >
+                                  {isSelected ? `✓ ${otherName} thay` : `+ Chọn ${otherName} thay`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={currentDispatchNote}
+                        onChange={(e) => handleUpdateDispatchNote(item.id, e.target.value)}
+                        placeholder="Ghi chú điều phối (VD: Út làm thay ca sáng, hoặc tuyển part-time...)"
+                        className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="px-4 py-3 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 text-xs font-bold text-slate-700">
+              <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <CalendarDays className="w-4 h-4" />
+              </span>
+              <span>
+                Kiểm soát lịch nghỉ tương lai: Hiện chưa có nhân viên nào đăng ký nghỉ làm trong những ngày tới.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!mgrLeaveEmpId && employees[0]?.id) setMgrLeaveEmpId(employees[0].id);
+                setShowMgrAddLeaveModal(true);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 self-start sm:self-auto whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Ghi Nhận Lịch Nghỉ Trước</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ================= TAB 1: BẢNG CHẤM CÔNG & QUYẾT TOÁN LƯƠNG TỔNG HỢP ================= */}
       {activeTab === 'timesheet' && (
@@ -2815,75 +3204,175 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             )}
           </div>
 
-          {/* Section: Danh sách thông báo nghỉ */}
+          {/* Section: Danh sách thông báo nghỉ & Điều phối ca */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-            <h4 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-blue-600" />
-              <span>Danh Sách Đăng Ký Ngày Nghỉ ({allLeaves.length} bản ghi)</span>
-            </h4>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h4 className="text-base font-black text-slate-900 flex items-center gap-2 flex-wrap">
+                  <CalendarDays className="w-4 h-4 text-blue-600" />
+                  <span>
+                    Danh Sách Đăng Ký Ngày Nghỉ & Điều Phối Nhân Sự ({allLeaves.length} bản ghi tháng này
+                    {upcomingLeaves.length > 0 ? ` • ${upcomingLeaves.length} sắp tới` : ''})
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Theo dõi ngày nghỉ, tên nhân viên nghỉ và ghi chú phân công người trực thay hợp lý.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {upcomingLeaves.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleCopyUpcomingLeavesZalo}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Sao Chép Điều Phối (Zalo)</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!mgrLeaveEmpId && employees[0]?.id) setMgrLeaveEmpId(employees[0].id);
+                    setShowMgrAddLeaveModal(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Ghi Nhận Ngày Nghỉ Mới</span>
+                </button>
+              </div>
+            </div>
 
-            {allLeaves.length > 0 ? (
+            {allLeaves.length > 0 || upcomingLeaves.length > 0 ? (
               <div className="overflow-x-auto rounded-2xl border border-slate-200">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-blue-50/70 border-b border-blue-200 text-blue-900 font-bold uppercase text-[10px] tracking-wider">
-                      <th className="py-3 px-4 whitespace-nowrap">Nhân Viên</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Nhân Viên Nghỉ</th>
                       <th className="py-3 px-4 whitespace-nowrap">
                         Ngày Đăng Ký Nghỉ (DD/MM/YYYY)
                       </th>
                       <th className="py-3 px-4 whitespace-nowrap">Ca Nghỉ</th>
                       <th className="py-3 px-4 whitespace-nowrap">Lý Do / Ghi Chú</th>
-                      <th className="py-3 px-4 text-center whitespace-nowrap">Trạng Thái</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Thời Gian / Trạng Thái</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Điều Phối Người Làm Thay</th>
                       <th className="py-3 px-4 text-center whitespace-nowrap">Thao Tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {allLeaves.map((leave) => (
-                      <tr key={leave.id} className="hover:bg-slate-50">
-                        <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
-                          {leave.employeeShortName || leave.employeeName} ({leave.employeeCode})
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 font-semibold whitespace-nowrap">
-                          {leave.endDate && leave.endDate !== leave.date ? (
-                            <span className="flex items-center gap-1 font-mono text-[11px] text-blue-900">
-                              <span>{formatDateVN(leave.date)}</span>
-                              <span className="text-blue-500 font-bold">➔</span>
-                              <span>{formatDateVN(leave.endDate)}</span>
-                            </span>
-                          ) : (
-                            formatDateVN(leave.date)
-                          )}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold whitespace-nowrap">
-                            {leave.shift}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                          {leave.reason}
-                        </td>
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold whitespace-nowrap">
-                            Đã Thông Báo
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <button
-                            onClick={() =>
-                              handleDeleteLeaveByManager(
-                                leave.id,
-                                leave.employeeShortName || leave.employeeName,
-                                leave.date
-                              )
+                    {(() => {
+                      const map = new Map();
+                      upcomingLeaves.forEach((u) => map.set(u.id, u));
+                      allLeaves.forEach((l) => {
+                        if (!map.has(l.id)) map.set(l.id, l);
+                      });
+                      const mergedList = Array.from(map.values()).sort((a, b) =>
+                        b.date.localeCompare(a.date)
+                      );
+
+                      return mergedList.map((leave) => {
+                        const effectiveEnd =
+                          leave.endDate && leave.endDate >= leave.date ? leave.endDate : leave.date;
+                        const isUpcoming = effectiveEnd >= todayStr;
+                        const upcomingMatch = upcomingLeaves.find((u) => u.id === leave.id);
+
+                        return (
+                          <tr
+                            key={leave.id}
+                            className={
+                              isUpcoming
+                                ? 'bg-amber-50/40 hover:bg-amber-50/80'
+                                : 'hover:bg-slate-50'
                             }
-                            className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors cursor-pointer shrink-0"
-                            title="Xóa thông báo nghỉ này"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                            <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                {isUpcoming && (
+                                  <span
+                                    className="w-2 h-2 rounded-full bg-rose-500 shrink-0"
+                                    title="Ngày nghỉ sắp tới cần điều phối"
+                                  />
+                                )}
+                                <span>
+                                  {leave.employeeShortName || leave.employeeName} (
+                                  {leave.employeeCode})
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-slate-700 font-semibold whitespace-nowrap">
+                              {leave.endDate && leave.endDate !== leave.date ? (
+                                <span className="flex items-center gap-1 font-mono text-[11px] text-blue-900 font-bold">
+                                  <span>
+                                    {getDayOfWeekNameSafe(leave.date)}, {formatDateVN(leave.date)}
+                                  </span>
+                                  <span className="text-blue-500 font-bold">➔</span>
+                                  <span>
+                                    {getDayOfWeekNameSafe(leave.endDate)},{' '}
+                                    {formatDateVN(leave.endDate)}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="font-bold text-slate-800">
+                                  {getDayOfWeekNameSafe(leave.date)}, {formatDateVN(leave.date)}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold whitespace-nowrap">
+                                {leave.shift}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                              {leave.reason}
+                            </td>
+                            <td className="py-3 px-4 text-center whitespace-nowrap">
+                              {upcomingMatch ? (
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap ${
+                                    upcomingMatch.urgency === 'today'
+                                      ? 'bg-rose-600 text-white'
+                                      : upcomingMatch.urgency === 'tomorrow'
+                                        ? 'bg-amber-600 text-white'
+                                        : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  }`}
+                                >
+                                  {upcomingMatch.countdownLabel}
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold whitespace-nowrap">
+                                  Đã qua ({formatDateVN(leave.date)})
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 min-w-[200px]">
+                              <input
+                                type="text"
+                                value={leaveDispatchNotes[leave.id] || ''}
+                                onChange={(e) => handleUpdateDispatchNote(leave.id, e.target.value)}
+                                placeholder="Ghi người làm thay..."
+                                className="w-full px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                              />
+                            </td>
+                            <td className="py-3 px-4 text-center whitespace-nowrap">
+                              <button
+                                onClick={() =>
+                                  handleDeleteLeaveByManager(
+                                    leave.id,
+                                    leave.employeeShortName || leave.employeeName,
+                                    leave.date
+                                  )
+                                }
+                                className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-800 transition-colors cursor-pointer shrink-0"
+                                title="Xóa thông báo nghỉ này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -5772,6 +6261,369 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL THÔNG BÁO CHÚ Ý: LỊCH NGHỈ TƯƠNG LAI CỦA NHÂN VIÊN (HIỆN MỖI KHI ĐĂNG NHẬP) ================= */}
+      {showUpcomingLeavesModal && upcomingLeaves.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border-2 border-rose-400 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
+            {/* Header Chú Ý Nổi Bật */}
+            <div className="px-5 py-4 bg-linear-to-r from-rose-600 via-amber-600 to-orange-600 text-white flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 shadow-inner">
+                  <Bell className="w-6 h-6 text-white animate-bounce" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-md bg-white text-rose-700 text-[10px] font-black uppercase tracking-wider">
+                      Thông Báo Chú Ý Quản Lý
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-rose-900/50 text-amber-100 text-[10px] font-bold">
+                      {upcomingLeaves.length} lịch nghỉ chưa đến / đang diễn ra
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white mt-0.5 tracking-tight">
+                    Chú Ý: Có Nhân Viên Đăng Ký Nghỉ Làm Trong Tương Lai!
+                  </h3>
+                  <p className="text-xs text-rose-100 mt-0.5">
+                    Hệ thống tự động nhắc nhở mỗi khi bạn đăng nhập để kịp thời kiểm soát và điều phối người làm thay.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUpcomingLeavesModal(false)}
+                className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body: Danh sách nhân viên nghỉ & ngày nghỉ */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-3 bg-slate-50/70 flex-1">
+              {upcomingLeaves.map((item, idx) => {
+                const empObj = employees.find(
+                  (e) =>
+                    e.id === item.employeeId ||
+                    e.username === item.employeeCode ||
+                    e.code === item.employeeCode
+                );
+                const empDisplayName =
+                  item.employeeShortName ||
+                  item.employeeName ||
+                  empObj?.shortName ||
+                  empObj?.name ||
+                  'Nhân viên';
+                const empFullName = empObj?.name || item.employeeName || empDisplayName;
+                const empCode = item.employeeCode || empObj?.username || empObj?.code || '';
+                const otherEmployees = employees.filter(
+                  (e) => e.id !== item.employeeId && e.username !== empCode
+                );
+                const currentDispatchNote = leaveDispatchNotes[item.id] || '';
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl p-4 border-2 border-rose-200/80 shadow-xs space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-rose-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                          #{idx + 1}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm sm:text-base font-black text-slate-900">
+                              Nhân viên: {empDisplayName}
+                            </span>
+                            {empFullName !== empDisplayName && (
+                              <span className="text-xs font-bold text-slate-500">
+                                ({empFullName})
+                              </span>
+                            )}
+                            {empCode && (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-mono font-bold">
+                                Mã: {empCode}
+                              </span>
+                            )}
+                          </div>
+                          {empObj?.phone && (
+                            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                              📞 SĐT liên hệ: {empObj.phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-black whitespace-nowrap self-start sm:self-center ${
+                          item.urgency === 'today'
+                            ? 'bg-rose-600 text-white animate-pulse'
+                            : item.urgency === 'tomorrow'
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-amber-100 text-amber-900 border border-amber-300'
+                        }`}
+                      >
+                        {item.urgency === 'today'
+                          ? `🚨 ${item.countdownLabel}`
+                          : item.urgency === 'tomorrow'
+                            ? `⚡ ${item.countdownLabel}`
+                            : `⏳ ${item.countdownLabel}`}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                      <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                        <span className="text-[10px] font-bold text-rose-700 uppercase block">
+                          📅 Ngày Nghỉ (DD/MM/YYYY):
+                        </span>
+                        <span className="font-black text-rose-950 text-xs sm:text-sm mt-0.5 block">
+                          {item.isMultiDay
+                            ? `${getDayOfWeekNameSafe(item.date)}, ${formatDateVN(item.date)} ➔ ${getDayOfWeekNameSafe(item.endDate)}, ${formatDateVN(item.endDate)} (${item.totalDays} ngày)`
+                            : `${getDayOfWeekNameSafe(item.date)}, ${formatDateVN(item.date)}`}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200">
+                        <span className="text-[10px] font-bold text-blue-700 uppercase block">
+                          ⏰ Ca Nghỉ & Lý Do:
+                        </span>
+                        <span className="font-black text-blue-950 text-xs sm:text-sm mt-0.5 block">
+                          {item.shift}
+                        </span>
+                        <span className="text-[11px] text-slate-600 italic block">
+                          Lý do: &ldquo;{item.reason}&rdquo;
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Chọn nhanh người làm thay ngay trong hộp thoại chú ý */}
+                    <div className="pt-1">
+                      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                        <span className="text-[11px] font-black text-slate-700 uppercase">
+                          🛠️ Điều phối người làm thay ca này:
+                        </span>
+                        {otherEmployees.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {otherEmployees.map((other) => {
+                              const otherName = other.shortName || other.name;
+                              const quickVal = `${otherName} (${other.username || other.code}) trực thay`;
+                              const isSelected = currentDispatchNote === quickVal;
+                              return (
+                                <button
+                                  key={other.id}
+                                  type="button"
+                                  onClick={() =>
+                                    handleUpdateDispatchNote(
+                                      item.id,
+                                      isSelected ? '' : quickVal
+                                    )
+                                  }
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-emerald-600 text-white border-emerald-600'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                  }`}
+                                >
+                                  {isSelected ? `✓ Đã xếp ${otherName} thay` : `+ Xếp ${otherName} làm thay`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={currentDispatchNote}
+                        onChange={(e) => handleUpdateDispatchNote(item.id, e.target.value)}
+                        placeholder="Nhập ghi chú điều phối (VD: Út làm thay ca sáng, hoặc đã báo nhóm...)"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer Modal */}
+            <div className="px-5 py-3.5 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={handleCopyUpcomingLeavesZalo}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Copy className="w-4 h-4" />
+                <span>
+                  {copiedDispatchMsg
+                    ? 'Đã Sao Chép Lịch Điều Phối!'
+                    : 'Sao Chép Lịch Điều Phối Gửi Zalo'}
+                </span>
+              </button>
+
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUpcomingLeavesModal(false);
+                    setActiveTab('advances-leaves');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Mở Bảng Quản Lý Nghỉ Phép
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUpcomingLeavesModal(false)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all cursor-pointer"
+                >
+                  Đã Biết & Đóng Thông Báo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: QUẢN LÝ GHI NHẬN LỊCH NGHỈ TRƯỚC CHO NHÂN VIÊN ================= */}
+      {showMgrAddLeaveModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">
+                    Ghi Nhận Lịch Nghỉ Nhân Viên
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Thêm lịch nghỉ tương lai để theo dõi và điều phối ca làm
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMgrAddLeaveModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleMgrCreateLeave} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px]">
+                  1. Chọn Nhân Viên Báo Nghỉ:
+                </label>
+                <select
+                  value={mgrLeaveEmpId}
+                  onChange={(e) => setMgrLeaveEmpId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                >
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.shortName || emp.name} ({emp.username || emp.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 uppercase text-[11px]">
+                    2. Ngày Nghỉ ({formatDateVN(mgrLeaveDate)}):
+                  </label>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={mgrLeaveIsMulti}
+                      onChange={(e) => {
+                        setMgrLeaveIsMulti(e.target.checked);
+                        if (e.target.checked && mgrLeaveEndDate < mgrLeaveDate) {
+                          setMgrLeaveEndDate(mgrLeaveDate);
+                        }
+                      }}
+                      className="rounded text-blue-600"
+                    />
+                    <span>Nghỉ nhiều ngày</span>
+                  </label>
+                </div>
+                <input
+                  type="date"
+                  value={mgrLeaveDate}
+                  onChange={(e) => {
+                    setMgrLeaveDate(e.target.value);
+                    if (mgrLeaveEndDate < e.target.value) {
+                      setMgrLeaveEndDate(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                />
+              </div>
+
+              {mgrLeaveIsMulti && (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px]">
+                    Đến Hết Ngày ({formatDateVN(mgrLeaveEndDate)}):
+                  </label>
+                  <input
+                    type="date"
+                    min={mgrLeaveDate}
+                    value={mgrLeaveEndDate}
+                    onChange={(e) => setMgrLeaveEndDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px]">
+                  3. Ca Làm Việc Xin Nghỉ:
+                </label>
+                <select
+                  value={mgrLeaveShift}
+                  onChange={(e) => setMgrLeaveShift(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                >
+                  <option value="Cả Ngày">Cả Ngày</option>
+                  <option value="Ca Sáng (08:00 - 17:00)">Ca Sáng (08:00 - 17:00)</option>
+                  <option value="Ca Chiều (17:00 - 22:00)">Ca Chiều (17:00 - 22:00)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 uppercase text-[11px]">
+                  4. Lý Do / Ghi Chú:
+                </label>
+                <input
+                  type="text"
+                  value={mgrLeaveReason}
+                  onChange={(e) => setMgrLeaveReason(e.target.value)}
+                  placeholder="Ví dụ: Về quê có việc gia đình, đi khám bệnh..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowMgrAddLeaveModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={mgrLeaveLoading}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {mgrLeaveLoading ? 'Đang lưu...' : 'Lưu Lịch Nghỉ & Điều Phối'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

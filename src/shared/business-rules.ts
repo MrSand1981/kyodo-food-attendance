@@ -486,3 +486,104 @@ export function calculateMonthlyAbsenceDays(
     registeredLeaveDates: registeredLeaveDates.sort(),
   };
 }
+
+export interface EnrichedUpcomingLeave {
+  id: string;
+  employeeId?: string;
+  employeeCode?: string;
+  employeeName?: string;
+  employeeShortName?: string;
+  date: string;
+  endDate: string;
+  shift: string;
+  reason: string;
+  daysUntil: number;
+  totalDays: number;
+  isMultiDay: boolean;
+  countdownLabel: string;
+  urgency: 'today' | 'tomorrow' | 'soon' | 'upcoming';
+}
+
+/**
+ * Lọc và tính toán thông tin đếm ngược cho danh sách ngày nghỉ sắp tới (chưa kết thúc)
+ * Phục vụ Quản lý kiểm soát và điều phối nhân sự làm thay.
+ */
+export function getUpcomingLeaves(
+  leaveList: Array<{
+    id?: string;
+    employeeId?: string;
+    employeeCode?: string;
+    employeeName?: string;
+    employeeShortName?: string;
+    date: string;
+    endDate?: string;
+    shift?: string;
+    reason?: string;
+  }> = [],
+  todayYMD: string = getVietnamTodayYMD()
+): EnrichedUpcomingLeave[] {
+  if (!Array.isArray(leaveList) || !todayYMD) return [];
+
+  const [ty, tm, td] = todayYMD.split('-').map(Number);
+  const tToday = new Date(ty, tm - 1, td).getTime();
+
+  return leaveList
+    .filter((l) => {
+      if (!l || !l.date) return false;
+      const effectiveEnd = l.endDate && l.endDate >= l.date ? l.endDate : l.date;
+      return effectiveEnd >= todayYMD;
+    })
+    .map((l, idx) => {
+      const startDate = l.date;
+      const endDate = l.endDate && l.endDate >= l.date ? l.endDate : l.date;
+      const isMultiDay = endDate !== startDate;
+
+      const [sy, sm, sd] = startDate.split('-').map(Number);
+      const [ey, em, ed] = endDate.split('-').map(Number);
+      const tStart = new Date(sy, sm - 1, sd).getTime();
+      const tEnd = new Date(ey, em - 1, ed).getTime();
+
+      const rawDiff = Math.round((tStart - tToday) / (1000 * 60 * 60 * 24));
+      const daysUntil = rawDiff < 0 ? 0 : rawDiff;
+      const totalDays =
+        tEnd >= tStart ? Math.round((tEnd - tStart) / (1000 * 60 * 60 * 24)) + 1 : 1;
+
+      let countdownLabel = '';
+      let urgency: 'today' | 'tomorrow' | 'soon' | 'upcoming' = 'upcoming';
+
+      if (rawDiff < 0 && endDate >= todayYMD) {
+        countdownLabel = 'Đang trong kỳ nghỉ';
+        urgency = 'today';
+      } else if (daysUntil === 0) {
+        countdownLabel = 'Nghỉ hôm nay';
+        urgency = 'today';
+      } else if (daysUntil === 1) {
+        countdownLabel = 'Ngày mai (Còn 1 ngày)';
+        urgency = 'tomorrow';
+      } else if (daysUntil <= 3) {
+        countdownLabel = `Còn ${daysUntil} ngày`;
+        urgency = 'soon';
+      } else {
+        countdownLabel = `Còn ${daysUntil} ngày`;
+        urgency = 'upcoming';
+      }
+
+      return {
+        id: l.id || `leave-${idx}`,
+        employeeId: l.employeeId,
+        employeeCode: l.employeeCode,
+        employeeName: l.employeeName,
+        employeeShortName: l.employeeShortName,
+        date: startDate,
+        endDate,
+        shift: l.shift || 'Cả ngày',
+        reason: l.reason || 'Có việc cá nhân',
+        daysUntil,
+        totalDays,
+        isMultiDay,
+        countdownLabel,
+        urgency,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+}

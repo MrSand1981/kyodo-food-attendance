@@ -14,6 +14,7 @@ import {
   calculateMonthlySalary,
   formatVND,
   formatVNDWithUnit,
+  getUpcomingLeaves,
 } from '../src/shared/business-rules';
 
 describe('Business Rules', () => {
@@ -380,6 +381,104 @@ describe('Business Rules', () => {
       const pending = records.filter((r) => r.isMakeup && r.status === 'pending');
       expect(pending.length).toBe(1);
       expect(pending[0].id).toBe('rec-3');
+    });
+  });
+
+  describe('getUpcomingLeaves (Manager Leave Attention & Staff Dispatch)', () => {
+    const sampleLeaves = [
+      {
+        id: 'leave-past',
+        employeeId: 'emp-1',
+        employeeCode: 'BAONVTNV',
+        employeeName: 'Lâm Nhật Bảo',
+        employeeShortName: 'Bảo',
+        date: '2026-11-02',
+        endDate: '2026-11-02',
+        shift: 'Cả ngày',
+        reason: 'Nghỉ ốm',
+      },
+      {
+        id: 'leave-future-far',
+        employeeId: 'emp-2',
+        employeeCode: 'UTNVTNV',
+        employeeName: 'Hoàng Thị Lệ',
+        employeeShortName: 'Út',
+        date: '2026-11-15',
+        endDate: '2026-11-16',
+        shift: 'Ca Sáng (08:00 - 17:00)',
+        reason: 'Về quê ăn cưới',
+      },
+      {
+        id: 'leave-tomorrow',
+        employeeId: 'emp-1',
+        employeeCode: 'BAONVTNV',
+        employeeName: 'Lâm Nhật Bảo',
+        employeeShortName: 'Bảo',
+        date: '2026-11-10',
+        endDate: '2026-11-10',
+        shift: 'Ca Chiều (17:00 - 22:00)',
+        reason: 'Đi thi ở trường',
+      },
+      {
+        id: 'leave-today',
+        employeeId: 'emp-2',
+        employeeCode: 'UTNVTNV',
+        employeeName: 'Hoàng Thị Lệ',
+        employeeShortName: 'Út',
+        date: '2026-11-09',
+        endDate: '2026-11-09',
+        shift: 'Cả ngày',
+        reason: 'Khám sức khỏe',
+      },
+    ];
+
+    it('should filter out past leaves and sort upcoming leaves chronologically', () => {
+      const upcoming = getUpcomingLeaves(sampleLeaves, '2026-11-09');
+      expect(upcoming.length).toBe(3);
+      expect(upcoming.map((l) => l.id)).toEqual([
+        'leave-today',
+        'leave-tomorrow',
+        'leave-future-far',
+      ]);
+    });
+
+    it('should calculate accurate countdown labels and urgency levels', () => {
+      const upcoming = getUpcomingLeaves(sampleLeaves, '2026-11-09');
+
+      // Hôm nay (2026-11-09)
+      expect(upcoming[0].daysUntil).toBe(0);
+      expect(upcoming[0].countdownLabel).toBe('Nghỉ hôm nay');
+      expect(upcoming[0].urgency).toBe('today');
+
+      // Ngày mai (2026-11-10)
+      expect(upcoming[1].daysUntil).toBe(1);
+      expect(upcoming[1].countdownLabel).toBe('Ngày mai (Còn 1 ngày)');
+      expect(upcoming[1].urgency).toBe('tomorrow');
+
+      // 6 ngày nữa (2026-11-15 -> 2026-11-16)
+      expect(upcoming[2].daysUntil).toBe(6);
+      expect(upcoming[2].totalDays).toBe(2);
+      expect(upcoming[2].isMultiDay).toBe(true);
+      expect(upcoming[2].countdownLabel).toBe('Còn 6 ngày');
+      expect(upcoming[2].urgency).toBe('upcoming');
+    });
+
+    it('should keep multi-day leave if start date is in past but endDate >= today', () => {
+      const multiOngoing = [
+        {
+          id: 'leave-ongoing',
+          employeeName: 'Bảo',
+          date: '2026-11-08',
+          endDate: '2026-11-10',
+          shift: 'Cả ngày',
+          reason: 'Về quê 3 ngày',
+        },
+      ];
+      const upcoming = getUpcomingLeaves(multiOngoing, '2026-11-09');
+      expect(upcoming.length).toBe(1);
+      expect(upcoming[0].countdownLabel).toBe('Đang trong kỳ nghỉ');
+      expect(upcoming[0].urgency).toBe('today');
+      expect(upcoming[0].totalDays).toBe(3);
     });
   });
 });

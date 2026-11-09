@@ -54,9 +54,9 @@ async function getGitStatus() {
     } catch (_) {}
 
     let lastCommit = {
-      hash: 'v2.20.0',
+      hash: 'v2.21.0',
       subject:
-        'Kyodo Food v2.20.0: Thong ke lich su ban giao tien theo ngay va doi chieu tien ket chuyen nghiep (Official Release)',
+        'Kyodo Food v2.21.0: Thong bao chu y lich nghi sap toi khi dang nhap va bang dieu phoi nhan su (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -95,9 +95,9 @@ async function getGitStatus() {
     };
   } catch (err) {
     let lastCommit = {
-      hash: 'v2.20.0',
+      hash: 'v2.21.0',
       subject:
-        'Kyodo Food v2.20.0: Thong ke lich su ban giao tien theo ngay va doi chieu tien ket chuyen nghiep (Official Release)',
+        'Kyodo Food v2.21.0: Thong bao chu y lich nghi sap toi khi dang nhap va bang dieu phoi nhan su (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
