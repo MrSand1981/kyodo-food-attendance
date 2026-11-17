@@ -2,37 +2,93 @@
 
 const BASE_URL = '/api';
 
+function parseSafeJson(text) {
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
+function getStorage() {
+  try {
+    return typeof window !== 'undefined' && window.localStorage ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function getStoredToken() {
+  try {
+    return getStorage()?.getItem('kyodo_token') || null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredToken(token) {
+  if (!token) return;
+  try {
+    getStorage()?.setItem('kyodo_token', token);
+  } catch {
+    // Bỏ qua nếu môi trường chặn lưu storage
+  }
+}
+
+function clearStoredToken() {
+  try {
+    getStorage()?.removeItem('kyodo_token');
+  } catch {
+    // Bỏ qua nếu môi trường chặn truy cập storage
+  }
+}
+
 async function request(endpoint, options = {}, retries = 2) {
   const url = `${BASE_URL}${endpoint}`;
-  const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : null;
+  const { retries: customRetries, headers: optionHeaders, ...fetchOptions } = options;
+  const method = String(fetchOptions.method || 'GET').toUpperCase();
+  // Chỉ tự thử lại khi là GET (hoặc cấu hình tường minh), tuyệt đối không retry POST/lỗi 4xx tránh nhân 3 số lần đăng nhập sai
+  const maxRetries =
+    typeof customRetries === 'number' ? Math.max(0, customRetries) : method === 'GET' ? retries : 0;
+
+  const token = getStoredToken();
   const config = {
     credentials: 'include',
+    ...fetchOptions,
+    method,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
+      ...optionHeaders,
     },
-    ...options,
   };
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      const rawText = typeof response.text === 'function' ? await response.text() : '';
+      const data = rawText ? parseSafeJson(rawText) : await response.json();
+
       if (!response.ok) {
         // Nếu token hết hạn hoặc không hợp lệ, xóa token để người dùng đăng nhập lại
-        if (response.status === 401 && typeof window !== 'undefined') {
-          localStorage.removeItem('kyodo_token');
+        if (response.status === 401) {
+          clearStoredToken();
         }
-        throw new Error(data.message || 'Lỗi xử lý yêu cầu từ máy chủ');
+        const err = new Error(data.message || 'Lỗi xử lý yêu cầu từ máy chủ');
+        err.status = response.status;
+        if (response.status >= 400 && response.status < 500) {
+          err.noRetry = true;
+        }
+        throw err;
       }
       return data;
     } catch (error) {
-      if (attempt === retries) {
+      if (error?.noRetry || attempt >= maxRetries) {
         console.error(`API Error [${endpoint}]:`, error);
         throw error;
       }
-      // Đợi ngắn rồi thử lại (rất hữu ích khi mạng chập chờn hoặc máy chủ Cloud đang nạp)
+      // Đợi ngắn rồi thử lại với lỗi mạng tạm thời hoặc 5xx trên GET
       await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
     }
   }
@@ -45,7 +101,7 @@ export const api = {
   uploadLogo: async (file) => {
     const formData = new FormData();
     formData.append('logo', file);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : null;
+    const token = getStoredToken();
     const res = await fetch(`${BASE_URL}/settings/upload-logo`, {
       method: 'POST',
       headers: {
@@ -62,17 +118,16 @@ export const api = {
   login: async ({ username, password }) => {
     const res = await request('/auth/login', {
       method: 'POST',
+      retries: 0,
       body: JSON.stringify({ username, password }),
     });
-    if (res.success && res.token && typeof window !== 'undefined') {
-      localStorage.setItem('kyodo_token', res.token);
+    if (res.success && res.token) {
+      setStoredToken(res.token);
     }
     return res;
   },
   logout: async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('kyodo_token');
-    }
+    clearStoredToken();
     try {
       await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch (_) {}
@@ -214,18 +269,45 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ employeeId, oldPassword, newPassword }),
     });
-    if (res.success && res.token && typeof window !== 'undefined') {
-      localStorage.setItem('kyodo_token', res.token);
+    if (res.success && res.token) {
+      setStoredToken(res.token);
     }
     return res;
   },
 
-  // Link xuất file Excel chuẩn
-  getExportExcelUrl: (month) => {
-    const query = month ? `?month=${month}` : '';
-    const token = typeof window !== 'undefined' ? localStorage.getItem('kyodo_token') : '';
-    const tokenParam = token ? `${query ? '&' : '?'}token=${encodeURIComponent(token)}` : '';
-    return `${BASE_URL}/attendance/export-excel${query}${tokenParam}`;
+  // Xuất file Excel bằng fetch kèm Authorization header (không gắn JWT lên URL)
+  exportAttendanceExcel: async (month) => {
+    const query = month ? `?month=${encodeURIComponent(month)}` : '';
+    const token = getStoredToken();
+    const response = await fetch(`${BASE_URL}/attendance/export-excel${query}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearStoredToken();
+      }
+      const rawText = typeof response.text === 'function' ? await response.text() : '';
+      const errData = parseSafeJson(rawText);
+      const err = new Error(errData?.message || 'Không thể xuất file Excel chấm công!');
+      err.status = response.status;
+      throw err;
+    }
+
+    const blob = await response.blob();
+    const disposition =
+      typeof response.headers?.get === 'function'
+        ? response.headers.get('Content-Disposition') || ''
+        : '';
+    const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+    const filename =
+      (filenameMatch && decodeURIComponent(filenameMatch[1])) ||
+      `Bang_Cham_Cong_Kyodo_Trung_Nu_Vuong_${month || 'hien_tai'}.xlsx`;
+    return { blob, filename };
   },
 
   // Bàn giao tiền mặt ca làm việc (Cash Handovers)

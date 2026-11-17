@@ -65,7 +65,11 @@ End Function
 cfgFile = strDir & "\cloud_config.json"
 cloudUrl = ReadConfigField(cfgFile, "cloudUrl")
 If Right(cloudUrl, 1) = "/" Then cloudUrl = Left(cloudUrl, Len(cloudUrl) - 1)
+If InStr(LCase(cloudUrl), "onrender.com") > 0 Or cloudUrl = "" Then
+    cloudUrl = "https://kyodo-food-attendance.vercel.app"
+End If
 activeMode = LCase(ReadConfigField(cfgFile, "activeMode"))
+If activeMode = "" Then activeMode = "cloud"
 
 Dim appUrl
 Dim useCloud
@@ -74,15 +78,16 @@ useCloud = False
 ' Neu duoc cau hinh che do Cloud
 If activeMode = "cloud" And Len(cloudUrl) > 7 Then
     cloudHealthUrl = cloudUrl & "/api/ping"
+    cloudSettingsUrl = cloudUrl & "/api/settings"
     ' Kiem tra nhanh trong 4 giay xem Cloud co dang san sang khong
-    If CheckServer(cloudHealthUrl, 4000) Then
+    If CheckServer(cloudHealthUrl, 4000) Or CheckServer(cloudSettingsUrl, 4000) Then
         useCloud = True
         appUrl = cloudUrl & "/?mode=manager"
     Else
         ' Neu Cloud chua phan hoi ngay, hoi nguoi dung
         Dim choice
         choice = MsgBox("May chu Cloud chua phan hoi ngay tai:" & vbCrLf & cloudUrl & vbCrLf & vbCrLf & _
-                        "- Neu may chu Cloud Render vua thuc day, se can vai giay de nap." & vbCrLf & _
+                        "- Kiem tra ket noi Internet hoac may chu Cloud Vercel." & vbCrLf & _
                         "- Bam [YES] de tiep tuc mo Cloud (giao dien se tu dong ket noi va cho may chu)." & vbCrLf & _
                         "- Bam [NO] de chuyen sang chay May Chu Cuc Bo (Localhost) tren may nay.", _
                         36, "Ket Noi He Thong Kyodo Food - Da Nang & Nghe An")
@@ -95,7 +100,8 @@ If activeMode = "cloud" And Len(cloudUrl) > 7 Then
     End If
 ElseIf Len(cloudUrl) > 7 Then
     cloudHealthUrl = cloudUrl & "/api/ping"
-    If CheckServer(cloudHealthUrl, 3000) Then
+    cloudSettingsUrl = cloudUrl & "/api/settings"
+    If CheckServer(cloudHealthUrl, 3000) Or CheckServer(cloudSettingsUrl, 3000) Then
         useCloud = True
         appUrl = cloudUrl & "/?mode=manager"
     End If

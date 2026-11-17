@@ -1,6 +1,7 @@
 // server/db.js
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const bcrypt = require('bcryptjs');
 const { MongoClient } = require('mongodb');
 const { generateSeedData } = require('./seedData');
@@ -26,9 +27,19 @@ function comparePasswords(provided, storedOrHash) {
   return p === String(storedOrHash).trim();
 }
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
-const VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
-const BACKUP_DIR = path.join(__dirname, '..', 'data', 'backups');
+const BUNDLED_DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
+const BUNDLED_VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
+
+// Trên Vercel Serverless, thư mục repo gốc là read-only nên cần ghi dữ liệu đệm vào /tmp
+const DB_PATH = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'kyodo_database.json')
+  : BUNDLED_DB_PATH;
+const VAULT_PATH = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'kyodo_employee_vault.json')
+  : BUNDLED_VAULT_PATH;
+const BACKUP_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'kyodo_backups')
+  : path.join(__dirname, '..', 'data', 'backups');
 
 const DEFAULT_HOLIDAYS = [
   // Năm 2026
@@ -237,6 +248,8 @@ const DEFAULT_HOLIDAYS = [
 let mongoClient = null;
 let mongoDb = null;
 let isMongo = false;
+let mongoConnectPromise = null;
+let pendingSyncPromise = null;
 
 // ---------------- KHO LƯU TRỮ NHÂN SỰ BẤT BIẾN (EMPLOYEE VAULT) ----------------
 // Dữ liệu nhân viên khi đã được Lưu lại từ Nhân viên hoặc Quản lý sẽ được khóa bất biến,
@@ -245,6 +258,11 @@ function loadVault() {
   try {
     if (fs.existsSync(VAULT_PATH)) {
       const content = fs.readFileSync(VAULT_PATH, 'utf-8');
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed.employees) ? parsed.employees : [];
+    }
+    if (VAULT_PATH !== BUNDLED_VAULT_PATH && fs.existsSync(BUNDLED_VAULT_PATH)) {
+      const content = fs.readFileSync(BUNDLED_VAULT_PATH, 'utf-8');
       const parsed = JSON.parse(content);
       return Array.isArray(parsed.employees) ? parsed.employees : [];
     }
@@ -325,66 +343,89 @@ function saveVault(employees) {
   }
 }
 
-// Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Render/Railway)
-if (process.env.MONGODB_URI) {
-  MongoClient.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 })
-    .then(async (client) => {
+async function connectMongo() {
+  if (!process.env.MONGODB_URI) return null;
+  if (isMongo && mongoDb) return mongoDb;
+  if (mongoConnectPromise) return mongoConnectPromise;
+
+  mongoConnectPromise = MongoClient.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 8000,
+  })
+    .then((client) => {
       mongoClient = client;
       mongoDb = client.db('kyodo_food');
       isMongo = true;
       console.log('✅ Đã kết nối Cơ sở dữ liệu Cloud MongoDB Atlas thành công!');
-
-      try {
-        const record = await mongoDb.collection('app_state').findOne({ _id: 'master_db' });
-        if (record && record.data) {
-          console.log(
-            '📥 Đã nạp dữ liệu đám mây từ MongoDB Atlas (Lần cuối cập nhật:',
-            record.updatedAt || 'Không rõ',
-            ')'
-          );
-          // Tự động chuyển các bản ghi chấm bù chưa có phê duyệt chính thức (approvedAt là null) về 'pending' để Quản lý có nút Duyệt / Từ Chối
-          let modified = false;
-          if (Array.isArray(record.data.attendance)) {
-            record.data.attendance.forEach((a) => {
-              if (a.isMakeup && !a.approvedAt && a.status === 'completed') {
-                a.status = 'pending';
-                modified = true;
-              }
-            });
-          }
-          saveDatabase(record.data, false);
-          if (modified && mongoDb) {
-            await mongoDb
-              .collection('app_state')
-              .updateOne(
-                { _id: 'master_db' },
-                { $set: { data: record.data, updatedAt: new Date().toISOString() } }
-              );
-          }
-          console.log(
-            '🛡️ Phục hồi dữ liệu từ Cloud MongoDB thành công! Bảo toàn 100% không bị rollback.'
-          );
-        } else {
-          const currentData = ensureDbFile();
-          await mongoDb
-            .collection('app_state')
-            .updateOne(
-              { _id: 'master_db' },
-              { $set: { data: currentData, updatedAt: new Date().toISOString() } },
-              { upsert: true }
-            );
-          console.log('🚀 Đã khởi tạo dữ liệu ban đầu lên MongoDB Atlas!');
-        }
-      } catch (pullErr) {
-        console.error('⚠️ Lỗi nạp dữ liệu từ MongoDB Atlas:', pullErr.message);
-      }
+      return mongoDb;
     })
     .catch((err) => {
       console.warn(
         '⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:',
         err.message
       );
+      mongoConnectPromise = null;
+      return null;
     });
+
+  return mongoConnectPromise;
+}
+
+async function syncFromCloud() {
+  if (!process.env.MONGODB_URI) return;
+  try {
+    const dbConn = await connectMongo();
+    if (!dbConn) return;
+
+    const record = await dbConn.collection('app_state').findOne({ _id: 'master_db' });
+    if (record && record.data) {
+      let modified = false;
+      if (Array.isArray(record.data.attendance)) {
+        record.data.attendance.forEach((a) => {
+          if (a.isMakeup && !a.approvedAt && a.status === 'completed') {
+            a.status = 'pending';
+            modified = true;
+          }
+        });
+      }
+      saveDatabase(record.data, false);
+      if (modified) {
+        await dbConn
+          .collection('app_state')
+          .updateOne(
+            { _id: 'master_db' },
+            { $set: { data: record.data, updatedAt: new Date().toISOString() } }
+          );
+      }
+    } else {
+      const currentData = ensureDbFile();
+      await dbConn
+        .collection('app_state')
+        .updateOne(
+          { _id: 'master_db' },
+          { $set: { data: currentData, updatedAt: new Date().toISOString() } },
+          { upsert: true }
+        );
+    }
+  } catch (pullErr) {
+    console.warn('⚠️ Lỗi nạp dữ liệu từ MongoDB Atlas:', pullErr.message);
+  }
+}
+
+async function flushCloudSync() {
+  if (pendingSyncPromise) {
+    try {
+      await pendingSyncPromise;
+    } catch (err) {
+      console.error('Lỗi chờ đồng bộ MongoDB:', err.message);
+    } finally {
+      pendingSyncPromise = null;
+    }
+  }
+}
+
+// Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Vercel/Render/Railway)
+if (process.env.MONGODB_URI) {
+  syncFromCloud();
 }
 
 function ensureDbFile() {
@@ -397,8 +438,18 @@ function ensureDbFile() {
   let dbNeedSave = false;
 
   if (!fs.existsSync(DB_PATH)) {
-    parsed = generateSeedData();
-    dbNeedSave = true;
+    if (DB_PATH !== BUNDLED_DB_PATH && fs.existsSync(BUNDLED_DB_PATH)) {
+      try {
+        parsed = JSON.parse(fs.readFileSync(BUNDLED_DB_PATH, 'utf-8'));
+        dbNeedSave = true;
+      } catch (_) {
+        parsed = generateSeedData();
+        dbNeedSave = true;
+      }
+    } else {
+      parsed = generateSeedData();
+      dbNeedSave = true;
+    }
   } else {
     try {
       const content = fs.readFileSync(DB_PATH, 'utf-8');
@@ -501,12 +552,18 @@ function ensureDbFile() {
 }
 
 function saveDatabase(data, syncToCloud = true) {
-  const tmpPath = `${DB_PATH}.tmp`;
   try {
-    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
-    fs.renameSync(tmpPath, DB_PATH);
-  } catch (writeErr) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const tmpPath = `${DB_PATH}.tmp`;
+    try {
+      fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(tmpPath, DB_PATH);
+    } catch (_) {
+      fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    }
+  } catch (err) {
+    console.warn('⚠️ Không thể ghi file database cục bộ:', err.message);
   }
 
   // Tự động đồng bộ và bảo vệ sang Kho nhân sự bất biến
@@ -514,15 +571,17 @@ function saveDatabase(data, syncToCloud = true) {
     saveVault(data.employees);
   }
 
-  // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud
-  if (syncToCloud && isMongo && mongoDb) {
-    mongoDb
-      .collection('app_state')
-      .updateOne(
-        { _id: 'master_db' },
-        { $set: { data: data, updatedAt: new Date() } },
-        { upsert: true }
-      )
+  // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud (lưu pendingSyncPromise cho Vercel Serverless)
+  if (syncToCloud && process.env.MONGODB_URI) {
+    pendingSyncPromise = connectMongo()
+      .then((dbConn) => {
+        if (!dbConn) return;
+        return dbConn.collection('app_state').updateOne(
+          { _id: 'master_db' },
+          { $set: { data: data, updatedAt: new Date() } },
+          { upsert: true }
+        );
+      })
       .catch((err) => console.error('Lỗi sync MongoDB:', err.message));
   }
 }
@@ -940,7 +999,7 @@ function checkIn({ employeeId, shiftCode, note }) {
   }
 
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0];
+  const dateStr = getVietnamTodayYMD(now);
   const shift = (db.shifts || []).find((s) => s.code === shiftCode) || {
     name: 'Ca Sáng',
     code: shiftCode || 'SANG',
@@ -1074,13 +1133,8 @@ function recordDailyWork({
 
     // Công thức giao thoa thời gian: newStart < existEnd && newEnd > existStart
     if (newStartMs < existEndMs && newEndMs > existStartMs) {
-      const formatTimeStr = (isoStr) => {
-        if (!isoStr) return '';
-        const d = new Date(isoStr);
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      };
-      const existStartStr = formatTimeStr(rec.checkIn);
-      const existEndStr = formatTimeStr(rec.checkOut);
+      const existStartStr = formatVietnamTimeHM(rec.checkIn);
+      const existEndStr = formatVietnamTimeHM(rec.checkOut);
       const recDate = rec.date || date;
       const [y, m, d] = recDate.split('-');
       const recDateVN = `${d}/${m}/${y}`;
@@ -1223,14 +1277,25 @@ function resetMakeupAttendanceToPending(id, adminUser = {}) {
   return rec;
 }
 
-// Xóa/Hủy yêu cầu chấm công bù (Quản lý được xóa bất kỳ lúc nào, Nhân viên chỉ xóa khi đang pending)
+// Xóa/Hủy yêu cầu chấm công bù (Quản lý được xóa bất kỳ lúc nào; Nhân viên chỉ được xóa đơn bù đang pending hoặc đã rejected của chính mình)
 function deleteMakeupAttendance(id, user = {}) {
   const db = ensureDbFile();
   const idx = (db.attendance || []).findIndex((a) => a.id === id);
   if (idx === -1) return false;
   const rec = db.attendance[idx];
-  if (user.role !== 'admin' && rec.employeeId !== user.id && rec.employeeCode !== user.username) {
-    throw new Error('Bạn không có quyền xóa yêu cầu chấm công bù của người khác!');
+  if (user.role !== 'admin') {
+    if (rec.employeeId !== user.id && rec.employeeCode !== user.username) {
+      const err = new Error('Bạn không có quyền xóa yêu cầu chấm công bù của người khác!');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (!rec.isMakeup || (rec.status !== 'pending' && rec.status !== 'rejected')) {
+      const err = new Error(
+        'Chỉ có thể hủy yêu cầu chấm công bù đang chờ duyệt hoặc đã bị từ chối. Ca đã duyệt chỉ Quản lý mới được xóa!'
+      );
+      err.statusCode = 403;
+      throw err;
+    }
   }
   db.attendance.splice(idx, 1);
   saveDatabase(db);
@@ -1282,7 +1347,7 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
     throw new Error('Số tiền ứng lương phải lớn hơn 0 VNĐ!');
   }
 
-  const advDate = date || new Date().toISOString().split('T')[0];
+  const advDate = date || getVietnamTodayYMD();
   const newAdvance = {
     id: `adv-${Date.now()}`,
     employeeId: emp.id,
@@ -1308,22 +1373,50 @@ function requestSalaryAdvance({ employeeId, date, amount, reason }) {
  * Lấy ngày hôm nay theo múi giờ Việt Nam (Asia/Ho_Chi_Minh, GMT+7) định dạng YYYY-MM-DD
  * Tuyệt đối không dùng toISOString() vì toISOString() trả về giờ UTC (GMT+0) khiến từ 00:00 đến 07:00 sáng tại VN bị lùi về ngày hôm trước!
  */
-function getVietnamTodayYMD() {
+function getVietnamTodayYMD(dateInput = new Date()) {
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return getVietnamTodayYMD(new Date());
   try {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(new Date());
+    }).format(d);
   } catch (e) {
-    const d = new Date(Date.now() + 7 * 3600 * 1000);
-    return d.toISOString().split('T')[0];
+    const shifted = new Date(d.getTime() + 7 * 3600 * 1000);
+    return shifted.toISOString().split('T')[0];
   }
 }
 
 function getVietnamCurrentYM() {
   return getVietnamTodayYMD().substring(0, 7);
+}
+
+/**
+ * Định dạng giờ:phút (HH:MM) theo múi giờ Việt Nam (Asia/Ho_Chi_Minh, GMT+7).
+ */
+function formatVietnamTimeHM(isoOrDate) {
+  if (!isoOrDate) return '';
+  const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
+  if (isNaN(d.getTime())) return '';
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const hour = parts.find((p) => p.type === 'hour')?.value;
+    const minute = parts.find((p) => p.type === 'minute')?.value;
+    if (hour && minute) {
+      return `${hour === '24' ? '00' : hour}:${minute}`;
+    }
+  } catch (e) {
+    // Dự phòng bằng phép cộng +7 giờ UTC bên dưới
+  }
+  const shifted = new Date(d.getTime() + 7 * 3600 * 1000);
+  return `${String(shifted.getUTCHours()).padStart(2, '0')}:${String(shifted.getUTCMinutes()).padStart(2, '0')}`;
 }
 
 /**
@@ -1619,33 +1712,54 @@ function deleteCashHandover(id) {
   return true;
 }
 
-// Đếm tổng số ngày nghỉ thực tế trong tháng (không trùng lặp)
-function countLeaveDaysInMonth(leaveList = [], yearMonth) {
-  if (!leaveList || !Array.isArray(leaveList)) return 0;
+function parseYMDToUTCMs(dateStr) {
+  if (!dateStr) return NaN;
+  const dateOnly = String(dateStr).trim().split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+    const [y, m, d] = dateOnly.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  }
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime())
+    ? NaN
+    : Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
+}
+
+/**
+ * Thu thập tập hợp ngày YYYY-MM-DD có đơn nghỉ trong tháng theo lịch thuần (tránh lệch múi giờ máy chủ).
+ */
+function collectLeaveDatesInMonth(leaveList = [], yearMonth) {
   const uniqueDates = new Set();
+  if (!Array.isArray(leaveList) || !yearMonth) return uniqueDates;
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
   leaveList.forEach((l) => {
-    const startStr = l.date;
-    const endStr = l.endDate || l.date;
-    if (!startStr) return;
+    const startStr = l?.date;
+    const endStr = l?.endDate || l?.date;
+    const startMs = parseYMDToUTCMs(startStr);
+    if (isNaN(startMs)) return;
 
-    const dStart = new Date(startStr);
-    const dEnd = new Date(endStr);
-    if (isNaN(dStart.getTime())) return;
-
-    const cur = new Date(dStart);
-    const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
+    const endMsRaw = parseYMDToUTCMs(endStr);
+    const stopMs = isNaN(endMsRaw) || endMsRaw < startMs ? startMs : endMsRaw;
 
     let count = 0;
-    while (cur <= stop && count <= 31) {
-      const ymd = cur.toISOString().split('T')[0];
+    for (let curMs = startMs; curMs <= stopMs && count < 366; curMs += DAY_MS, count += 1) {
+      const cur = new Date(curMs);
+      const y = cur.getUTCFullYear();
+      const m = String(cur.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(cur.getUTCDate()).padStart(2, '0');
+      const ymd = `${y}-${m}-${d}`;
       if (ymd.startsWith(yearMonth)) {
         uniqueDates.add(ymd);
       }
-      cur.setDate(cur.getDate() + 1);
-      count++;
     }
   });
-  return uniqueDates.size;
+  return uniqueDates;
+}
+
+// Đếm tổng số ngày nghỉ thực tế trong tháng (không trùng lặp)
+function countLeaveDaysInMonth(leaveList = [], yearMonth) {
+  return collectLeaveDatesInMonth(leaveList, yearMonth).size;
 }
 
 /**
@@ -1673,7 +1787,7 @@ function calculateMonthlyAbsenceDays(
   const [yearStr, monthStr] = yearMonth.split('-');
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
   const workedSet = new Set();
   if (workedDates instanceof Set) {
@@ -1682,34 +1796,7 @@ function calculateMonthlyAbsenceDays(
     workedDates.forEach((d) => workedSet.add(d));
   }
 
-  const registeredSet = new Set();
-  if (Array.isArray(leaveList)) {
-    leaveList.forEach((l) => {
-      const startStr = l.date;
-      const endStr = l.endDate || l.date;
-      if (!startStr) return;
-
-      const dStart = new Date(startStr);
-      const dEnd = new Date(endStr);
-      if (isNaN(dStart.getTime())) return;
-
-      const cur = new Date(dStart);
-      const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
-
-      let count = 0;
-      while (cur <= stop && count <= 31) {
-        const y = cur.getFullYear();
-        const m = String(cur.getMonth() + 1).padStart(2, '0');
-        const d = String(cur.getDate()).padStart(2, '0');
-        const ymd = `${y}-${m}-${d}`;
-        if (ymd.startsWith(yearMonth)) {
-          registeredSet.add(ymd);
-        }
-        cur.setDate(cur.getDate() + 1);
-        count++;
-      }
-    });
-  }
+  const registeredSet = collectLeaveDatesInMonth(leaveList, yearMonth);
 
   const absenceDates = [];
   const registeredLeaveDates = [];
@@ -2450,6 +2537,10 @@ function deleteHoliday(id) {
 
 module.exports = {
   isMongoConnected: () => isMongo,
+  syncFromCloud,
+  flushCloudSync,
+  ensureDbFile,
+  saveDatabase,
   getHolidays,
   getHolidayByDate,
   addHoliday,
@@ -2482,6 +2573,7 @@ module.exports = {
   getSalaryMonthForAdvance,
   getVietnamTodayYMD,
   getVietnamCurrentYM,
+  formatVietnamTimeHM,
   updateSalaryAdvance,
   deleteSalaryAdvance,
   requestLeave,

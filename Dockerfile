@@ -35,6 +35,7 @@ WORKDIR /app
 # Environment variables
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV TZ=Asia/Ho_Chi_Minh
 
 # Copy package files
 COPY --chown=node:node package*.json ./

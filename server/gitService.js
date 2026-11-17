@@ -54,9 +54,9 @@ async function getGitStatus() {
     } catch (_) {}
 
     let lastCommit = {
-      hash: 'v2.21.0',
+      hash: 'v2.22.0',
       subject:
-        'Kyodo Food v2.21.0: Thong bao chu y lich nghi sap toi khi dang nhap va bang dieu phoi nhan su (Official Release)',
+        'Kyodo Food v2.22.0: Chuyen doi he thong Cloud sang Vercel (kyodo-food-attendance.vercel.app) va dong goi bo cai dat moi (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');
@@ -95,9 +95,9 @@ async function getGitStatus() {
     };
   } catch (err) {
     let lastCommit = {
-      hash: 'v2.21.0',
+      hash: 'v2.22.0',
       subject:
-        'Kyodo Food v2.21.0: Thong bao chu y lich nghi sap toi khi dang nhap va bang dieu phoi nhan su (Official Release)',
+        'Kyodo Food v2.22.0: Chuyen doi he thong Cloud sang Vercel (kyodo-food-attendance.vercel.app) va dong goi bo cai dat moi (Official Release)',
     };
     try {
       const commitInfoPath = path.join(__dirname, 'commit-info.json');

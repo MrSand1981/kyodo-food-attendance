@@ -92,7 +92,7 @@ async function notifySalaryAdvance({ employee, amount, date, reason }) {
 ⏰ <b>Thời gian gửi:</b> ${now}
 ━━━━━━━━━━━━━━━━━━
 👉 <i>Quản lý đăng nhập để đối chiếu và duyệt chi:</i>
-🌐 <a href="https://kyodo-food-attendance.onrender.com">Cổng Quản Trị Kyodo Food</a>`;
+🌐 <a href="https://kyodo-food-attendance.vercel.app">Cổng Quản Trị Kyodo Food</a>`;
 
   return sendNotification(text);
 }
@@ -128,7 +128,7 @@ async function notifyLeaveRequest({ employee, date, endDate, shift, reason }) {
 ⏰ <b>Thời gian gửi:</b> ${now}
 ━━━━━━━━━━━━━━━━━━
 👉 <i>Quản lý kiểm tra lịch ca và sắp xếp nhân sự thay thế:</i>
-🌐 <a href="https://kyodo-food-attendance.onrender.com">Cổng Quản Trị Kyodo Food</a>`;
+🌐 <a href="https://kyodo-food-attendance.vercel.app">Cổng Quản Trị Kyodo Food</a>`;
 
   return sendNotification(text);
 }

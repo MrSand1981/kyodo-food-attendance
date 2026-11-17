@@ -55,6 +55,8 @@ app.use(
           'https://*.vietqr.io',
           'https://api.telegram.org',
           'https://openapi.zalo.me',
+          'https://kyodo-food-attendance.vercel.app',
+          'https://*.vercel.app',
           'https://kyodo-food-attendance.onrender.com',
           'https://kyodo-food-attendance-2.onrender.com',
           'http://localhost:5000',
@@ -71,8 +73,9 @@ app.use(
   })
 );
 
-// Giới hạn CORS an toàn: Chỉ chấp nhận danh sách nguồn cấu hình của Kyodo Food (Bỏ hoàn toàn wildcard *.onrender.com)
+// Giới hạn CORS an toàn: Chỉ chấp nhận danh sách nguồn cấu hình của Kyodo Food
 const defaultAllowedOrigins = [
+  'https://kyodo-food-attendance.vercel.app',
   'https://kyodo-food-attendance.onrender.com',
   'https://kyodo-food-attendance-2.onrender.com',
   'http://localhost:5000',
@@ -95,7 +98,10 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        /^https:\/\/kyodo-food-attendance(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)
+      ) {
         return callback(null, true);
       }
       return callback(
@@ -176,6 +182,21 @@ app.use('/api', apiLimiter);
 // Middleware tự động giải mã JWT Token phiên làm việc
 app.use(extractUserMiddleware);
 
+// Middleware đồng bộ dữ liệu Cloud (MongoDB Atlas) cho Vercel Serverless
+app.use('/api', async (req, res, next) => {
+  if (typeof db.syncFromCloud === 'function') {
+    await db.syncFromCloud();
+  }
+  const originalJson = res.json.bind(res);
+  res.json = async function (body) {
+    if (typeof db.flushCloudSync === 'function') {
+      await db.flushCloudSync();
+    }
+    return originalJson(body);
+  };
+  next();
+});
+
 const publicDir = path.join(__dirname, '..', 'public');
 const distDir = path.join(__dirname, '..', 'dist');
 
@@ -185,10 +206,11 @@ if (fs.existsSync(distDir)) {
 }
 app.use(express.static(publicDir));
 
-// Multer lưu logo an toàn (chỉ chấp nhận ảnh, giới hạn 5MB)
+// Multer lưu logo an toàn (chỉ chấp nhận ảnh, giới hạn 5MB; trên Vercel dùng os.tmpdir())
+const uploadDir = process.env.VERCEL ? require('os').tmpdir() : publicDir;
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, publicDir);
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
@@ -725,9 +747,13 @@ app.post('/api/attendance/makeup-requests/:id/reset', requireAdmin, (req, res) =
 app.delete('/api/attendance/makeup-requests/:id', requireAuth, (req, res) => {
   try {
     const ok = db.deleteMakeupAttendance(req.params.id, req.user);
-    res.json({ success: ok, message: 'Đã hủy yêu cầu chấm công bù thành công!' });
+    if (!ok) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy yêu cầu chấm công bù!' });
+    }
+    res.json({ success: true, message: 'Đã hủy yêu cầu chấm công bù thành công!' });
   } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+    const statusCode = err.statusCode || 400;
+    res.status(statusCode).json({ success: false, message: err.message });
   }
 });
 
@@ -1392,11 +1418,11 @@ if (require.main === module) {
     console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
     console.log(`=======================================================`);
 
-    // Cơ chế phụ trợ tự giữ nhịp 24/7 (Keep-Alive) cho Cloud Render
+    // Cơ chế phụ trợ tự giữ nhịp 24/7 (Keep-Alive) cho Cloud Server
     const publicCloudUrl =
       process.env.RENDER_EXTERNAL_URL ||
       process.env.APP_URL ||
-      'https://kyodo-food-attendance-2.onrender.com';
+      'https://kyodo-food-attendance.vercel.app';
     if (publicCloudUrl && publicCloudUrl.startsWith('http')) {
       console.log(
         `[Keep-Alive 24/7] Đã kích hoạt cơ chế tự giữ nhịp 24/7 đến: ${publicCloudUrl}/api/ping (mỗi 9 phút)`
@@ -1432,7 +1458,7 @@ app.get('/api/system/export-db', requireAdmin, (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="kyodo_backup_${new Date().toISOString().slice(0, 10)}.json"`
+      `attachment; filename="kyodo_backup_${db.getVietnamTodayYMD()}.json"`
     );
     res.send(JSON.stringify(data, null, 2));
   } catch (err) {

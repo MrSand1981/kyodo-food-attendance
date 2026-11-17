@@ -33,6 +33,7 @@ import {
   getVietnamCurrentYM,
   getDayOfWeekNameSafe,
   addDaysYMD,
+  getSelectableMonths,
 } from '../utils/date';
 import { api } from '../utils/api';
 
@@ -84,7 +85,12 @@ export default function CashCounterModal({
   const [lastSubmittedHandover, setLastSubmittedHandover] = useState(null);
 
   // Tab Lịch Sử: Thống kê & Đối chiếu theo ngày
-  const [selectedMonth, setSelectedMonth] = useState(getVietnamCurrentYM());
+  const currentYM = getVietnamCurrentYM();
+  const [selectedMonth, setSelectedMonth] = useState(currentYM);
+  const monthOptions = useMemo(
+    () => getSelectableMonths({ currentYM, selectedMonth }),
+    [currentYM, selectedMonth]
+  );
   const [selectedDateFilter, setSelectedDateFilter] = useState(''); // '' = tất cả các ngày trong tháng, hoặc 'YYYY-MM-DD'
   const [historyList, setHistoryList] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -1131,10 +1137,11 @@ export default function CashCounterModal({
                     }}
                     className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
                   >
-                    <option value="2026-11">Tháng 11/2026</option>
-                    <option value="2026-12">Tháng 12/2026</option>
-                    <option value="2027-01">Tháng 01/2027</option>
-                    <option value="2026-10">Tháng 10/2026</option>
+                    {monthOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

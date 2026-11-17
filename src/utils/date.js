@@ -428,4 +428,93 @@ export function getUpcomingLeaves(leaveList = [], todayYMD = getVietnamTodayYMD(
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function isValidYM(value) {
+  if (!value || !/^\d{4}-\d{2}$/.test(String(value).trim())) return false;
+  const [, m] = String(value).trim().split('-').map(Number);
+  return m >= 1 && m <= 12;
+}
 
+/**
+ * Cộng/trừ số tháng cho chuỗi YYYY-MM (xử lý chuyển năm an toàn).
+ */
+export function addMonthsYM(yearMonth, deltaMonths = 0) {
+  if (!isValidYM(yearMonth)) return '';
+  const [y, m] = String(yearMonth).trim().split('-').map(Number);
+  const delta = Number.isFinite(Number(deltaMonths)) ? Math.trunc(Number(deltaMonths)) : 0;
+  const totalMonths = y * 12 + (m - 1) + delta;
+  if (totalMonths < 0) return '';
+  const targetYear = Math.floor(totalMonths / 12);
+  const targetMonth = (totalMonths % 12) + 1;
+  return `${String(targetYear).padStart(4, '0')}-${String(targetMonth).padStart(2, '0')}`;
+}
+
+/**
+ * Tạo danh sách các tháng chọn được theo thời gian thực (mới nhất ở trên),
+ * tự động mở rộng qua năm 2027+ và luôn giữ lại selectedMonth nếu đang được chọn.
+ */
+export function getSelectableMonths({
+  currentYM = getVietnamCurrentYM(),
+  selectedMonth = '',
+  startYM = '2026-08',
+  futureMonths = 2,
+  launchYM = '2026-11',
+} = {}) {
+  const baseCurrentYM = isValidYM(currentYM) ? String(currentYM).trim() : getVietnamCurrentYM();
+  const safeFuture = Math.max(0, Math.trunc(Number(futureMonths) || 0));
+  const maxYM = addMonthsYM(baseCurrentYM, safeFuture) || baseCurrentYM;
+
+  const cleanStart = isValidYM(startYM) ? String(startYM).trim() : baseCurrentYM;
+  const rangeStart = cleanStart <= maxYM ? cleanStart : baseCurrentYM;
+
+  const monthSet = new Set();
+  let cursor = rangeStart;
+  let guard = 0;
+  while (cursor && cursor <= maxYM && guard < 240) {
+    monthSet.add(cursor);
+    cursor = addMonthsYM(cursor, 1);
+    guard += 1;
+  }
+
+  if (isValidYM(selectedMonth)) {
+    monthSet.add(String(selectedMonth).trim());
+  }
+
+  return Array.from(monthSet)
+    .sort((a, b) => b.localeCompare(a))
+    .map((ym) => {
+      const tags = [];
+      if (ym === baseCurrentYM) tags.push('Hiện tại');
+      if (launchYM && ym === launchYM) tags.push('Bắt đầu sử dụng');
+      return {
+        value: ym,
+        label: tags.length > 0 ? `${formatMonthVN(ym)} (${tags.join(' • ')})` : formatMonthVN(ym),
+      };
+    });
+}
+
+/**
+ * Tạo danh sách năm lọc ngày lễ tự động theo năm hiện tại tại Việt Nam.
+ */
+export function getSelectableHolidayYears({
+  currentYear = Number(getVietnamTodayYMD().slice(0, 4)),
+  startYear = 2026,
+  futureYears = 1,
+} = {}) {
+  const fallbackYear = Number(getVietnamTodayYMD().slice(0, 4)) || 2026;
+  const baseYear =
+    Number.isFinite(Number(currentYear)) && Number(currentYear) >= 2000
+      ? Math.trunc(Number(currentYear))
+      : fallbackYear;
+  const minYear = Math.min(startYear, baseYear);
+  const maxYear = Math.max(
+    baseYear + Math.max(0, Math.trunc(Number(futureYears) || 0)),
+    startYear + 1
+  );
+
+  const years = [];
+  for (let y = minYear; y <= maxYear; y += 1) {
+    years.push(String(y));
+  }
+  years.push('all');
+  return years;
+}

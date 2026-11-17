@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "Kyodo Food"
-#define MyAppVersion "2.20.0"
+#define MyAppVersion "2.22.0"
 #define MyAppPublisher "Kyodo Food - Trung Nu Vuong"
 #define MyAppURL "https://github.com/MrSand1981/kyodo-food-attendance"
 
@@ -211,7 +211,7 @@ begin
   LblCloudUrl.Parent := CloudPage.Surface;
   LblCloudUrl.Top := ScaleY(34);
   LblCloudUrl.Left := ScaleX(35);
-  LblCloudUrl.Caption := 'Duong dan Cloud Server (Render):';
+  LblCloudUrl.Caption := 'Duong dan Cloud Server (Vercel):';
   LblCloudUrl.Enabled := True;
 
   EdtCloudUrl := TEdit.Create(CloudPage);
@@ -219,7 +219,7 @@ begin
   EdtCloudUrl.Top := ScaleY(52);
   EdtCloudUrl.Left := ScaleX(35);
   EdtCloudUrl.Width := ScaleX(390);
-  EdtCloudUrl.Text := 'https://kyodo-food-attendance-2.onrender.com';
+  EdtCloudUrl.Text := 'https://kyodo-food-attendance.vercel.app';
   EdtCloudUrl.Enabled := True;
   EdtCloudUrl.Color := clWindow;
 
@@ -296,7 +296,7 @@ begin
     begin
       TargetCloudUrl := Trim(EdtCloudUrl.Text);
       if TargetCloudUrl = '' then
-        TargetCloudUrl := 'https://kyodo-food-attendance.onrender.com';
+        TargetCloudUrl := 'https://kyodo-food-attendance.vercel.app';
       ConfigContent := '{' #13#10 +
         '  "cloudUrl": "' + TargetCloudUrl + '",' #13#10 +
         '  "activeMode": "cloud",' #13#10 +

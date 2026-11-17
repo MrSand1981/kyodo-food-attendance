@@ -64,6 +64,8 @@ import {
   getDayOfWeekNameSafe,
   addDaysYMD,
   getUpcomingLeaves,
+  getSelectableMonths,
+  getSelectableHolidayYears,
 } from '../utils/date';
 import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
@@ -75,7 +77,12 @@ export default function ManagerDashboard({
   onEmployeesChange,
 }) {
   const [activeTab, setActiveTab] = useState('timesheet'); // 'timesheet' | 'employees' | 'advances-leaves' | 'settings'
-  const [selectedMonth, setSelectedMonth] = useState(getVietnamCurrentYM());
+  const currentYM = getVietnamCurrentYM();
+  const [selectedMonth, setSelectedMonth] = useState(currentYM);
+  const monthOptions = useMemo(
+    () => getSelectableMonths({ currentYM, selectedMonth }),
+    [currentYM, selectedMonth]
+  );
 
   // Data states
   const [report, setReport] = useState(null);
@@ -187,13 +194,39 @@ export default function ManagerDashboard({
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const handleExportExcel = async () => {
+    try {
+      setExportingExcel(true);
+      setError('');
+      const { blob, filename } = await api.exportAttendanceExcel(selectedMonth);
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+    } catch (err) {
+      setError(err.message || 'Lỗi khi xuất file Excel chấm công!');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
   const [tableDensity, setTableDensity] = useState('compact');
 
   // Quản lý Ngày Lễ (Phương án 2: Lương x2)
   const [holidaysList, setHolidaysList] = useState([]);
-  const [holidaysYear, setHolidaysYear] = useState('2026');
+  const currentYearNum = Number(currentYM.slice(0, 4)) || 2026;
+  const [holidaysYear, setHolidaysYear] = useState(String(currentYearNum));
+  const holidayYearOptions = useMemo(
+    () => getSelectableHolidayYears({ currentYear: currentYearNum }),
+    [currentYearNum]
+  );
   const [showAddHolidayModal, setShowAddHolidayModal] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState(null);
   const [holidayForm, setHolidayForm] = useState({
@@ -1006,7 +1039,7 @@ export default function ManagerDashboard({
 
   // Cau hinh ket noi Cloud (Nghe An - Da Nang)
   const [cloudConfig, setCloudConfig] = useState({
-    cloudUrl: 'https://kyodo-food-attendance-2.onrender.com',
+    cloudUrl: 'https://kyodo-food-attendance.vercel.app',
     activeMode: 'cloud',
   });
   const [savingCloud, setSavingCloud] = useState(false);
@@ -1150,8 +1183,13 @@ export default function ManagerDashboard({
     try {
       const res = await api.getCloudConfig();
       if (res && res.config) {
+        const rawUrl = res.config.cloudUrl || '';
+        const normalizedUrl =
+          !rawUrl || rawUrl.includes('onrender.com')
+            ? 'https://kyodo-food-attendance.vercel.app'
+            : rawUrl;
         setCloudConfig({
-          cloudUrl: res.config.cloudUrl || '',
+          cloudUrl: normalizedUrl,
           activeMode: res.config.activeMode || 'cloud',
         });
       }
@@ -1736,12 +1774,11 @@ export default function ManagerDashboard({
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   className="px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 cursor-pointer"
                 >
-                  <option value="2026-11">Tháng 11/2026 (Bắt đầu sử dụng)</option>
-                  <option value="2026-12">Tháng 12/2026</option>
-                  <option value="2027-01">Tháng 01/2027</option>
-                  <option value="2026-10">Tháng 10/2026</option>
-                  <option value="2026-09">Tháng 09/2026</option>
-                  <option value="2026-08">Tháng 08/2026</option>
+                  {monthOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="pt-5 text-xs text-slate-500 font-bold whitespace-nowrap">
@@ -1750,14 +1787,17 @@ export default function ManagerDashboard({
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-              <a
-                href={api.getExportExcelUrl(selectedMonth)}
-                download={`Bang_Cham_Cong_Kyodo_Trung_Nu_Vuong_${selectedMonth}.xlsx`}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer whitespace-nowrap"
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                disabled={exportingExcel}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 active:scale-98 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
               >
                 <Download className="w-4 h-4 shrink-0" />
-                <span className="whitespace-nowrap">Xuất File Excel (.xlsx)</span>
-              </a>
+                <span className="whitespace-nowrap">
+                  {exportingExcel ? 'Đang xuất Excel...' : 'Xuất File Excel (.xlsx)'}
+                </span>
+              </button>
 
               <button
                 onClick={() => window.print()}
@@ -2960,10 +3000,11 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
               >
-              <option value="2026-11">Tháng 11/2026</option>
-              <option value="2026-12">Tháng 12/2026</option>
-              <option value="2027-01">Tháng 01/2027</option>
-              <option value="2026-10">Tháng 10/2026</option>
+              {monthOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -3741,7 +3782,7 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
               <div className="flex items-center gap-2">
                 {/* Lọc theo năm */}
                 <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-                  {['2026', '2027', 'all'].map((yr) => (
+                  {holidayYearOptions.map((yr) => (
                     <button
                       key={yr}
                       onClick={() => setHolidaysYear(yr)}
@@ -4088,13 +4129,13 @@ Cảm ơn em đã nỗ lực làm việc cùng Kyodo Food!`;
             <form onSubmit={handleSaveCloudConfig} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Đường dẫn Cloud Máy Chủ (Render / Cloudflare):
+                  Đường dẫn Cloud Máy Chủ (Vercel / Cloud):
                 </label>
                 <input
                   type="url"
                   value={cloudConfig.cloudUrl}
                   onChange={(e) => setCloudConfig({ ...cloudConfig, cloudUrl: e.target.value })}
-                  placeholder="https://kyodo-food-attendance-2.onrender.com"
+                  placeholder="https://kyodo-food-attendance.vercel.app"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-700 focus:outline-hidden focus:border-amber-500"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">

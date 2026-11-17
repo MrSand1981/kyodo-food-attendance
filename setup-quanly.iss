@@ -1,6 +1,6 @@
 ; Script Inno Setup 6 cho Phien Ban Quan Ly & Bang Luong - Kyodo Food
 #define MyAppName "Kyodo Food - Quan Ly & Bang Luong"
-#define MyAppVersion "2.20.0"
+#define MyAppVersion "2.22.0"
 #define MyAppPublisher "Kyodo Food"
 #define MyAppURL "https://kyodofood.vn"
 
@@ -33,6 +33,7 @@ Name: "desktopicon"; Description: "Tao bieu tuong loi tat Quan Ly & Bang Luong n
 
 [Files]
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\KyodoFood-QuanLy.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\cloud_config.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Day-Len-GitHub.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\Cap-Nhat-Phan-Mem.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Sand\.gemini\antigravity\scratch\kyodo-food-attendance\kyodo-icon.ico"; DestDir: "{app}"; Flags: ignoreversion

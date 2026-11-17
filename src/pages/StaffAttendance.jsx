@@ -1,5 +1,5 @@
 // src/pages/StaffAttendance.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Clock,
@@ -52,6 +52,7 @@ import {
   addDaysYMD,
   countDaysBetween,
   getDayOfWeekNameSafe,
+  getSelectableMonths,
 } from '../utils/date';
 import { APP_VERSION, APP_RELEASE_LABEL } from '../version';
 
@@ -72,7 +73,11 @@ export default function StaffAttendance({
   const [activeShift, setActiveShift] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const todayYM = getVietnamCurrentYM();
-  const [selectedMonth, setSelectedMonth] = useState('2026-11');
+  const [selectedMonth, setSelectedMonth] = useState(todayYM);
+  const monthOptions = useMemo(
+    () => getSelectableMonths({ currentYM: todayYM, selectedMonth }),
+    [todayYM, selectedMonth]
+  );
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -539,15 +544,17 @@ export default function StaffAttendance({
 
     for (const rec of dayRecords) {
       if (rec.checkIn && rec.checkOut) {
-        const dStart = new Date(rec.checkIn);
-        const dEnd = new Date(rec.checkOut);
-        const existStartMins = dStart.getHours() * 60 + dStart.getMinutes();
-        let existEndMins = dEnd.getHours() * 60 + dEnd.getMinutes();
+        const existStartStr = formatShortTime(rec.checkIn);
+        const existEndStr = formatShortTime(rec.checkOut);
+        if (existStartStr === '--:--' || existEndStr === '--:--') continue;
+
+        const [esh, esm] = existStartStr.split(':').map(Number);
+        const [eeh, eem] = existEndStr.split(':').map(Number);
+        const existStartMins = esh * 60 + esm;
+        let existEndMins = eeh * 60 + eem;
         if (existEndMins <= existStartMins) existEndMins += 24 * 60;
 
         if (newStartMins < existEndMins && newEndMins > existStartMins) {
-          const existStartStr = `${String(dStart.getHours()).padStart(2, '0')}:${String(dStart.getMinutes()).padStart(2, '0')}`;
-          const existEndStr = `${String(dEnd.getHours()).padStart(2, '0')}:${String(dEnd.getMinutes()).padStart(2, '0')}`;
           if (entryStart === existStartStr && entryEnd === existEndStr) {
             setErrorMsg(
               `⚠️ Trùng lặp thời gian! Bạn đã chấm công ca ${existStartStr} - ${existEndStr} (${rec.totalHours}h) trong ngày hôm nay rồi. Không được khai báo lặp lại 2 lần!`
@@ -702,19 +709,7 @@ export default function StaffAttendance({
     }
   };
 
-  const getDayOfWeekName = (dateStr) => {
-    const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-    const d = new Date(dateStr);
-    return days[d.getDay()];
-  };
-
-  const formatShortTime = (isoString) => {
-    if (!isoString) return '--:--';
-    const d = new Date(isoString);
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    return `${h}:${m}`;
-  };
+  const getDayOfWeekName = getDayOfWeekNameSafe;
 
   // Avatar hiển thị ưu tiên
   const currentAvatar =
@@ -1423,19 +1418,21 @@ export default function StaffAttendance({
                         <span className="font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-lg text-xs">
                           {r.totalHours}h
                         </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteAttendance(
-                              r.id,
-                              `${formatShortTime(r.checkIn)} - ${formatShortTime(r.checkOut)}`
-                            )
-                          }
-                          className="text-slate-400 hover:text-amber-800 p-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-colors"
-                          title="Xóa ca này nếu nhập nhầm"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isAdminInspect && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteAttendance(
+                                r.id,
+                                `${formatShortTime(r.checkIn)} - ${formatShortTime(r.checkOut)}`
+                              )
+                            }
+                            className="text-slate-400 hover:text-amber-800 p-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-colors"
+                            title="Xóa ca này nếu nhập nhầm"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1814,12 +1811,11 @@ export default function StaffAttendance({
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="appearance-none pl-3 pr-8 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 cursor-pointer transition-colors"
               >
-                <option value="2026-11">Tháng 11/2026 (Bắt đầu sử dụng)</option>
-                <option value="2026-12">Tháng 12/2026</option>
-                <option value="2027-01">Tháng 01/2027</option>
-                <option value="2026-10">Tháng 10/2026</option>
-                <option value="2026-09">Tháng 09/2026</option>
-                <option value="2026-08">Tháng 08/2026</option>
+                {monthOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
@@ -2065,19 +2061,21 @@ export default function StaffAttendance({
                                 Đã chốt
                               </span>
                             )}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleDeleteAttendance(
-                                  rec.id,
-                                  `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
-                                )
-                              }
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors"
-                              title="Xóa ca này"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {isAdminInspect && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDeleteAttendance(
+                                    rec.id,
+                                    `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
+                                  )
+                                }
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors"
+                                title="Xóa ca này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -2117,9 +2115,11 @@ export default function StaffAttendance({
                             Trạng Thái
                           </th>
                           <th className="py-2.5 px-3 whitespace-nowrap bg-slate-100">Ghi Chú</th>
-                          <th className="py-2.5 px-3 text-center whitespace-nowrap bg-slate-100">
-                            Thao Tác
-                          </th>
+                          {isAdminInspect && (
+                            <th className="py-2.5 px-3 text-center whitespace-nowrap bg-slate-100">
+                              Thao Tác
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -2171,21 +2171,23 @@ export default function StaffAttendance({
                             <td className="py-2 px-3 text-slate-500 max-w-xs truncate text-[11px] whitespace-nowrap">
                               {rec.note || '-'}
                             </td>
-                            <td className="py-2 px-3 text-center whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDeleteAttendance(
-                                    rec.id,
-                                    `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
-                                  )
-                                }
-                                className="p-1 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
-                                title="Xóa bản ghi ca làm này"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
+                            {isAdminInspect && (
+                              <td className="py-2 px-3 text-center whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteAttendance(
+                                      rec.id,
+                                      `${formatDateVN(rec.date)} (${formatShortTime(rec.checkIn)} - ${formatShortTime(rec.checkOut)})`
+                                    )
+                                  }
+                                  className="p-1 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                                  title="Xóa bản ghi ca làm này"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
