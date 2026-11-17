@@ -1,390 +1,89 @@
 // server/db.js
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
+const os = require('os');
 const { MongoClient } = require('mongodb');
 const { generateSeedData } = require('./seedData');
+const XLSX = require('xlsx');
 
-// --- HÀM BẢO MẬT & BĂM MẬT KHẨU BCRYPT ---
-function isBcryptHash(str) {
-  return typeof str === 'string' && /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(str);
-}
-
-function hashPassword(plainText) {
-  if (!plainText) return '';
-  const trimmed = String(plainText).trim();
-  if (isBcryptHash(trimmed)) return trimmed;
-  return bcrypt.hashSync(trimmed, 10);
-}
-
-function comparePasswords(provided, storedOrHash) {
-  if (!storedOrHash) return false;
-  const p = String(provided || '').trim();
-  if (isBcryptHash(storedOrHash)) {
-    return bcrypt.compareSync(p, storedOrHash);
-  }
-  return p === String(storedOrHash).trim();
-}
-
-const DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
-const VAULT_PATH = path.join(__dirname, '..', 'data', 'kyodo_employee_vault.json');
-const BACKUP_DIR = path.join(__dirname, '..', 'data', 'backups');
-
-const DEFAULT_HOLIDAYS = [
-  // Năm 2026
-  {
-    id: 'hol-2026-01-01',
-    name: 'Tết Dương Lịch 2026',
-    date: '2026-01-01',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-02-16',
-    name: '29 Tết Bính Ngọ',
-    date: '2026-02-16',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-02-17',
-    name: 'Mùng 1 Tết Bính Ngọ',
-    date: '2026-02-17',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-02-18',
-    name: 'Mùng 2 Tết Bính Ngọ',
-    date: '2026-02-18',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-02-19',
-    name: 'Mùng 3 Tết Bính Ngọ',
-    date: '2026-02-19',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-02-20',
-    name: 'Mùng 4 Tết Bính Ngọ',
-    date: '2026-02-20',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-04-26',
-    name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)',
-    date: '2026-04-26',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-04-30',
-    name: 'Ngày Chiến Thắng 30/4',
-    date: '2026-04-30',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-05-01',
-    name: 'Ngày Quốc Tế Lao Động 1/5',
-    date: '2026-05-01',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-09-02',
-    name: 'Quốc Khánh 2/9',
-    date: '2026-09-02',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2026-09-03',
-    name: 'Nghỉ liền kề Quốc Khánh',
-    date: '2026-09-03',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)',
-  },
-
-  // Năm 2027
-  {
-    id: 'hol-2027-01-01',
-    name: 'Tết Dương Lịch 2027',
-    date: '2027-01-01',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Tết Dương Lịch toàn quốc (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-02-05',
-    name: '29 Tết Đinh Mùi',
-    date: '2027-02-05',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-02-06',
-    name: 'Mùng 1 Tết Đinh Mùi',
-    date: '2027-02-06',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-02-07',
-    name: 'Mùng 2 Tết Đinh Mùi',
-    date: '2027-02-07',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-02-08',
-    name: 'Mùng 3 Tết Đinh Mùi',
-    date: '2027-02-08',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-02-09',
-    name: 'Mùng 4 Tết Đinh Mùi',
-    date: '2027-02-09',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ Tết Âm Lịch (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-04-16',
-    name: 'Giỗ Tổ Hùng Vương (10/3 ÂL)',
-    date: '2027-04-16',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Giỗ Tổ Hùng Vương (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-04-30',
-    name: 'Ngày Chiến Thắng 30/4',
-    date: '2027-04-30',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Giải phóng miền Nam 30/4 (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-05-01',
-    name: 'Ngày Quốc Tế Lao Động 1/5',
-    date: '2027-05-01',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Quốc tế Lao động 1/5 (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-09-02',
-    name: 'Quốc Khánh 2/9',
-    date: '2027-09-02',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Lễ Quốc Khánh 2/9 (Lương nhân 2)',
-  },
-  {
-    id: 'hol-2027-09-03',
-    name: 'Nghỉ liền kề Quốc Khánh',
-    date: '2027-09-03',
-    multiplier: 2,
-    active: true,
-    isDefault: true,
-    description: 'Nghỉ lễ Quốc Khánh liền kề (Lương nhân 2)',
-  },
-];
+const BUNDLED_DB_PATH = path.join(__dirname, '..', 'data', 'database.json');
+// Trên Vercel (serverless), thư mục gốc là read-only nên cần ghi file tạm vào /tmp
+const DB_PATH = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'kyodo_database.json')
+  : BUNDLED_DB_PATH;
 
 let mongoClient = null;
 let mongoDb = null;
 let isMongo = false;
+let mongoConnectPromise = null;
+let pendingSyncPromise = null;
 
-// ---------------- KHO LƯU TRỮ NHÂN SỰ BẤT BIẾN (EMPLOYEE VAULT) ----------------
-// Dữ liệu nhân viên khi đã được Lưu lại từ Nhân viên hoặc Quản lý sẽ được khóa bất biến,
-// KHÔNG BAO GIỜ bị xóa, làm rỗng hoặc ghi đè bởi bất kỳ bản cập nhật nào từ GitHub/Installer.
-function loadVault() {
-  try {
-    if (fs.existsSync(VAULT_PATH)) {
-      const content = fs.readFileSync(VAULT_PATH, 'utf-8');
-      const parsed = JSON.parse(content);
-      return Array.isArray(parsed.employees) ? parsed.employees : [];
-    }
-  } catch (err) {
-    console.warn('[Vault] Lỗi đọc kyodo_employee_vault.json:', err.message);
-  }
-  return [];
-}
+async function connectMongo() {
+  if (!process.env.MONGODB_URI) return null;
+  if (isMongo && mongoDb) return mongoDb;
+  if (mongoConnectPromise) return mongoConnectPromise;
 
-function saveVault(employees) {
-  try {
-    if (!Array.isArray(employees)) return;
-    const vaultDir = path.dirname(VAULT_PATH);
-    if (!fs.existsSync(vaultDir)) fs.mkdirSync(vaultDir, { recursive: true });
-
-    const currentVault = loadVault();
-    const vaultMap = new Map();
-    currentVault.forEach((e) => {
-      const key = e.id || e.code || e.username;
-      if (key) vaultMap.set(key, e);
-    });
-
-    employees.forEach((e) => {
-      const key = e.id || e.code || e.username;
-      if (!key) return;
-      if (e.isTest || e.username === 'LINHNVTNV' || String(key).startsWith('test-')) return;
-      const existing = vaultMap.get(key) || {};
-
-      // Hợp nhất thông tin: Luôn bảo toàn các trường dữ liệu thực tế đã có
-      const merged = { ...existing, ...e };
-      const importantFields = [
-        'fullName',
-        'shortName',
-        'dob',
-        'cccd',
-        'phone',
-        'address',
-        'bankCode',
-        'bankName',
-        'bankAccount',
-        'accountName',
-        'hourlyRate',
-        'password',
-        'passwordChanged',
-        'gender',
-        'avatar',
-      ];
-      importantFields.forEach((f) => {
-        if (
-          (merged[f] === undefined || merged[f] === '') &&
-          existing[f] !== undefined &&
-          existing[f] !== ''
-        ) {
-          merged[f] = existing[f];
-        }
-      });
-
-      vaultMap.set(key, merged);
-    });
-
-    const finalEmployees = Array.from(vaultMap.values());
-    const vaultData = {
-      lastUpdated: new Date().toISOString(),
-      protectionNotice:
-        'Kho du lieu nhan su bat bien Kyodo Food - Khong the bi ghi de boi cap nhat!',
-      employees: finalEmployees,
-    };
-
-    const tmpVault = `${VAULT_PATH}.tmp`;
-    try {
-      fs.writeFileSync(tmpVault, JSON.stringify(vaultData, null, 2), 'utf-8');
-      fs.renameSync(tmpVault, VAULT_PATH);
-    } catch (writeErr) {
-      fs.writeFileSync(VAULT_PATH, JSON.stringify(vaultData, null, 2), 'utf-8');
-    }
-  } catch (err) {
-    console.error('[Vault] Lỗi lưu employee vault:', err.message);
-  }
-}
-
-// Khởi tạo kết nối MongoDB nếu có biến môi trường MONGODB_URI (dành cho Cloud Render/Railway)
-if (process.env.MONGODB_URI) {
-  MongoClient.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 })
+  mongoConnectPromise = MongoClient.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000
+  })
     .then(async (client) => {
       mongoClient = client;
       mongoDb = client.db('kyodo_food');
       isMongo = true;
       console.log('✅ Đã kết nối Cơ sở dữ liệu Cloud MongoDB Atlas thành công!');
-
-      try {
-        const record = await mongoDb.collection('app_state').findOne({ _id: 'master_db' });
-        if (record && record.data) {
-          console.log(
-            '📥 Đã nạp dữ liệu đám mây từ MongoDB Atlas (Lần cuối cập nhật:',
-            record.updatedAt || 'Không rõ',
-            ')'
-          );
-          // Tự động chuyển các bản ghi chấm bù chưa có phê duyệt chính thức (approvedAt là null) về 'pending' để Quản lý có nút Duyệt / Từ Chối
-          let modified = false;
-          if (Array.isArray(record.data.attendance)) {
-            record.data.attendance.forEach((a) => {
-              if (a.isMakeup && !a.approvedAt && a.status === 'completed') {
-                a.status = 'pending';
-                modified = true;
-              }
-            });
-          }
-          saveDatabase(record.data, false);
-          if (modified && mongoDb) {
-            await mongoDb
-              .collection('app_state')
-              .updateOne(
-                { _id: 'master_db' },
-                { $set: { data: record.data, updatedAt: new Date().toISOString() } }
-              );
-          }
-          console.log(
-            '🛡️ Phục hồi dữ liệu từ Cloud MongoDB thành công! Bảo toàn 100% không bị rollback.'
-          );
-        } else {
-          const currentData = ensureDbFile();
-          await mongoDb
-            .collection('app_state')
-            .updateOne(
-              { _id: 'master_db' },
-              { $set: { data: currentData, updatedAt: new Date().toISOString() } },
-              { upsert: true }
-            );
-          console.log('🚀 Đã khởi tạo dữ liệu ban đầu lên MongoDB Atlas!');
-        }
-      } catch (pullErr) {
-        console.error('⚠️ Lỗi nạp dữ liệu từ MongoDB Atlas:', pullErr.message);
-      }
+      return mongoDb;
     })
     .catch((err) => {
-      console.warn(
-        '⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:',
-        err.message
-      );
+      console.warn('⚠️ Không thể kết nối MongoDB Cloud, chuyển sang dùng database.json:', err.message);
+      mongoConnectPromise = null;
+      return null;
     });
+
+  return mongoConnectPromise;
+}
+
+// Đồng bộ dữ liệu mới nhất từ MongoDB Atlas về bộ nhớ đệm trước mỗi request
+async function syncFromCloud() {
+  if (!process.env.MONGODB_URI) return;
+  try {
+    const dbConn = await connectMongo();
+    if (!dbConn) return;
+
+    const doc = await dbConn.collection('app_state').findOne({ _id: 'master_db' });
+    if (doc && doc.data) {
+      const dir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(DB_PATH, JSON.stringify(doc.data, null, 2), 'utf-8');
+    } else {
+      // Nếu trên MongoDB chưa có dữ liệu, đẩy dữ liệu khởi tạo lên Cloud
+      const localData = ensureDbFile();
+      await dbConn.collection('app_state').updateOne(
+        { _id: 'master_db' },
+        { $set: { data: localData, updatedAt: new Date() } },
+        { upsert: true }
+      );
+    }
+  } catch (err) {
+    console.warn('⚠️ Lỗi đồng bộ từ MongoDB Cloud:', err.message);
+  }
+}
+
+async function flushCloudSync() {
+  if (pendingSyncPromise) {
+    try {
+      await pendingSyncPromise;
+    } catch (err) {
+      console.error('Lỗi chờ đồng bộ MongoDB:', err.message);
+    } finally {
+      pendingSyncPromise = null;
+    }
+  }
+}
+
+// Khởi tạo kết nối ngay khi chạy server
+if (process.env.MONGODB_URI) {
+  syncFromCloud();
 }
 
 function ensureDbFile() {
@@ -393,230 +92,109 @@ function ensureDbFile() {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  let parsed = null;
-  let dbNeedSave = false;
-
   if (!fs.existsSync(DB_PATH)) {
-    parsed = generateSeedData();
-    dbNeedSave = true;
-  } else {
-    try {
-      const content = fs.readFileSync(DB_PATH, 'utf-8');
-      parsed = JSON.parse(content);
-    } catch (err) {
-      console.error('Lỗi đọc database.json, khôi phục từ mẫu:', err);
-      parsed = generateSeedData();
-      dbNeedSave = true;
+    // Nếu đang ở môi trường Vercel (/tmp) và có sẵn file gốc trong repo thì copy sang
+    if (DB_PATH !== BUNDLED_DB_PATH && fs.existsSync(BUNDLED_DB_PATH)) {
+      try {
+        const bundled = JSON.parse(fs.readFileSync(BUNDLED_DB_PATH, 'utf-8'));
+        fs.writeFileSync(DB_PATH, JSON.stringify(bundled, null, 2), 'utf-8');
+        return bundled;
+      } catch (e) {
+        // fallback xuống dưới
+      }
     }
+    const seed = generateSeedData();
+    saveDatabase(seed);
+    return seed;
   }
 
-  if (!parsed.salaryAdvances) parsed.salaryAdvances = [];
-  if (!parsed.leaveRequests) parsed.leaveRequests = [];
-  if (!parsed.cashHandovers) parsed.cashHandovers = [];
-  if (!parsed.employees) parsed.employees = [];
-  if (!parsed.holidays || !Array.isArray(parsed.holidays) || parsed.holidays.length === 0) {
-    parsed.holidays = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
-    dbNeedSave = true;
+  try {
+    const content = fs.readFileSync(DB_PATH, 'utf-8');
+    return JSON.parse(content);
+  } catch (err) {
+    console.error("Lỗi đọc database.json, tạo lại dữ liệu mẫu:", err);
+    const seed = generateSeedData();
+    saveDatabase(seed);
+    return seed;
   }
-
-  // --- BẢO VỆ VÀ PHỤC HỒI DỮ LIỆU NHÂN SỰ BẤT BIẾN TỪ KHO VAULT ---
-  const vaultEmployees = loadVault();
-  if (vaultEmployees.length > 0) {
-    const vaultMap = new Map();
-    vaultEmployees.forEach((ve) => {
-      const k = ve.id || ve.code || ve.username;
-      if (k) vaultMap.set(k, ve);
-    });
-
-    parsed.employees.forEach((emp) => {
-      const k = emp.id || emp.code || emp.username;
-      const v = vaultMap.get(k);
-      if (v) {
-        const fields = [
-          'fullName',
-          'shortName',
-          'dob',
-          'cccd',
-          'phone',
-          'address',
-          'bankCode',
-          'bankName',
-          'bankAccount',
-          'accountName',
-          'password',
-          'passwordChanged',
-          'hourlyRate',
-          'gender',
-          'avatar',
-        ];
-        fields.forEach((f) => {
-          if (v[f] !== undefined && v[f] !== '' && (emp[f] === undefined || emp[f] === '')) {
-            emp[f] = v[f];
-            dbNeedSave = true;
-          }
-        });
-      }
-    });
-
-    // Nếu có nhân viên trong vault mà database.json bị mất do cập nhật, phục hồi lại ngay
-    vaultEmployees.forEach((ve) => {
-      const exists = parsed.employees.find(
-        (e) =>
-          (e.id && ve.id && e.id === ve.id) ||
-          (e.username && ve.username && e.username === ve.username)
-      );
-      if (!exists) {
-        parsed.employees.push(ve);
-        dbNeedSave = true;
-      }
-    });
-  } else if (parsed.employees.length > 0) {
-    // Nếu vault chưa có nhưng database có nhân viên, lưu sang vault ngay để bảo vệ
-    saveVault(parsed.employees);
-  }
-
-  // Tự động chuyển avatar mặc định về hình hiển thị Nam/Nữ (không dùng ảnh cá nhân cũ)
-  parsed.employees.forEach((e) => {
-    if (!e.avatar || e.avatar.includes('images.unsplash.com') || e.avatar.startsWith('http')) {
-      e.avatar = e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
-      dbNeedSave = true;
-    }
-  });
-
-  // Tự động chuyển các bản ghi chấm bù chưa có phê duyệt chính thức (approvedAt là null) về 'pending' để Quản lý luôn có nút Duyệt / Từ Chối
-  if (Array.isArray(parsed.attendance)) {
-    parsed.attendance.forEach((a) => {
-      if (a.isMakeup && !a.approvedAt && a.status === 'completed') {
-        a.status = 'pending';
-        dbNeedSave = true;
-      }
-    });
-  }
-
-  if (dbNeedSave) {
-    saveDatabase(parsed);
-  }
-
-  return parsed;
 }
 
-function saveDatabase(data, syncToCloud = true) {
-  const tmpPath = `${DB_PATH}.tmp`;
+function saveDatabase(data) {
   try {
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const tmpPath = `${DB_PATH}.tmp`;
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(tmpPath, DB_PATH);
-  } catch (writeErr) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('⚠️ Không thể ghi file cục bộ:', err.message);
   }
 
-  // Tự động đồng bộ và bảo vệ sang Kho nhân sự bất biến
-  if (data.employees && Array.isArray(data.employees)) {
-    saveVault(data.employees);
-  }
-
-  // Nếu có MongoDB Cloud, đồng bộ song song lên Cloud
-  if (syncToCloud && isMongo && mongoDb) {
-    mongoDb
-      .collection('app_state')
-      .updateOne(
+  // Nếu có MongoDB Cloud, đồng bộ lên Cloud
+  if (process.env.MONGODB_URI) {
+    pendingSyncPromise = connectMongo().then((dbConn) => {
+      if (!dbConn) return;
+      return dbConn.collection('app_state').updateOne(
         { _id: 'master_db' },
         { $set: { data: data, updatedAt: new Date() } },
         { upsert: true }
-      )
-      .catch((err) => console.error('Lỗi sync MongoDB:', err.message));
+      );
+    }).catch(err => console.error('Lỗi sync MongoDB:', err.message));
   }
 }
 
 // ---------------- EMPLOYEES ----------------
-function getEmployees(includeConfidential = true) {
+function getEmployees(includeConfidential = false) {
   const db = ensureDbFile();
-  const list = (db.employees || []).filter((e) => e.active !== false);
-  return list.map((e) => ({
+  const list = (db.employees || []).filter(e => e.active !== false);
+  if (includeConfidential) return list;
+  return list.map(e => ({
     id: e.id,
     username: e.username,
     code: e.code,
-    fullName: e.fullName || e.name || '',
-    shortName: e.shortName || e.name || '',
-    name: e.shortName || e.name || '',
-    gender: e.gender || 'Nam',
-    dob: e.dob || '',
-    phone: e.phone || '',
-    address: e.address || '',
-    cccd: e.cccd || '',
-    branch: e.branch || 'Trưng Nữ Vương',
-    role: e.role || 'Nhân viên',
-    hourlyRate: Number(e.hourlyRate) || 25000,
-    bankCode: e.bankCode || '',
-    bankName: e.bankName || '',
-    bankAccount: e.bankAccount || '',
-    accountName: e.accountName || (e.fullName || e.name || '').toUpperCase(),
-    avatar: e.avatar || (e.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
-    active: e.active !== false,
-    passwordChanged: e.passwordChanged === true,
-    isDefaultPassword:
-      (comparePasswords('1234', e.password) || !e.password) && e.passwordChanged !== true,
-    password: e.password || '1234',
+    name: e.name,
+    gender: e.gender,
+    branch: e.branch || "Trưng Nữ Vương",
+    role: e.role || "Nhân viên",
+    avatar: e.avatar,
+    active: e.active
   }));
 }
 
 function getEmployeeByIdOrUsername(idOrUsername) {
   const db = ensureDbFile();
   const search = String(idOrUsername).trim().toLowerCase();
-  return db.employees.find(
-    (e) =>
-      (e.id && e.id.toLowerCase() === search) ||
-      (e.username && e.username.toLowerCase() === search) ||
-      (e.code && e.code.toLowerCase() === search)
+  return db.employees.find(e => 
+    (e.id && e.id.toLowerCase() === search) || 
+    (e.username && e.username.toLowerCase() === search) || 
+    (e.code && e.code.toLowerCase() === search)
   );
 }
 
 function addEmployee(employeeData) {
   const db = ensureDbFile();
-  const shortName = (employeeData.shortName || employeeData.name || '').trim();
-  const fullName = (employeeData.fullName || employeeData.name || shortName).trim();
-  const rawUsername = (
-    employeeData.username ||
-    employeeData.code ||
-    `NV${db.employees.length + 1}TNV`
-  )
-    .trim()
-    .toUpperCase();
-
+  const rawUsername = (employeeData.username || employeeData.code || `NV${db.employees.length + 1}`).trim().toUpperCase();
+  
   // Kiểm tra trùng username
-  const exists = db.employees.find(
-    (e) => e.username && e.username.toUpperCase() === rawUsername && e.active !== false
-  );
+  const exists = db.employees.find(e => e.username && e.username.toUpperCase() === rawUsername && e.active !== false);
   if (exists) {
     throw new Error(`Tài khoản "${rawUsername}" đã tồn tại! Vui lòng chọn tên đăng nhập khác.`);
   }
 
   const newId = `emp-${Date.now()}`;
-  const gender = employeeData.gender === 'Nữ' ? 'Nữ' : 'Nam';
-  const defaultAvatar = gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
-
   const newEmp = {
     id: newId,
     username: rawUsername,
     code: rawUsername,
-    fullName: fullName,
-    shortName: shortName || fullName,
-    name: shortName || fullName,
-    gender: gender,
-    dob: employeeData.dob || '',
-    cccd: employeeData.cccd || '',
-    phone: employeeData.phone || '',
-    address: employeeData.address || '',
-    bankCode: employeeData.bankCode || '',
-    bankName: employeeData.bankName || '',
-    bankAccount: employeeData.bankAccount || '',
-    accountName: employeeData.accountName || fullName.toUpperCase(),
-    branch: 'Trưng Nữ Vương',
-    role: employeeData.role || 'Nhân viên',
+    name: employeeData.name.trim(),
+    gender: employeeData.gender || "Khác",
+    branch: "Trưng Nữ Vương",
+    role: employeeData.role || "Nhân viên",
     hourlyRate: Number(employeeData.hourlyRate) || 25000,
-    password: String(employeeData.password || '1234').trim(),
-    passwordChanged: !!(employeeData.password && String(employeeData.password).trim() !== '1234'),
-    avatar: employeeData.avatar || defaultAvatar,
-    active: true,
+    password: employeeData.password || "1234",
+    phone: employeeData.phone || "",
+    avatar: employeeData.avatar || "",
+    active: true
   };
 
   db.employees.push(newEmp);
@@ -624,127 +202,28 @@ function addEmployee(employeeData) {
   return newEmp;
 }
 
-function updateEmployeeAvatar(employeeId, avatarUrl) {
-  const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) =>
-      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
-      e.active !== false
-  );
-  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
-  emp.avatar = avatarUrl;
-  saveDatabase(db);
-  return { success: true, avatar: avatarUrl, message: 'Cập nhật ảnh đại diện thành công!' };
-}
-
 function updateEmployee(id, updateData) {
   const db = ensureDbFile();
-  const idx = db.employees.findIndex((e) => e.id === id || e.username === id || e.code === id);
+  const idx = db.employees.findIndex(e => e.id === id);
   if (idx === -1) return null;
 
-  const current = db.employees[idx];
-  const shortName = (
-    updateData.shortName !== undefined
-      ? updateData.shortName
-      : updateData.name || current.shortName || current.name || ''
-  ).trim();
-  const fullName = (
-    updateData.fullName !== undefined
-      ? updateData.fullName
-      : current.fullName || current.name || shortName
-  ).trim();
-  const gender = updateData.gender || current.gender || 'Nữ';
-  let avatar = updateData.avatar || current.avatar;
-  if (!avatar || avatar === '/avatar-female.svg' || avatar === '/avatar-male.svg') {
-    avatar = gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
-  }
-  const hourlyRate =
-    updateData.hourlyRate !== undefined
-      ? Number(updateData.hourlyRate) || 0
-      : current.hourlyRate !== undefined
-        ? Number(current.hourlyRate)
-        : 25000;
-
-  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu đăng nhập (Lưu dạng văn bản rõ cho Admin quản lý)
-  let newPassword = current.password || '1234';
-  let passwordChanged = current.passwordChanged === true;
-  if (updateData.password !== undefined) {
-    const pTrim = String(updateData.password).trim();
-    if (pTrim && pTrim !== '••••••••') {
-      newPassword = pTrim;
-      passwordChanged = pTrim !== '1234';
-    }
-  }
-
-  // Bảo vệ dữ liệu thực tế do người dùng / nhân viên nhập
-  const cccd = updateData.cccd !== undefined ? String(updateData.cccd).trim() : current.cccd || '';
-  const phone =
-    updateData.phone !== undefined ? String(updateData.phone).trim() : current.phone || '';
-  const address =
-    updateData.address !== undefined ? String(updateData.address).trim() : current.address || '';
-  const dob = updateData.dob !== undefined ? String(updateData.dob).trim() : current.dob || '';
-  const bankCode =
-    updateData.bankCode !== undefined ? String(updateData.bankCode).trim() : current.bankCode || '';
-  const bankName =
-    updateData.bankName !== undefined ? String(updateData.bankName).trim() : current.bankName || '';
-  const bankAccount =
-    updateData.bankAccount !== undefined
-      ? String(updateData.bankAccount).trim()
-      : current.bankAccount || '';
-  const accountName =
-    updateData.accountName !== undefined
-      ? String(updateData.accountName).trim().toUpperCase()
-      : current.accountName || fullName.toUpperCase();
-
   db.employees[idx] = {
-    ...current,
+    ...db.employees[idx],
     ...updateData,
-    fullName: fullName,
-    shortName: shortName || fullName,
-    name: shortName || fullName,
-    gender: gender,
-    dob: dob,
-    cccd: cccd,
-    phone: phone,
-    address: address,
-    bankCode: bankCode,
-    bankName: bankName,
-    bankAccount: bankAccount,
-    accountName: accountName,
-    avatar: avatar,
-    hourlyRate: hourlyRate,
-    password: newPassword,
-    passwordChanged: passwordChanged,
-    branch: 'Trưng Nữ Vương',
-    id: current.id,
-    code: current.code,
-    username: current.username,
+    branch: "Trưng Nữ Vương",
+    id
   };
 
   saveDatabase(db);
-
-  // Tự động sao lưu dữ liệu an toàn
-  try {
-    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
-    const backupPath = path.join(BACKUP_DIR, `db_backup_auto_${Date.now()}.json`);
-    fs.writeFileSync(backupPath, JSON.stringify(db, null, 2), 'utf-8');
-  } catch (e) {
-    // ignore
-  }
-
   return db.employees[idx];
 }
 
-function deleteEmployee(id, hard = false) {
+function deleteEmployee(id) {
   const db = ensureDbFile();
-  const idx = db.employees.findIndex((e) => e.id === id);
+  const idx = db.employees.findIndex(e => e.id === id);
   if (idx === -1) return false;
 
-  if (hard) {
-    db.employees.splice(idx, 1);
-  } else {
-    db.employees[idx].active = false;
-  }
+  db.employees[idx].active = false;
   saveDatabase(db);
   return true;
 }
@@ -752,147 +231,77 @@ function deleteEmployee(id, hard = false) {
 // ---------------- AUTHENTICATION ----------------
 function authenticateUser(username, password) {
   const db = ensureDbFile();
-  const u = String(username || '')
-    .trim()
-    .toLowerCase();
+  const u = String(username || '').trim().toLowerCase();
   const p = String(password || '').trim();
 
-  const currentAdminUsername = String(db.settings.adminUsername || 'admin')
-    .trim()
-    .toLowerCase();
-  const currentAdminPassword = String(db.settings.adminPassword || '20162020').trim();
-
-  // 1. Kiểm tra tài khoản Admin (hỗ trợ 'admin', 'Admin', username tùy chỉnh, hoặc các định danh quản lý)
-  const isAdminUser =
-    u === currentAdminUsername || u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang';
-  if (isAdminUser) {
-    const isMatch = comparePasswords(p, currentAdminPassword);
-    if (isMatch) {
-      // Tự động băm bảo mật bcrypt nếu đang lưu dạng văn bản thường
-      if (!isBcryptHash(currentAdminPassword)) {
-        db.settings.adminPassword = hashPassword(p);
-        saveDatabase(db);
-      }
+  // 1. Kiểm tra tài khoản Admin (mật khẩu: 20162020)
+  if (p === db.settings.adminPassword || p === '20162020') {
+    if (u === 'admin' || u === '' || u === 'quanly' || u === 'chucuahang') {
       return {
         role: 'admin',
-        user: {
-          username: db.settings.adminUsername || 'Admin',
-          name: db.settings.adminName || 'Chủ Cửa Hàng (Admin)',
-          role: 'admin',
-          email: db.settings.adminEmail || '',
-          phone: db.settings.adminPhone || '',
-        },
+        user: { username: 'admin', name: 'Chủ Cửa Hàng (Admin)', role: 'admin' }
       };
-    } else {
-      throw new Error('Mật khẩu Quản trị không chính xác!');
     }
   }
 
   // 2. Kiểm tra tài khoản Nhân viên (UTNVTNV, BAONVTNV...)
-  const emp = db.employees.find(
-    (e) =>
-      e.active !== false &&
-      ((e.username && e.username.toLowerCase() === u) || (e.code && e.code.toLowerCase() === u))
+  const emp = db.employees.find(e => 
+    e.active !== false && 
+    (
+      (e.username && e.username.toLowerCase() === u) ||
+      (e.code && e.code.toLowerCase() === u)
+    )
   );
 
   if (!emp) {
     throw new Error(`Tài khoản "${username}" không tồn tại trên hệ thống!`);
   }
 
-  // Mỗi tài khoản chỉ có DUY NHẤT 1 mật khẩu: mật khẩu hiện tại trong cơ sở dữ liệu (được thay đổi lần gần nhất)
-  const activePassword = String(emp.password || '1234').trim();
-  const isEmpMatch = comparePasswords(p, activePassword);
-
-  if (!isEmpMatch) {
-    if (p === '1234' && emp.passwordChanged) {
-      throw new Error(
-        `Tài khoản "${emp.shortName || emp.name}" đã đổi mật khẩu riêng! Mật khẩu khởi tạo 1234 đã hết hiệu lực. Vui lòng nhập đúng mật khẩu mới nhất.`
-      );
-    }
+  if (emp.password && emp.password !== p) {
     throw new Error('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
   }
 
   const activeShift = getActiveShift(emp.id);
 
-  // Thông tin cá nhân của nhân viên
-  const defaultAvatar = emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg';
+  // Che giấu tuyệt đối thông tin lương và mật khẩu cho nhân viên
   const sanitizedEmp = {
     id: emp.id,
     username: emp.username,
     code: emp.code,
-    fullName: emp.fullName || emp.name || '',
-    shortName: emp.shortName || emp.name || '',
-    name: emp.shortName || emp.name || '',
-    gender: emp.gender || 'Nam',
-    dob: emp.dob || '',
-    cccd: emp.cccd || '',
-    phone: emp.phone || '',
-    address: emp.address || '',
-    branch: emp.branch || 'Trưng Nữ Vương',
-    role: emp.role || 'Nhân viên',
-    bankCode: emp.bankCode || '',
-    bankName: emp.bankName || '',
-    bankAccount: emp.bankAccount || '',
-    accountName: emp.accountName || (emp.fullName || emp.name || '').toUpperCase(),
-    avatar: emp.avatar || defaultAvatar,
-    passwordChanged: emp.passwordChanged === true,
-    isDefaultPassword:
-      !emp.passwordChanged && (comparePasswords('1234', emp.password) || !emp.password),
-    active: emp.active,
+    name: emp.name,
+    gender: emp.gender,
+    branch: emp.branch || "Trưng Nữ Vương",
+    role: emp.role || "Nhân viên",
+    avatar: emp.avatar,
+    active: emp.active
   };
 
   return {
     role: 'employee',
     user: sanitizedEmp,
-    activeShift,
+    activeShift
   };
 }
 
 // Nhân viên tự đổi mật khẩu riêng biệt
 function changeEmployeePassword(employeeId, oldPassword, newPassword) {
   const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) =>
-      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
-      e.active !== false
-  );
-  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
+  const emp = db.employees.find(e => (e.id === employeeId || e.username === employeeId || e.code === employeeId) && e.active !== false);
+  if (!emp) throw new Error("Nhân viên không tồn tại trên hệ thống!");
 
   const curPass = String(oldPassword || '').trim();
-  if (emp.password && !comparePasswords(curPass, emp.password)) {
-    throw new Error('Mật khẩu hiện tại không chính xác!');
+  if (emp.password && emp.password !== curPass) {
+    throw new Error("Mật khẩu hiện tại không chính xác!");
   }
 
   const newPass = String(newPassword || '').trim();
   if (!newPass || newPass.length < 4) {
-    throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự!');
+    throw new Error("Mật khẩu mới phải có ít nhất 4 ký tự!");
   }
 
   emp.password = newPass;
-  emp.passwordChanged = newPass !== '1234';
   saveDatabase(db);
-  return { success: true, message: 'Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.' };
-}
-
-// Đặt lại mật khẩu nhân viên về 1234 (Dành cho Quản trị viên khi nhân viên quên mật khẩu)
-function resetEmployeePassword(employeeId, newPassword = '1234') {
-  const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) =>
-      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
-      e.active !== false
-  );
-  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
-
-  const p = String(newPassword || '1234').trim();
-  emp.password = p;
-  emp.passwordChanged = p !== '1234';
-  saveDatabase(db);
-  return {
-    success: true,
-    message: `Đã đặt lại mật khẩu cho nhân viên "${emp.shortName || emp.name}" về "${p}" thành công!`,
-    password: p,
-  };
+  return { success: true, message: "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn." };
 }
 
 // ---------------- ATTENDANCE / CHẤM CÔNG ----------------
@@ -901,19 +310,19 @@ function getAttendance(filters = {}) {
   let list = db.attendance || [];
 
   if (filters.employeeId) {
-    list = list.filter((a) => a.employeeId === filters.employeeId);
+    list = list.filter(a => a.employeeId === filters.employeeId);
   }
   if (filters.employeeCode) {
-    list = list.filter((a) => a.employeeCode === filters.employeeCode);
+    list = list.filter(a => a.employeeCode === filters.employeeCode);
   }
   if (filters.date) {
-    list = list.filter((a) => a.date === filters.date);
+    list = list.filter(a => a.date === filters.date);
   }
   if (filters.yearMonth) {
-    list = list.filter((a) => a.date.startsWith(filters.yearMonth));
+    list = list.filter(a => a.date.startsWith(filters.yearMonth));
   }
   if (filters.status) {
-    list = list.filter((a) => a.status === filters.status);
+    list = list.filter(a => a.status === filters.status);
   }
 
   return list.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
@@ -921,46 +330,43 @@ function getAttendance(filters = {}) {
 
 function getActiveShift(employeeId) {
   const db = ensureDbFile();
-  return (
-    (db.attendance || []).find((a) => a.employeeId === employeeId && a.status === 'working') || null
-  );
+  return (db.attendance || []).find(a => a.employeeId === employeeId && a.status === 'working') || null;
 }
 
-// Chấm công vào ca trực tiếp
-function checkIn({ employeeId, shiftCode, note }) {
+// Chấm công vào ca trực tiếp - KHÔNG CẦN CHỌN CA, CHỈ CẦN GIỜ VÀO
+function checkIn({ employeeId, startTime, note }) {
   const db = ensureDbFile();
-  const emp = db.employees.find((e) => e.id === employeeId);
-  if (!emp) throw new Error('Không tìm thấy nhân viên');
+  const emp = db.employees.find(e => e.id === employeeId);
+  if (!emp) throw new Error("Không tìm thấy nhân viên");
 
-  const active = (db.attendance || []).find(
-    (a) => a.employeeId === employeeId && a.status === 'working'
-  );
+  const active = (db.attendance || []).find(a => a.employeeId === employeeId && a.status === 'working');
   if (active) {
-    throw new Error('Bạn đang trong ca làm việc, vui lòng bấm Kết Thúc Ca trước!');
+    throw new Error("Bạn đang trong ca làm việc, vui lòng bấm Kết Thúc Ca trước!");
   }
 
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
-  const shift = (db.shifts || []).find((s) => s.code === shiftCode) || {
-    name: 'Ca Sáng',
-    code: shiftCode || 'SANG',
-  };
+  // Sử dụng giờ vào từ tham số hoặc giờ hiện tại
+  let checkInTime = now.toISOString();
+  if (startTime) {
+    checkInTime = new Date(`${dateStr}T${startTime}:00+07:00`).toISOString();
+  }
 
   const newRecord = {
     id: `att-${Date.now()}`,
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
     employeeName: emp.name,
-    branch: 'Trưng Nữ Vương',
+    branch: "Trưng Nữ Vương",
     date: dateStr,
-    checkIn: now.toISOString(),
+    checkIn: checkInTime,
     checkOut: null,
     totalHours: 0,
-    shiftCode: shift.code,
-    shiftName: shift.name,
-    status: 'working',
-    note: note || '',
-    photo: null,
+    shiftCode: null,
+    shiftName: "Tự do",
+    status: "working",
+    note: note || "",
+    photo: null
   };
 
   db.attendance.push(newRecord);
@@ -973,15 +379,13 @@ function checkOut({ employeeId, attendanceId, note }) {
   const db = ensureDbFile();
   let record = null;
   if (attendanceId) {
-    record = (db.attendance || []).find((a) => a.id === attendanceId);
+    record = (db.attendance || []).find(a => a.id === attendanceId);
   } else if (employeeId) {
-    record = (db.attendance || []).find(
-      (a) => a.employeeId === employeeId && a.status === 'working'
-    );
+    record = (db.attendance || []).find(a => a.employeeId === employeeId && a.status === 'working');
   }
 
   if (!record) {
-    throw new Error('Không tìm thấy ca làm việc đang mở để kết thúc!');
+    throw new Error("Không tìm thấy ca làm việc đang mở để kết thúc!");
   }
 
   const now = new Date();
@@ -991,7 +395,7 @@ function checkOut({ employeeId, attendanceId, note }) {
 
   record.checkOut = now.toISOString();
   record.totalHours = totalHours;
-  record.status = 'completed';
+  record.status = "completed";
   if (note) {
     record.note = record.note ? `${record.note} | ${note}` : note;
   }
@@ -1000,151 +404,48 @@ function checkOut({ employeeId, attendanceId, note }) {
   return record;
 }
 
-// NHÂN VIÊN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (KHAI BÁO CA LÀM - HỖ TRỢ NHIỀU CA TRONG NGÀY & CHỐNG TRÙNG LẶP)
-// QUY TẮC BẢO MẬT: Nếu chấm công cho ngày trong quá khứ (< todayYMD) bởi nhân viên -> Cần Quản lý phê duyệt (status: 'pending') để chống khai gian!
-function recordDailyWork({
-  employeeId,
-  date,
-  startTime,
-  endTime,
-  hours,
-  shiftName,
-  note,
-  requestedByRole = 'employee',
-}) {
+// NHÂN VIÊN NHẬP THỜI GIAN LÀM VIỆC TỪNG NGÀY (KHAI BÁO CA LÀM)
+function recordDailyWork({ employeeId, date, startTime, endTime, hours, shiftName, note }) {
   const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) => e.id === employeeId || e.username === employeeId || e.code === employeeId
-  );
-  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
+  const emp = db.employees.find(e => e.id === employeeId);
+  if (!emp) throw new Error("Nhân viên không tồn tại");
 
-  if (!date) throw new Error('Vui lòng chọn ngày làm việc!');
+  if (!date) throw new Error("Vui lòng chọn ngày làm việc");
 
-  // Không cho phép chấm công cho ngày trong tương lai (cho phép hôm nay hoặc các ngày trước đó)
-  const todayYMD = getVietnamTodayYMD();
-  if (date > todayYMD) {
-    throw new Error(
-      'Không thể chấm công cho ngày trong tương lai! Vui lòng chọn ngày hôm nay hoặc các ngày trước đó.'
-    );
-  }
-
-  if (!startTime || !endTime) throw new Error('Vui lòng chọn đầy đủ giờ vào ca và giờ ra ca!');
-
-  if (startTime === endTime) {
-    throw new Error(
-      'Giờ vào ca và giờ ra ca không được giống nhau! Vui lòng chọn thời gian hợp lệ.'
-    );
-  }
-
-  // Parse checkIn và checkOut chính xác theo múi giờ
-  const checkInDate = new Date(`${date}T${startTime}:00+07:00`);
-  let checkOutDate = new Date(`${date}T${endTime}:00+07:00`);
-  if (checkOutDate <= checkInDate) {
-    // Trường hợp làm qua đêm (ví dụ: vào 21:00, ra 02:00 sáng hôm sau)
-    checkOutDate = new Date(checkOutDate.getTime() + 24 * 3600 * 1000);
-  }
-
-  const checkInISO = checkInDate.toISOString();
-  const checkOutISO = checkOutDate.toISOString();
-  const newStartMs = checkInDate.getTime();
-  const newEndMs = checkOutDate.getTime();
-
-  // Tính số giờ làm và làm tròn theo ngày (5h10p -> 5h, 4h50p -> 5h, không tính lẻ phút)
   let calculatedHours = Number(hours);
-  const diffMinutes = Math.round((newEndMs - newStartMs) / 60000);
-  const roundedHours = Math.round(diffMinutes / 60);
-  if (isNaN(calculatedHours) || calculatedHours <= 0) {
-    calculatedHours = Math.max(1, roundedHours);
-  }
+  let checkInISO = null;
+  let checkOutISO = null;
 
-  // ================= BẢO VỆ CHỐNG TRÙNG LẶP & GIAO THOA THỜI GIAN =================
-  // Lấy toàn bộ ca làm việc của nhân viên này để kiểm tra giao thoa (bao gồm ca hoàn thành và ca đang chờ duyệt)
-  const existingRecords = (db.attendance || []).filter(
-    (a) =>
-      a.employeeId === emp.id &&
-      a.status !== 'cancelled' &&
-      a.status !== 'rejected' &&
-      a.checkIn &&
-      a.checkOut
-  );
-
-  for (const rec of existingRecords) {
-    const existStartMs = new Date(rec.checkIn).getTime();
-    const existEndMs = new Date(rec.checkOut).getTime();
-
-    // Công thức giao thoa thời gian: newStart < existEnd && newEnd > existStart
-    if (newStartMs < existEndMs && newEndMs > existStartMs) {
-      const formatTimeStr = (isoStr) => {
-        if (!isoStr) return '';
-        const d = new Date(isoStr);
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      };
-      const existStartStr = formatTimeStr(rec.checkIn);
-      const existEndStr = formatTimeStr(rec.checkOut);
-      const recDate = rec.date || date;
-      const [y, m, d] = recDate.split('-');
-      const recDateVN = `${d}/${m}/${y}`;
-
-      if (startTime === existStartStr && endTime === existEndStr) {
-        throw new Error(
-          `Trùng lặp thời gian! Bạn đã có ca làm/yêu cầu chấm công ${existStartStr} - ${existEndStr} (${rec.totalHours} giờ) trong ngày ${recDateVN} rồi.`
-        );
-      } else {
-        throw new Error(
-          `Trùng thời gian làm việc! Khoảng giờ bạn nhập (${startTime} - ${endTime}) bị giao thoa/trùng đè với ca (${existStartStr} - ${existEndStr}) đã có ngày ${recDateVN}. Vui lòng nhập khoảng giờ khác!`
-        );
-      }
+  if (startTime && endTime) {
+    checkInISO = new Date(`${date}T${startTime}:00+07:00`).toISOString();
+    checkOutISO = new Date(`${date}T${endTime}:00+07:00`).toISOString();
+    if (isNaN(calculatedHours) || calculatedHours <= 0) {
+      const diffMs = new Date(checkOutISO) - new Date(checkInISO);
+      calculatedHours = Math.max(0.1, Number((diffMs / 3600000).toFixed(2)));
     }
+  } else if (calculatedHours > 0) {
+    checkInISO = new Date(`${date}T08:00:00+07:00`).toISOString();
+    const endMs = new Date(checkInISO).getTime() + calculatedHours * 3600000;
+    checkOutISO = new Date(endMs).toISOString();
+  } else {
+    throw new Error("Vui lòng nhập số giờ làm việc hoặc giờ vào và giờ ra!");
   }
-
-  // Đặt tên ca làm việc thông minh
-  let autoShiftName = shiftName;
-  if (!autoShiftName || autoShiftName === 'Khai báo ngày làm' || autoShiftName === 'MANUAL') {
-    if (startTime === '08:00' && endTime === '17:00') {
-      autoShiftName = 'Ca Sáng';
-    } else if (startTime === '17:00' && endTime === '22:00') {
-      autoShiftName = 'Ca Chiều';
-    } else {
-      autoShiftName = `Ca ${startTime}-${endTime}`;
-    }
-  }
-
-  const hol = getHolidayByDate(date);
-  const isHol = !!(hol && hol.active !== false);
-
-  // Quy tắc bảo mật: Bất kỳ ca làm việc nào khai báo cho ngày trong quá khứ (< todayYMD)
-  // ĐỀU là Chấm Công Bù (isMakeup = true) và BẮT BUỘC phải qua Quản lý phê duyệt (status: 'pending')!
-  const isMakeup = date < todayYMD;
-  const status = isMakeup ? 'pending' : 'completed';
 
   const newRecord = {
-    id: `att-manual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    id: `att-manual-${Date.now()}`,
     employeeId: emp.id,
     employeeCode: emp.username || emp.code,
     employeeName: emp.name,
-    branch: 'Trưng Nữ Vương',
+    branch: "Trưng Nữ Vương",
     date: date,
     checkIn: checkInISO,
     checkOut: checkOutISO,
     totalHours: Number(calculatedHours.toFixed(2)),
-    shiftCode: 'MANUAL',
-    shiftName: autoShiftName,
-    status: status, // 'pending' (chờ quản lý duyệt bù) | 'completed'
-    isMakeup: isMakeup,
-    reason:
-      note ||
-      (isMakeup ? 'Nhân viên xin chấm công bù (quên chấm công)' : 'Nhân viên tự nhập giờ làm'),
-    note: note || (isMakeup ? 'Chấm công bù - Chờ Quản lý duyệt' : 'Nhân viên tự nhập giờ làm'),
-    photo: null,
-    isHoliday: isHol,
-    holidayMultiplier: isHol ? Number(hol.multiplier) || 2 : 1,
-    holidayName: isHol ? hol.name : null,
-    createdAt: new Date().toISOString(),
-    approvedAt: null,
-    approvedBy: null,
-    rejectedAt: null,
-    rejectedBy: null,
-    rejectReason: null,
+    shiftCode: "MANUAL",
+    shiftName: shiftName || "Khai báo ngày làm",
+    status: "completed",
+    note: note || "Nhân viên tự nhập giờ làm",
+    photo: null
   };
 
   db.attendance.push(newRecord);
@@ -1152,95 +453,10 @@ function recordDailyWork({
   return newRecord;
 }
 
-// Lấy danh sách yêu cầu chấm công bù
-function getMakeupRequests(employeeId = null, month = null) {
-  const db = ensureDbFile();
-  let list = (db.attendance || []).filter((a) => a.isMakeup === true);
-  let modified = false;
-  list.forEach((a) => {
-    // Nếu bản ghi chấm bù chưa có người duyệt cụ thể (approvedBy là null hoặc Auto), luôn đưa về pending
-    if (a.isMakeup && (!a.approvedAt || a.approvedBy === 'Auto') && a.status === 'completed') {
-      a.status = 'pending';
-      a.approvedAt = null;
-      a.approvedBy = null;
-      modified = true;
-    }
-  });
-  if (modified) {
-    saveDatabase(db);
-  }
-  if (employeeId) {
-    list = list.filter((a) => a.employeeId === employeeId);
-  }
-  if (month) {
-    list = list.filter((a) => a.date && a.date.startsWith(month));
-  }
-  return list.sort(
-    (a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
-  );
-}
-
-// Quản lý Chấp nhận (Duyệt) chấm công bù
-function approveMakeupAttendance(id, adminUser = {}) {
-  const db = ensureDbFile();
-  const rec = (db.attendance || []).find((a) => a.id === id);
-  if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
-  rec.status = 'completed';
-  rec.approvedAt = new Date().toISOString();
-  rec.approvedBy = adminUser.name || adminUser.username || 'Chủ Cửa Hàng';
-  rec.rejectedAt = null;
-  rec.rejectedBy = null;
-  rec.rejectReason = null;
-  saveDatabase(db);
-  return rec;
-}
-
-// Quản lý Từ chối chấm công bù
-function rejectMakeupAttendance(id, adminUser = {}, reason = '') {
-  const db = ensureDbFile();
-  const rec = (db.attendance || []).find((a) => a.id === id);
-  if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
-  rec.status = 'rejected';
-  rec.rejectedAt = new Date().toISOString();
-  rec.rejectedBy = adminUser.name || adminUser.username || 'Chủ Cửa Hàng';
-  rec.rejectReason = reason || 'Quản lý từ chối yêu cầu chấm công bù';
-  saveDatabase(db);
-  return rec;
-}
-
-// Quản lý Chuyển yêu cầu chấm công bù về trạng thái Chờ Duyệt (reset to pending)
-function resetMakeupAttendanceToPending(id, adminUser = {}) {
-  const db = ensureDbFile();
-  const rec = (db.attendance || []).find((a) => a.id === id);
-  if (!rec) throw new Error('Không tìm thấy bản ghi chấm công bù!');
-  rec.status = 'pending';
-  rec.approvedAt = null;
-  rec.approvedBy = null;
-  rec.rejectedAt = null;
-  rec.rejectedBy = null;
-  rec.rejectReason = null;
-  saveDatabase(db);
-  return rec;
-}
-
-// Xóa/Hủy yêu cầu chấm công bù (Quản lý được xóa bất kỳ lúc nào, Nhân viên chỉ xóa khi đang pending)
-function deleteMakeupAttendance(id, user = {}) {
-  const db = ensureDbFile();
-  const idx = (db.attendance || []).findIndex((a) => a.id === id);
-  if (idx === -1) return false;
-  const rec = db.attendance[idx];
-  if (user.role !== 'admin' && rec.employeeId !== user.id && rec.employeeCode !== user.username) {
-    throw new Error('Bạn không có quyền xóa yêu cầu chấm công bù của người khác!');
-  }
-  db.attendance.splice(idx, 1);
-  saveDatabase(db);
-  return true;
-}
-
 function adjustAttendance(id, updateData) {
   const db = ensureDbFile();
-  const record = (db.attendance || []).find((a) => a.id === id);
-  if (!record) throw new Error('Bản ghi chấm công không tồn tại');
+  const record = (db.attendance || []).find(a => a.id === id);
+  if (!record) throw new Error("Bản ghi chấm công không tồn tại");
 
   if (updateData.checkIn) record.checkIn = updateData.checkIn;
   if (updateData.checkOut) record.checkOut = updateData.checkOut;
@@ -1250,7 +466,7 @@ function adjustAttendance(id, updateData) {
   if (record.checkIn && record.checkOut && !updateData.totalHours) {
     const diffMs = new Date(record.checkOut) - new Date(record.checkIn);
     record.totalHours = Math.max(0, Number((diffMs / 3600000).toFixed(2)));
-    record.status = 'completed';
+    record.status = "completed";
   }
 
   saveDatabase(db);
@@ -1259,7 +475,7 @@ function adjustAttendance(id, updateData) {
 
 function deleteAttendance(id) {
   const db = ensureDbFile();
-  const idx = db.attendance.findIndex((a) => a.id === id);
+  const idx = db.attendance.findIndex(a => a.id === id);
   if (idx === -1) return false;
 
   db.attendance.splice(idx, 1);
@@ -1267,525 +483,170 @@ function deleteAttendance(id) {
   return true;
 }
 
-// ---------------- ỨNG TIỀN LƯƠNG TRƯỚC (SALARY ADVANCES) ----------------
-function requestSalaryAdvance({ employeeId, date, amount, reason }) {
+// ---------------- SHARED SHIFTS (CHIA CA 2 NHÂN VIÊN) ----------------
+// Mỗi record: { id, date, shiftCode, shiftName, emp1Id, emp1Hours, emp2Id, emp2Hours, note, createdAt, createdBy }
+
+function getSharedShifts(filters = {}) {
   const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) =>
-      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
-      e.active !== false
+  let list = db.sharedShifts || [];
+
+  if (filters.date) {
+    list = list.filter(s => s.date === filters.date);
+  }
+  if (filters.yearMonth) {
+    list = list.filter(s => s.date.startsWith(filters.yearMonth));
+  }
+  if (filters.shiftCode) {
+    list = list.filter(s => s.shiftCode === filters.shiftCode);
+  }
+  if (filters.employeeId) {
+    list = list.filter(s => s.emp1Id === filters.employeeId || s.emp2Id === filters.employeeId);
+  }
+
+  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+function createSharedShift(data) {
+  const db = ensureDbFile();
+  const emp1 = db.employees.find(e => e.id === data.emp1Id);
+  const emp2 = db.employees.find(e => e.id === data.emp2Id);
+  if (!emp1 || !emp2) throw new Error("Nhân viên không tồn tại");
+
+  // Kiểm tra đã có record cho ngày/ca này chưa
+  const existing = db.sharedShifts.find(s => 
+    s.date === data.date && s.shiftCode === data.shiftCode
   );
-  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
-
-  const numAmount = Math.round(Number(amount));
-  if (isNaN(numAmount) || numAmount <= 0) {
-    throw new Error('Số tiền ứng lương phải lớn hơn 0 VNĐ!');
+  if (existing) {
+    throw new Error(`Đã có lịch chia ca cho ${data.date} - ${data.shiftCode}!`);
   }
 
-  const advDate = date || new Date().toISOString().split('T')[0];
-  const newAdvance = {
-    id: `adv-${Date.now()}`,
-    employeeId: emp.id,
-    employeeCode: emp.username || emp.code,
-    employeeName: emp.shortName || emp.name,
-    employeeShortName: emp.shortName || emp.name,
-    branch: 'Trưng Nữ Vương',
-    date: advDate,
-    salaryMonth: getSalaryMonthForAdvance(advDate),
-    amount: numAmount,
-    reason: reason ? String(reason).trim() : 'Ứng tiền lương',
-    status: 'approved',
+  const newId = `ss-${Date.now()}`;
+  const newRecord = {
+    id: newId,
+    date: data.date,
+    shiftCode: data.shiftCode,
+    shiftName: data.shiftName,
+    emp1Id: emp1.id,
+    emp1Code: emp1.username || emp1.code,
+    emp1Name: emp1.name,
+    emp1Hours: Number(data.emp1Hours) || 0,
+    emp2Id: emp2.id,
+    emp2Code: emp2.username || emp2.code,
+    emp2Name: emp2.name,
+    emp2Hours: Number(data.emp2Hours) || 0,
+    note: data.note || "",
     createdAt: new Date().toISOString(),
+    createdBy: data.createdBy || 'system'
   };
 
-  if (!db.salaryAdvances) db.salaryAdvances = [];
-  db.salaryAdvances.push(newAdvance);
+  db.sharedShifts.push(newRecord);
   saveDatabase(db);
-  return newAdvance;
+  return newRecord;
 }
 
-/**
- * Lấy ngày hôm nay theo múi giờ Việt Nam (Asia/Ho_Chi_Minh, GMT+7) định dạng YYYY-MM-DD
- * Tuyệt đối không dùng toISOString() vì toISOString() trả về giờ UTC (GMT+0) khiến từ 00:00 đến 07:00 sáng tại VN bị lùi về ngày hôm trước!
- */
-function getVietnamTodayYMD() {
-  try {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-  } catch (e) {
-    const d = new Date(Date.now() + 7 * 3600 * 1000);
-    return d.toISOString().split('T')[0];
-  }
-}
-
-function getVietnamCurrentYM() {
-  return getVietnamTodayYMD().substring(0, 7);
-}
-
-/**
- * Quy tắc nghiệp vụ chu kỳ tạm ứng lương Kyodo Food:
- * - Chấm công tính từ ngày 01 đến ngày cuối cùng của tháng.
- * - Ngày trả lương là ngày 05 hàng tháng.
- * - Ứng lương trước hoặc vào ngày 05 (ngày 01 - 05): khấu trừ vào lương của THÁNG TRƯỚC ĐÓ.
- * - Ứng lương từ ngày 06 trở đi (ngày 06 tháng này đến 05 tháng sau): khấu trừ vào lương THÁNG ĐANG CHẤM CÔNG.
- */
-function getSalaryMonthForAdvance(dateStr) {
-  if (!dateStr) return '';
-  const s = String(dateStr).trim().split('T')[0];
-  let year = 0,
-    month = 0,
-    day = 0;
-
-  if (s.includes('-')) {
-    const parts = s.split('-');
-    if (parts[0].length === 4) {
-      year = parseInt(parts[0], 10);
-      month = parseInt(parts[1], 10);
-      day = parseInt(parts[2], 10);
-    } else if (parts[2].length === 4) {
-      year = parseInt(parts[2], 10);
-      month = parseInt(parts[1], 10);
-      day = parseInt(parts[0], 10);
-    }
-  } else if (s.includes('/')) {
-    const parts = s.split('/');
-    if (parts[2].length === 4) {
-      year = parseInt(parts[2], 10);
-      month = parseInt(parts[1], 10);
-      day = parseInt(parts[0], 10);
-    }
-  }
-
-  if (!year || !month || isNaN(day)) return s.substring(0, 7);
-
-  // Nếu ngày ứng <= 5: thuộc chu kỳ lương tháng trước
-  if (day <= 5) {
-    month -= 1;
-    if (month === 0) {
-      month = 12;
-      year -= 1;
-    }
-  }
-
-  return `${year}-${String(month).padStart(2, '0')}`;
-}
-
-function extractYearMonth(dateStr) {
-  if (!dateStr) return '';
-  const str = String(dateStr).trim();
-  if (str.includes('-')) {
-    const parts = str.split('-');
-    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}`;
-    if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}`;
-  }
-  if (str.includes('/')) {
-    const parts = str.split('/');
-    if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}`;
-  }
-  return str.substring(0, 7);
-}
-
-function getSalaryAdvances(employeeId = null, yearMonth = null) {
+function updateSharedShift(id, updateData) {
   const db = ensureDbFile();
-  let list = db.salaryAdvances || [];
-  if (employeeId) {
-    const search = String(employeeId).trim().toLowerCase();
-    list = list.filter(
-      (a) =>
-        (a.employeeId && a.employeeId.toLowerCase() === search) ||
-        (a.employeeCode && a.employeeCode.toLowerCase() === search)
-    );
-  }
-  if (yearMonth) {
-    list = list.filter((a) => getSalaryMonthForAdvance(a.date) === yearMonth);
-  }
-  list = list
-    .map((a) => ({
-      ...a,
-      salaryMonth: getSalaryMonthForAdvance(a.date),
-    }))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const idx = db.sharedShifts.findIndex(s => s.id === id);
+  if (idx === -1) throw new Error("Lịch chia ca không tồn tại");
 
-  const totalCount = list.length;
-  const totalAmount = list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-
-  return {
-    records: list,
-    totalCount,
-    totalAmount,
-  };
+  db.sharedShifts[idx] = { ...db.sharedShifts[idx], ...updateData, id };
+  saveDatabase(db);
+  return db.sharedShifts[idx];
 }
 
-function deleteSalaryAdvance(id) {
+function deleteSharedShift(id) {
   const db = ensureDbFile();
-  if (!db.salaryAdvances) return false;
-  const idx = db.salaryAdvances.findIndex((a) => a.id === id);
+  const idx = db.sharedShifts.findIndex(s => s.id === id);
   if (idx === -1) return false;
-  db.salaryAdvances.splice(idx, 1);
+
+  db.sharedShifts.splice(idx, 1);
   saveDatabase(db);
   return true;
 }
 
-function updateSalaryAdvance(id, { amount, date, reason }) {
-  const db = ensureDbFile();
-  if (!db.salaryAdvances) return null;
-  const idx = db.salaryAdvances.findIndex((a) => a.id === id);
-  if (idx === -1) return null;
-
-  if (amount !== undefined && !isNaN(Number(amount))) {
-    db.salaryAdvances[idx].amount = Math.round(Number(amount));
-  }
-  if (date !== undefined && date) {
-    db.salaryAdvances[idx].date = date;
-    db.salaryAdvances[idx].salaryMonth = getSalaryMonthForAdvance(date);
-  }
-  if (reason !== undefined) {
-    db.salaryAdvances[idx].reason = String(reason).trim();
-  }
-  saveDatabase(db);
-  return db.salaryAdvances[idx];
-}
-
-// ---------------- XIN NGÀY NGHỈ (LEAVE REQUESTS) ----------------
-function requestLeave({ employeeId, date, endDate, shift, reason }) {
-  const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) =>
-      (e.id === employeeId || e.username === employeeId || e.code === employeeId) &&
-      e.active !== false
-  );
-  if (!emp) throw new Error('Nhân viên không tồn tại trên hệ thống!');
-
-  if (!date) throw new Error('Vui lòng chọn ngày xin nghỉ!');
-
-  const newLeave = {
-    id: `leave-${Date.now()}`,
-    employeeId: emp.id,
-    employeeCode: emp.username || emp.code,
-    employeeName: emp.shortName || emp.name,
-    employeeShortName: emp.shortName || emp.name,
-    branch: 'Trưng Nữ Vương',
-    date: date,
-    endDate: endDate || date,
-    shift: shift || 'Cả ngày',
-    reason: reason ? String(reason).trim() : 'Có việc gia đình',
-    status: 'approved',
-    createdAt: new Date().toISOString(),
-  };
-
-  if (!db.leaveRequests) db.leaveRequests = [];
-  db.leaveRequests.push(newLeave);
-  saveDatabase(db);
-  return newLeave;
-}
-
-function getLeaveRequests(employeeId = null, yearMonth = null) {
-  const db = ensureDbFile();
-  let list = db.leaveRequests || [];
-  if (employeeId) {
-    const search = String(employeeId).trim().toLowerCase();
-    list = list.filter(
-      (l) =>
-        (l.employeeId && l.employeeId.toLowerCase() === search) ||
-        (l.employeeCode && l.employeeCode.toLowerCase() === search)
-    );
-  }
-  if (yearMonth) {
-    list = list.filter(
-      (l) => extractYearMonth(l.date) === yearMonth || (l.date && l.date.startsWith(yearMonth))
-    );
-  }
-  list = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return list;
-}
-
-function deleteLeaveRequest(id) {
-  const db = ensureDbFile();
-  if (!db.leaveRequests) return false;
-  const idx = db.leaveRequests.findIndex((l) => l.id === id);
-  if (idx === -1) return false;
-  db.leaveRequests.splice(idx, 1);
-  saveDatabase(db);
-  return true;
-}
-
-// ---------------- BÀN GIAO TIỀN MẶT CA LÀM (CASH HANDOVERS) ----------------
-function createCashHandover({
-  giverId,
-  receiverId,
-  receiverName,
-  date,
-  time,
-  shift,
-  totalAmount,
-  totalBills,
-  amountInWords,
-  breakdown,
-  note,
-}) {
-  const db = ensureDbFile();
-  let giver = db.employees.find(
-    (e) => (e.id === giverId || e.username === giverId || e.code === giverId) && e.active !== false
-  );
-  if (!giver && (giverId === 'admin' || giverId === 'quanly' || !giverId)) {
-    giver = {
-      id: 'admin',
-      username: 'admin',
-      code: 'ADMIN',
-      name: 'Quản Lý Cửa Hàng',
-      shortName: 'Quản Lý',
-    };
-  }
-  if (!giver) throw new Error('Nhân viên bàn giao không tồn tại trên hệ thống!');
-
-  let actualReceiverName = receiverName || '';
-  if (receiverId) {
-    const receiver = db.employees.find(
-      (e) => e.id === receiverId || e.username === receiverId || e.code === receiverId
-    );
-    if (receiver) {
-      actualReceiverName = receiver.shortName || receiver.name;
+// Tự động tạo attendance records từ sharedShifts (dùng cho báo cáo)
+function generateAttendanceFromSharedShifts(sharedShifts) {
+  const records = [];
+  sharedShifts.forEach(s => {
+    // Nhân viên 1
+    if (s.emp1Hours > 0) {
+      records.push({
+        id: `att-shared-${s.id}-1`,
+        employeeId: s.emp1Id,
+        employeeCode: s.emp1Code,
+        employeeName: s.emp1Name,
+        branch: "Trưng Nữ Vương",
+        date: s.date,
+        checkIn: new Date(`${s.date}T08:00:00+07:00`).toISOString(),
+        checkOut: new Date(`${s.date}T${Number(s.emp1Hours) + 8}:00:00+07:00`).toISOString(),
+        totalHours: s.emp1Hours,
+        shiftCode: s.shiftCode,
+        shiftName: s.shiftName,
+        status: "completed",
+        note: `Chia ca: ${s.note || ''}`,
+        photo: null,
+        isShared: true,
+        sharedShiftId: s.id
+      });
     }
-  }
-
-  const cleanDate = date || getVietnamTodayYMD();
-  const cleanTime =
-    time ||
-    new Intl.DateTimeFormat('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(new Date());
-
-  const newHandover = {
-    id: `handover-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-    branch: 'Trưng Nữ Vương',
-    date: cleanDate,
-    time: cleanTime,
-    shift: shift || 'Giao ca',
-    giverId: giver.id,
-    giverCode: giver.username || giver.code,
-    giverName: giver.shortName || giver.name,
-    receiverId: receiverId || '',
-    receiverName: actualReceiverName || 'Quản lý / Ca sau',
-    totalAmount: Math.round(Number(totalAmount) || 0),
-    totalBills: Math.round(Number(totalBills) || 0),
-    amountInWords: String(amountInWords || '').trim(),
-    breakdown: breakdown || {},
-    note: String(note || 'Bàn giao tiền ca làm việc').trim(),
-    createdAt: new Date().toISOString(),
-  };
-
-  if (!db.cashHandovers) db.cashHandovers = [];
-  db.cashHandovers.push(newHandover);
-  saveDatabase(db);
-  return newHandover;
-}
-
-function getCashHandovers(employeeId = null, yearMonth = null) {
-  const db = ensureDbFile();
-  let list = db.cashHandovers || [];
-  if (employeeId) {
-    const search = String(employeeId).trim().toLowerCase();
-    list = list.filter(
-      (h) =>
-        (h.giverId && h.giverId.toLowerCase() === search) ||
-        (h.giverCode && h.giverCode.toLowerCase() === search) ||
-        (h.receiverId && h.receiverId.toLowerCase() === search)
-    );
-  }
-  if (yearMonth) {
-    list = list.filter((h) => h.date && h.date.startsWith(yearMonth));
-  }
-  list = list.sort(
-    (a, b) =>
-      new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
-  );
-  return list;
-}
-
-function deleteCashHandover(id) {
-  const db = ensureDbFile();
-  if (!db.cashHandovers) return false;
-  const idx = db.cashHandovers.findIndex((h) => h.id === id);
-  if (idx === -1) return false;
-  db.cashHandovers.splice(idx, 1);
-  saveDatabase(db);
-  return true;
-}
-
-// Đếm tổng số ngày nghỉ thực tế trong tháng (không trùng lặp)
-function countLeaveDaysInMonth(leaveList = [], yearMonth) {
-  if (!leaveList || !Array.isArray(leaveList)) return 0;
-  const uniqueDates = new Set();
-  leaveList.forEach((l) => {
-    const startStr = l.date;
-    const endStr = l.endDate || l.date;
-    if (!startStr) return;
-
-    const dStart = new Date(startStr);
-    const dEnd = new Date(endStr);
-    if (isNaN(dStart.getTime())) return;
-
-    const cur = new Date(dStart);
-    const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
-
-    let count = 0;
-    while (cur <= stop && count <= 31) {
-      const ymd = cur.toISOString().split('T')[0];
-      if (ymd.startsWith(yearMonth)) {
-        uniqueDates.add(ymd);
-      }
-      cur.setDate(cur.getDate() + 1);
-      count++;
+    // Nhân viên 2
+    if (s.emp2Hours > 0) {
+      records.push({
+        id: `att-shared-${s.id}-2`,
+        employeeId: s.emp2Id,
+        employeeCode: s.emp2Code,
+        employeeName: s.emp2Name,
+        branch: "Trưng Nữ Vương",
+        date: s.date,
+        checkIn: new Date(`${s.date}T08:00:00+07:00`).toISOString(),
+        checkOut: new Date(`${s.date}T${Number(s.emp2Hours) + 8}:00:00+07:00`).toISOString(),
+        totalHours: s.emp2Hours,
+        shiftCode: s.shiftCode,
+        shiftName: s.shiftName,
+        status: "completed",
+        note: `Chia ca: ${s.note || ''}`,
+        photo: null,
+        isShared: true,
+        sharedShiftId: s.id
+      });
     }
   });
-  return uniqueDates.size;
+  return records;
 }
 
-/**
- * Quy tắc tính ngày nghỉ Kyodo Food:
- * - Ngày nào nếu nhân viên không phát sinh chấm công thì qua ngày hôm sau sẽ tính ngày trước đó là ngày nghỉ.
- * - Nếu nhân viên chấm công bù thì lại loại trừ tính ngày đó là ngày nghỉ.
- * - Ngày hôm nay (today) đang diễn ra ca làm nên chưa tính là ngày nghỉ.
- * - Ngày trong tương lai chỉ tính nếu có đơn xin nghỉ phép hợp lệ.
- */
-function calculateMonthlyAbsenceDays(
-  yearMonth,
-  workedDates,
-  leaveList = [],
-  todayYMD = getVietnamTodayYMD()
-) {
-  if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) {
-    return {
-      totalLeaveDays: 0,
-      leaveDates: [],
-      absenceDates: [],
-      registeredLeaveDates: [],
-    };
-  }
-
-  const [yearStr, monthStr] = yearMonth.split('-');
-  const year = parseInt(yearStr, 10);
-  const month = parseInt(monthStr, 10);
-  const daysInMonth = new Date(year, month, 0).getDate();
-
-  const workedSet = new Set();
-  if (workedDates instanceof Set) {
-    workedDates.forEach((d) => workedSet.add(d));
-  } else if (Array.isArray(workedDates)) {
-    workedDates.forEach((d) => workedSet.add(d));
-  }
-
-  const registeredSet = new Set();
-  if (Array.isArray(leaveList)) {
-    leaveList.forEach((l) => {
-      const startStr = l.date;
-      const endStr = l.endDate || l.date;
-      if (!startStr) return;
-
-      const dStart = new Date(startStr);
-      const dEnd = new Date(endStr);
-      if (isNaN(dStart.getTime())) return;
-
-      const cur = new Date(dStart);
-      const stop = isNaN(dEnd.getTime()) || dEnd < dStart ? dStart : dEnd;
-
-      let count = 0;
-      while (cur <= stop && count <= 31) {
-        const y = cur.getFullYear();
-        const m = String(cur.getMonth() + 1).padStart(2, '0');
-        const d = String(cur.getDate()).padStart(2, '0');
-        const ymd = `${y}-${m}-${d}`;
-        if (ymd.startsWith(yearMonth)) {
-          registeredSet.add(ymd);
-        }
-        cur.setDate(cur.getDate() + 1);
-        count++;
-      }
-    });
-  }
-
-  const absenceDates = [];
-  const registeredLeaveDates = [];
-  const allLeaveDatesSet = new Set();
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dStr = String(d).padStart(2, '0');
-    const mStr = String(month).padStart(2, '0');
-    const dateFormatted = `${year}-${mStr}-${dStr}`;
-
-    // 1. Nếu ngày này nhân viên đã có chấm công (hoặc chấm công bù): LOẠI TRỪ khỏi ngày nghỉ!
-    if (workedSet.has(dateFormatted)) {
-      continue;
-    }
-
-    // 2. Nếu ngày này là ngày trong quá khứ (< todayYMD):
-    // Qua ngày hôm sau tự động tính ngày trước đó là ngày nghỉ!
-    if (dateFormatted < todayYMD) {
-      absenceDates.push(dateFormatted);
-      allLeaveDatesSet.add(dateFormatted);
-    } else if (registeredSet.has(dateFormatted)) {
-      // 3. Nếu nhân viên chủ động đăng ký nghỉ (cho hôm nay hoặc tương lai)
-      registeredLeaveDates.push(dateFormatted);
-      allLeaveDatesSet.add(dateFormatted);
-    }
-    // Chú ý: dateFormatted === todayYMD nếu chưa đăng ký nghỉ thì không tính vì hôm nay đang diễn ra ca làm!
-  }
-
-  return {
-    totalLeaveDays: allLeaveDatesSet.size,
-    leaveDates: Array.from(allLeaveDatesSet).sort(),
-    absenceDates: absenceDates.sort(),
-    registeredLeaveDates: registeredLeaveDates.sort(),
-  };
-}
-
-// ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN (CUỐI THÁNG NHẬN TỔNG GIỜ LÀM) ----------------
+// ---------------- TỔNG KẾT THÁNG CHO NHÂN VIÊN ----------------
 function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false) {
   const db = ensureDbFile();
-  const emp = db.employees.find(
-    (e) => e.id === employeeId || e.username === employeeId || e.code === employeeId
+  const emp = db.employees.find(e => e.id === employeeId || e.username === employeeId || e.code === employeeId);
+  if (!emp) throw new Error("Nhân viên không tồn tại");
+
+  const currentYM = yearMonth || new Date().toISOString().substring(0, 7);
+
+  // Gộp attendance thường + shared shifts
+  const monthAttendance = (db.attendance || []).filter(
+    a => a.employeeId === emp.id && a.date.startsWith(currentYM)
   );
-  if (!emp) throw new Error('Nhân viên không tồn tại');
 
-  const currentYM = yearMonth || getVietnamCurrentYM();
+  // Thêm shared shifts
+  const monthSharedShifts = (db.sharedShifts || []).filter(
+    s => s.date.startsWith(currentYM) && (s.emp1Id === emp.id || s.emp2Id === emp.id)
+  );
+  const sharedAttRecords = generateAttendanceFromSharedShifts(monthSharedShifts).filter(
+    a => a.employeeId === emp.id
+  );
 
-  const monthRecords = (db.attendance || [])
-    .filter((a) => a.employeeId === emp.id && a.date.startsWith(currentYM))
-    .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+  const allRecords = [...monthAttendance, ...sharedAttRecords].sort(
+    (a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime()
+  );
 
   let totalCompletedHours = 0;
-  let regularHours = 0;
-  let holidayHours = 0;
   let activeShift = null;
   const daysWorkedSet = new Set();
   let shiftCount = 0;
 
-  monthRecords.forEach((rec) => {
-    const hol = getHolidayByDate(rec.date);
-    const isHol = !!(hol && hol.active !== false);
-    const multiplier = isHol ? Number(hol.multiplier) || 2 : 1;
-
-    if (isHol && !rec.isHoliday) {
-      rec.isHoliday = true;
-      rec.holidayName = hol.name;
-      rec.holidayMultiplier = multiplier;
-    }
-
+  allRecords.forEach(rec => {
     if (rec.status === 'completed') {
-      const h = Number(rec.totalHours || 0);
-      totalCompletedHours += h;
-      if (isHol) {
-        holidayHours += h;
-      } else {
-        regularHours += h;
-      }
+      totalCompletedHours += Number(rec.totalHours || 0);
       daysWorkedSet.add(rec.date);
       shiftCount++;
     } else if (rec.status === 'working') {
@@ -1795,34 +656,8 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
   });
 
   totalCompletedHours = Number(totalCompletedHours.toFixed(2));
-  regularHours = Number(regularHours.toFixed(2));
-  holidayHours = Number(holidayHours.toFixed(2));
-
-  const hourlyRate =
-    emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate))
-      ? Number(emp.hourlyRate)
-      : emp.name === 'Út'
-        ? 25000
-        : 22000;
-
-  const regularSalary = Math.round(regularHours * hourlyRate);
-  let holidaySalary = 0;
-  monthRecords.forEach((rec) => {
-    if (rec.status === 'completed') {
-      const hol = getHolidayByDate(rec.date);
-      if (hol && hol.active !== false) {
-        const mult = Number(hol.multiplier) || 2;
-        holidaySalary += Math.round(Number(rec.totalHours || 0) * hourlyRate * mult);
-      }
-    }
-  });
-  const estimatedSalary = regularSalary + holidaySalary;
-  const holidayBonus = Math.max(0, holidaySalary - Math.round(holidayHours * hourlyRate));
-
-  const advData = getSalaryAdvances(emp.id, currentYM);
-  const leaveData = getLeaveRequests(emp.id, currentYM);
-  const absenceInfo = calculateMonthlyAbsenceDays(currentYM, daysWorkedSet, leaveData);
-  const totalLeaveDays = absenceInfo.totalLeaveDays;
+  const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
+  const estimatedSalary = Math.round(totalCompletedHours * hourlyRate);
 
   const summary = {
     employee: {
@@ -1830,164 +665,74 @@ function getEmployeeMonthlySummary(employeeId, yearMonth, includeSalary = false)
       username: emp.username,
       code: emp.code,
       name: emp.name,
-      gender: emp.gender || 'Nam',
-      dob: emp.dob || '',
-      cccd: emp.cccd || '',
-      phone: emp.phone || '',
-      address: emp.address || '',
-      bankCode: emp.bankCode || '',
-      bankName: emp.bankName || '',
-      bankAccount: emp.bankAccount || '',
-      accountName: emp.accountName || emp.name.toUpperCase(),
-      avatar: emp.avatar || (emp.gender === 'Nữ' ? '/avatar-female.svg' : '/avatar-male.svg'),
-      branch: 'Trưng Nữ Vương',
-      role: emp.role,
-      passwordChanged: emp.passwordChanged === true,
-      isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
+      gender: emp.gender,
+      branch: "Trưng Nữ Vương",
+      role: emp.role
     },
     yearMonth: currentYM,
     totalHours: totalCompletedHours,
-    regularHours: regularHours,
-    holidayHours: holidayHours,
     totalDays: daysWorkedSet.size,
     totalShifts: shiftCount,
-    totalLeaveDays: totalLeaveDays,
-    leaveDates: absenceInfo.leaveDates,
-    absenceDates: absenceInfo.absenceDates,
-    registeredLeaveDates: absenceInfo.registeredLeaveDates,
-    pendingMakeupRequests: monthRecords.filter((r) => r.isMakeup && r.status === 'pending'),
-    rejectedMakeupRequests: monthRecords.filter((r) => r.isMakeup && r.status === 'rejected'),
-    approvedMakeupRequests: monthRecords.filter((r) => r.isMakeup && r.status === 'completed'),
-    advanceCount: advData.totalCount,
-    advanceTotal: advData.totalAmount,
-    advances: advData.records,
-    leaveRequests: leaveData,
-    cashHandovers: getCashHandovers(emp.id, currentYM),
     salaryConfidential: !includeSalary,
     activeShift: activeShift,
-    records: monthRecords.filter((r) => r.status === 'completed' || r.status === 'working'),
-    allRecords: monthRecords,
+    records: allRecords
   };
 
   if (includeSalary) {
     summary.employee.hourlyRate = hourlyRate;
     summary.hourlyRate = hourlyRate;
-    summary.regularSalary = regularSalary;
-    summary.holidaySalary = holidaySalary;
-    summary.holidayBonus = holidayBonus;
     summary.estimatedSalary = estimatedSalary;
   }
 
   return summary;
 }
 
-// ---------------- BẢNG TỔNG HỢP CỬA HÀNG TRƯNG NỮ VƯƠNG (ADMIN) ----------------
+// ---------------- BẢNG TỔNG HỢP CỬA HÀNG (ADMIN) ----------------
 function getMasterMonthlyReport(yearMonth) {
   const db = ensureDbFile();
-  const currentYM = yearMonth || getVietnamCurrentYM();
-
+  const currentYM = yearMonth || new Date().toISOString().substring(0, 7);
+  
   const [yearStr, monthStr] = currentYM.split('-');
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const days = [];
-  const vietnameseDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const vietnameseDays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   for (let d = 1; d <= daysInMonth; d++) {
-    const dStr = d < 10 ? '0' + d : '' + d;
-    const mStr = String(month).padStart(2, '0');
-    const dateFormatted = year + '-' + mStr + '-' + dStr;
-    const dateObj = new Date(dateFormatted);
-    const hol = getHolidayByDate(dateFormatted);
-    const isHoliday = !!(hol && hol.active !== false);
+    const dStr = d < 10 ? `0${d}` : `${d}`;
+    const dateObj = new Date(`${year}-${String(month).padStart(2, '0')}-${dStr}`);
     days.push({
       day: d,
-      date: dateFormatted,
-      dateVN: dStr + '/' + mStr + '/' + year,
+      date: `${year}-${String(month).padStart(2, '0')}-${dStr}`,
       dayOfWeek: vietnameseDays[dateObj.getDay()],
-      isWeekend: dateObj.getDay() === 0,
-      isHoliday: isHoliday,
-      holidayName: isHoliday ? hol.name : null,
-      holidayMultiplier: isHoliday ? Number(hol.multiplier) || 2 : 1,
+      isWeekend: dateObj.getDay() === 0
     });
   }
 
-  const employees = db.employees.filter((e) => e.active !== false);
-  const allMonthAttendance = (db.attendance || []).filter((a) => a.date.startsWith(currentYM));
+  const employees = db.employees.filter(e => e.active !== false);
+  
+  // Gộp attendance + shared shifts
+  const allMonthAttendance = (db.attendance || []).filter(a => a.date.startsWith(currentYM));
+  const monthSharedShifts = (db.sharedShifts || []).filter(s => s.date.startsWith(currentYM));
+  const sharedAttRecords = generateAttendanceFromSharedShifts(monthSharedShifts);
+  
+  const allRecords = [...allMonthAttendance, ...sharedAttRecords];
 
   let storeTotalHours = 0;
-  let storeRegularHours = 0;
-  let storeHolidayHours = 0;
   let storeTotalSalary = 0;
-  let storeTotalAdvance = 0;
 
-  const rows = employees.map((emp) => {
-    const empRecords = allMonthAttendance.filter((a) => a.employeeId === emp.id);
+  const rows = employees.map(emp => {
+    const empRecords = allRecords.filter(a => a.employeeId === emp.id);
     const dailyData = {};
     let empTotalHours = 0;
-    let empRegularHours = 0;
-    let empHolidayHours = 0;
-    let empRegularSalary = 0;
-    let empHolidaySalary = 0;
     let daysWorked = 0;
-    let morningShifts = 0;
-    let eveningShifts = 0;
-    let otherShifts = 0;
 
-    empRecords.forEach((log) => {
-      if (log.status === 'completed' || log.status === 'working') {
-        const sName = (log.shiftName || '').toLowerCase();
-        const sCode = (log.shiftCode || '').toUpperCase();
-        if (sName.includes('sáng') || sCode === 'SANG' || sCode === 'CA1') {
-          morningShifts++;
-        } else if (
-          sName.includes('chiều') ||
-          sName.includes('tối') ||
-          sCode === 'CHIEU' ||
-          sCode === 'CA2' ||
-          sCode === 'CA3'
-        ) {
-          eveningShifts++;
-        } else {
-          otherShifts++;
-        }
-      }
-    });
-
-    const hourlyRate =
-      emp.hourlyRate !== undefined && !isNaN(Number(emp.hourlyRate))
-        ? Number(emp.hourlyRate)
-        : emp.name === 'Út'
-          ? 25000
-          : 22000;
-
-    const todayYMD = getVietnamTodayYMD();
-    const workedDatesSet = new Set();
-    empRecords.forEach((log) => {
-      if (log.status === 'completed' || log.status === 'working') {
-        workedDatesSet.add(log.date);
-      }
-    });
-
-    const leaveData = getLeaveRequests(emp.id, currentYM);
-    const absenceInfo = calculateMonthlyAbsenceDays(currentYM, workedDatesSet, leaveData, todayYMD);
-    const leaveDatesSet = new Set(absenceInfo.leaveDates);
-
-    days.forEach((dayInfo) => {
-      const dayLogs = empRecords.filter((a) => a.date === dayInfo.date);
-      const completedLogs = dayLogs.filter(
-        (a) => a.status === 'completed' || a.status === 'working'
-      );
-      const pendingMakeupLogs = dayLogs.filter((a) => a.isMakeup && a.status === 'pending');
-      const hasCompleted = completedLogs.length > 0;
-      const hasPendingMakeup = !hasCompleted && pendingMakeupLogs.length > 0;
-      const isPast = dayInfo.date < todayYMD;
-      const isToday = dayInfo.date === todayYMD;
-      const isDayOff = leaveDatesSet.has(dayInfo.date);
-
-      if (hasCompleted) {
+    days.forEach(dayInfo => {
+      const dayLogs = empRecords.filter(a => a.date === dayInfo.date);
+      if (dayLogs.length > 0) {
         let dayHours = 0;
-        completedLogs.forEach((log) => {
+        dayLogs.forEach(log => {
           if (log.status === 'completed') {
             dayHours += Number(log.totalHours || 0);
           }
@@ -1995,367 +740,111 @@ function getMasterMonthlyReport(yearMonth) {
 
         dayHours = Number(dayHours.toFixed(2));
         empTotalHours += dayHours;
-        if (dayHours > 0 || completedLogs.length > 0) daysWorked++;
-
-        if (dayInfo.isHoliday) {
-          empHolidayHours += dayHours;
-          empHolidaySalary += Math.round(dayHours * hourlyRate * dayInfo.holidayMultiplier);
-        } else {
-          empRegularHours += dayHours;
-          empRegularSalary += Math.round(dayHours * hourlyRate);
-        }
+        if (dayHours > 0 || dayLogs.length > 0) daysWorked++;
 
         dailyData[dayInfo.day] = {
           hours: dayHours,
-          logs: completedLogs,
-          allLogs: dayLogs,
-          isHoliday: dayInfo.isHoliday,
-          holidayName: dayInfo.holidayName,
-          holidayMultiplier: dayInfo.holidayMultiplier,
-          isWorked: true,
-          isDayOff: false, // Có chấm công được duyệt -> Loại trừ tuyệt đối khỏi ngày nghỉ!
-          hasPendingMakeup: false,
-          pendingMakeup: null,
-          isPastDay: isPast,
-          isToday: isToday,
+          logs: dayLogs
         };
       } else {
         dailyData[dayInfo.day] = {
           hours: 0,
-          logs: [],
-          allLogs: dayLogs,
-          isHoliday: dayInfo.isHoliday,
-          holidayName: dayInfo.holidayName,
-          holidayMultiplier: dayInfo.holidayMultiplier,
-          isWorked: false,
-          isDayOff: isDayOff, // true nếu qua ngày hôm sau chưa phát sinh chấm công
-          hasPendingMakeup: hasPendingMakeup,
-          pendingMakeup: hasPendingMakeup ? pendingMakeupLogs[0] : null,
-          isPastDay: isPast,
-          isToday: isToday,
+          logs: []
         };
       }
     });
 
     empTotalHours = Number(empTotalHours.toFixed(2));
-    empRegularHours = Number(empRegularHours.toFixed(2));
-    empHolidayHours = Number(empHolidayHours.toFixed(2));
-
-    const empTotalSalary = empRegularSalary + empHolidaySalary;
-    const holidayBonus = Math.max(0, empHolidaySalary - Math.round(empHolidayHours * hourlyRate));
-
-    const advData = getSalaryAdvances(emp.id, currentYM);
-    const advanceTotal = advData.totalAmount || 0;
-    const advanceCount = advData.totalCount || 0;
-    const netSalary = empTotalSalary - advanceTotal;
-
-    const leaveDaysCount = absenceInfo.totalLeaveDays;
+    const hourlyRate = emp.hourlyRate || (emp.name === 'Út' ? 25000 : 22000);
+    const empTotalSalary = Math.round(empTotalHours * hourlyRate);
 
     storeTotalHours += empTotalHours;
-    storeRegularHours += empRegularHours;
-    storeHolidayHours += empHolidayHours;
     storeTotalSalary += empTotalSalary;
-    storeTotalAdvance += advanceTotal;
-
-    const sanitizedEmpWithSecrets = {
-      ...emp,
-      password: emp.password || '1234',
-      passwordChanged: emp.passwordChanged === true,
-      isDefaultPassword: (emp.password === '1234' || !emp.password) && emp.passwordChanged !== true,
-      bankCode: emp.bankCode || '',
-      bankName: emp.bankName || '',
-      bankAccount: emp.bankAccount || '',
-      accountName: emp.accountName || emp.name.toUpperCase(),
-    };
 
     return {
-      employee: sanitizedEmpWithSecrets,
+      employee: emp,
       dailyData: dailyData,
       totalHours: empTotalHours,
-      regularHours: empRegularHours,
-      holidayHours: empHolidayHours,
       daysWorked: daysWorked,
-      morningShifts: morningShifts,
-      eveningShifts: eveningShifts,
-      totalShifts: morningShifts + eveningShifts + otherShifts,
-      leaveDaysCount: leaveDaysCount,
-      leaveDates: absenceInfo.leaveDates,
-      absenceDates: absenceInfo.absenceDates,
-      leaves: leaveData,
-      pendingMakeupCount: empRecords.filter((a) => a.isMakeup && a.status === 'pending').length,
-      pendingMakeupList: empRecords.filter((a) => a.isMakeup && a.status === 'pending'),
       hourlyRate: hourlyRate,
-      regularSalary: empRegularSalary,
-      holidaySalary: empHolidaySalary,
-      holidayBonus: holidayBonus,
-      totalSalary: empTotalSalary,
-      advanceCount: advanceCount,
-      advanceTotal: advanceTotal,
-      netSalary: netSalary,
-      advances: advData.records,
+      totalSalary: empTotalSalary
     };
   });
 
-  const allPendingMakeup = (db.attendance || []).filter(
-    (a) =>
-      a.isMakeup &&
-      a.status === 'pending' &&
-      (!currentYM || (a.date && a.date.startsWith(currentYM)))
-  );
-
   return {
     yearMonth: currentYM,
-    branchName: 'Trưng Nữ Vương',
+    branchName: "Trưng Nữ Vương",
     year,
     month,
     daysInMonth,
     days,
     rows,
-    allPendingMakeup: allPendingMakeup,
-    pendingMakeupCount: allPendingMakeup.length,
     summary: {
       totalEmployees: employees.length,
       storeTotalHours: Number(storeTotalHours.toFixed(2)),
-      storeRegularHours: Number(storeRegularHours.toFixed(2)),
-      storeHolidayHours: Number(storeHolidayHours.toFixed(2)),
-      storeTotalSalary: storeTotalSalary,
-      storeTotalAdvance: storeTotalAdvance,
-      storeTotalNetSalary: storeTotalSalary - storeTotalAdvance,
-    },
-  };
-}
-
-// ---------------- ADMIN PROFILE & RECOVERY ----------------
-function maskEmail(email) {
-  if (!email || !email.includes('@')) return '';
-  const [name, domain] = email.split('@');
-  if (name.length <= 2) return `${name[0]}*@${domain}`;
-  return `${name.slice(0, 2)}***${name.slice(-1)}@${domain}`;
-}
-
-function maskPhone(phone) {
-  if (!phone) return '';
-  const clean = String(phone).replace(/\D/g, '');
-  if (clean.length < 6) return clean;
-  return `${clean.slice(0, 3)}****${clean.slice(-3)}`;
-}
-
-function getAdminProfileStatus(isAdmin = false) {
-  const db = ensureDbFile();
-  const s = db.settings || {};
-  return {
-    adminName: s.adminName || 'Chủ Cửa Hàng (Admin)',
-    adminUsername: s.adminUsername || 'admin',
-    // CHỈ trả về email và số điện thoại thô nếu đã xác thực vai trò Admin
-    adminEmail: isAdmin ? s.adminEmail || '' : undefined,
-    adminPhone: isAdmin ? s.adminPhone || '' : undefined,
-    maskedEmail: maskEmail(s.adminEmail),
-    maskedPhone: maskPhone(s.adminPhone),
-    hasEmail: !!(s.adminEmail && s.adminEmail.trim()),
-    hasPhone: !!(s.adminPhone && s.adminPhone.trim()),
-    ...(isAdmin
-      ? { isDefaultPassword: !s.adminPassword || comparePasswords('20162020', s.adminPassword) }
-      : {}),
-  };
-}
-
-function updateAdminProfile(data) {
-  const db = ensureDbFile();
-  if (!db.settings) db.settings = {};
-
-  const { adminName, adminUsername, adminEmail, adminPhone, currentPassword, newPassword } =
-    data || {};
-
-  const currentActual = db.settings.adminPassword || '20162020';
-  if (newPassword && newPassword.trim()) {
-    if (!comparePasswords(currentPassword, currentActual)) {
-      throw new Error('Mật khẩu hiện tại không đúng! Không thể thiết lập mật khẩu mới.');
+      storeTotalSalary: storeTotalSalary
     }
-    db.settings.adminPassword = hashPassword(newPassword.trim());
-  }
-
-  if (adminName !== undefined) db.settings.adminName = adminName.trim();
-  if (adminUsername !== undefined && adminUsername.trim()) {
-    db.settings.adminUsername = adminUsername.trim();
-  }
-  if (adminEmail !== undefined) db.settings.adminEmail = adminEmail.trim();
-  if (adminPhone !== undefined) db.settings.adminPhone = adminPhone.trim();
-
-  saveDatabase(db);
-  return {
-    success: true,
-    message: 'Đã lưu thông tin tài khoản Quản trị viên thành công!',
-    profile: getAdminProfileStatus(true),
   };
 }
 
-function changeAdminPassword(oldPassword, newPassword) {
-  const db = ensureDbFile();
-  if (!db.settings) db.settings = {};
+// ---------------- EXPORT EXCEL (CHẤM CÔNG) ----------------
+function exportAttendanceExcel(report) {
+  const titleRow = [`BẢNG CHẤM CÔNG THEO GIỜ KYODO FOODS - CƠ SỞ TRƯNG NỮ VƯƠNG (${report.yearMonth})`];
+  const headerRow1 = ['Tài khoản', 'Tên nhân viên', 'Cơ sở'];
+  const headerRow2 = ['', '', ''];
 
-  const currentActual = db.settings.adminPassword || '20162020';
-  if (!comparePasswords(oldPassword, currentActual)) {
-    throw new Error('Mật khẩu hiện tại không đúng! Vui lòng thử lại.');
-  }
+  report.days.forEach(d => {
+    headerRow1.push(`${d.day}`);
+    headerRow2.push(d.dayOfWeek);
+  });
 
-  if (!newPassword || newPassword.trim().length < 4) {
-    throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự!');
-  }
+  headerRow1.push('Tổng giờ làm', 'Lương mỗi giờ', 'Tổng tiền lương');
+  headerRow2.push('', '', '');
 
-  db.settings.adminPassword = hashPassword(newPassword.trim());
-  saveDatabase(db);
+  const excelRows = [
+    titleRow,
+    [],
+    headerRow1,
+    headerRow2
+  ];
 
-  return {
-    success: true,
-    message:
-      '🎉 Đổi mật khẩu Quản trị viên thành công! Vui lòng ghi nhớ mật khẩu mới để đăng nhập.',
-  };
-}
+  report.rows.forEach(r => {
+    const row = [
+      r.employee.username || r.employee.code,
+      r.employee.name,
+      'Trưng Nữ Vương'
+    ];
 
-// Đặt lại mật khẩu Quản trị viên an toàn trực tiếp (dùng cho CLI trên máy chủ)
-function resetAdminPasswordDirect(newPassword = 'admin') {
-  const db = ensureDbFile();
-  if (!db.settings) db.settings = {};
+    report.days.forEach(d => {
+      const dData = r.dailyData[d.day];
+      if (dData && dData.hours > 0) {
+        row.push(`${dData.hours}h`);
+      } else {
+        row.push('');
+      }
+    });
 
-  const cleanPass = String(newPassword || '').trim();
-  if (!cleanPass || cleanPass.length < 4) {
-    throw new Error('Mật khẩu quản trị mới phải có ít nhất 4 ký tự!');
-  }
+    row.push(r.totalHours, r.hourlyRate, r.totalSalary);
+    excelRows.push(row);
+  });
 
-  db.settings.adminPassword = hashPassword(cleanPass);
-  saveDatabase(db);
+  const totalRow = ['TỔNG CỘNG', '', ''];
+  report.days.forEach(() => totalRow.push(''));
+  totalRow.push(report.summary.storeTotalHours, '', report.summary.storeTotalSalary);
+  excelRows.push(totalRow);
 
-  return {
-    success: true,
-    adminUsername: db.settings.adminUsername || 'admin',
-    message: 'Đã đặt lại mật khẩu Quản trị viên thành công!',
-  };
-}
+  const ws = XLSX.utils.aoa_to_sheet(excelRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Kyodo_TNV_${report.yearMonth}`);
 
-async function recoverAdminPassword(identifier, options = {}) {
-  const db = ensureDbFile();
-  if (!db.settings) db.settings = {};
-
-  const rawInput = String(identifier || '').trim();
-  if (!rawInput) {
-    throw new Error('Vui lòng nhập Email hoặc Số điện thoại đã đăng ký của Quản trị viên!');
-  }
-
-  const cleanInput = rawInput.toLowerCase().replace(/[\s\-\.]/g, '');
-  const savedEmail = String(db.settings.adminEmail || '')
-    .toLowerCase()
-    .trim();
-  const savedPhone = String(db.settings.adminPhone || '')
-    .replace(/[\s\-\.]/g, '')
-    .trim();
-
-  if (!savedEmail && !savedPhone) {
-    throw new Error(
-      'Chủ Cửa Hàng chưa đăng ký Email hoặc Số điện thoại khôi phục! Vui lòng liên hệ kỹ thuật viên hoặc chạy lệnh: npm run reset-admin'
-    );
-  }
-
-  const matchEmail =
-    savedEmail && (cleanInput === savedEmail || cleanInput === savedEmail.replace(/[\s\-\.]/g, ''));
-  const matchPhone = savedPhone && cleanInput === savedPhone;
-
-  if (!matchEmail && !matchPhone) {
-    throw new Error(
-      'Email hoặc Số điện thoại không khớp với hồ sơ Quản trị viên đã đăng ký! Vui lòng kiểm tra lại.'
-    );
-  }
-
-  const telegramService = options.telegramService || require('./telegramService');
-  const zaloService = options.zaloService || require('./zaloService');
-
-  const tgConfig = telegramService ? telegramService.getTelegramConfig() : { enabled: false };
-  const zaloConfig = zaloService ? zaloService.getZaloConfig() : { enabled: false };
-
-  const hasTelegram = Boolean(tgConfig.enabled && tgConfig.botToken && tgConfig.chatId);
-  const hasZalo = Boolean(
-    zaloConfig.enabled &&
-    (zaloConfig.webhookUrl || (zaloConfig.oaAccessToken && zaloConfig.oaUserId))
-  );
-
-  const envRecoveryKey = process.env.ADMIN_RECOVERY_KEY;
-  const isMasterKeyValid =
-    envRecoveryKey && options.recoveryKey && options.recoveryKey.trim() === envRecoveryKey.trim();
-
-  // BẢO VỆ TUYỆT ĐỐI: Không bao giờ trả mật khẩu ra trình duyệt công cộng.
-  // Yêu cầu phải có kênh thông báo bảo mật (Telegram/Zalo) hoặc Server Recovery Key
-  if (!hasTelegram && !hasZalo && !isMasterKeyValid) {
-    throw new Error(
-      'Kênh thông báo bảo mật (Telegram/Zalo) chưa được kích hoạt để nhận mật khẩu. Để bảo vệ dữ liệu quán ăn, mật khẩu không được phép hiển thị trên màn hình. Vui lòng đặt lại trên máy chủ bằng lệnh: npm run reset-admin'
-    );
-  }
-
-  // Khởi tạo mật khẩu mới an toàn: Kyodo@ + 4 số ngẫu nhiên
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  const newPassword = `Kyodo@${randomSuffix}`;
-
-  db.settings.adminPassword = hashPassword(newPassword);
-  saveDatabase(db);
-
-  const adminUsername = db.settings.adminUsername || 'admin';
-  const channelsNotified = [];
-
-  // Gửi ngoài băng tới Telegram nếu có
-  if (hasTelegram && telegramService.notifyAdminPasswordReset) {
-    try {
-      await telegramService.notifyAdminPasswordReset({
-        adminUsername,
-        newPassword,
-        ip: options.ip || '',
-      });
-      channelsNotified.push('Telegram');
-    } catch (tgErr) {
-      console.error('⚠️ [Telegram] Lỗi gửi thông báo reset mật khẩu:', tgErr.message);
-    }
-  }
-
-  // Gửi ngoài băng tới Zalo nếu có
-  if (hasZalo && zaloService.notifyAdminPasswordReset) {
-    try {
-      await zaloService.notifyAdminPasswordReset({
-        adminUsername,
-        newPassword,
-        ip: options.ip || '',
-      });
-      channelsNotified.push('Zalo');
-    } catch (zaloErr) {
-      console.error('⚠️ [Zalo] Lỗi gửi thông báo reset mật khẩu:', zaloErr.message);
-    }
-  }
-
-  const channelText =
-    channelsNotified.length > 0
-      ? channelsNotified.join(' & ')
-      : isMasterKeyValid
-        ? 'Khóa quản trị máy chủ (Server Master Key)'
-        : 'Kênh bảo mật Quản lý';
-
-  // KHÔNG BAO GIỜ TRẢ newPassword VỀ PHẢN HỒI HTTP CỦA CLIENT
-  return {
-    success: true,
-    message: `Xác minh thành công! Mật khẩu mới tạm thời đã được gửi trực tiếp tới kênh thông báo bảo mật (${channelText}) của Quản lý. Vui lòng kiểm tra tin nhắn và đăng nhập lại!`,
-    sentTo: channelText,
-    adminUsername,
-  };
+  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  return buffer;
 }
 
 // ---------------- SETTINGS ----------------
-function getSettings(isAdmin = false) {
+function getSettings() {
   const db = ensureDbFile();
-  const s = { ...(db.settings || {}) };
-  delete s.adminPassword; // BẢO VỆ TUYỆT ĐỐI: KHÔNG BAO GIỜ TRẢ MẬT KHẨU ADMIN RA NGOÀI API CÔNG KHAI
-  if (!isAdmin) {
-    delete s.adminEmail;
-    delete s.adminPhone;
-    delete s.telegram;
-    delete s.zalo;
-    delete s.cloudConfig;
-  }
-  return s;
+  return db.settings || {};
 }
 
 function updateSettings(newSettings) {
@@ -2370,92 +859,7 @@ function getShifts() {
   return db.shifts || [];
 }
 
-// ---------------- QUẢN LÝ NGÀY LỄ TRONG NĂM (HỆ SỐ LƯƠNG X2) ----------------
-function getHolidays(year = null) {
-  const db = ensureDbFile();
-  let list = db.holidays || [];
-  if (year) {
-    list = list.filter((h) => h.date && h.date.startsWith(String(year)));
-  }
-  return list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-}
-
-function getHolidayByDate(dateStr) {
-  if (!dateStr) return null;
-  const db = ensureDbFile();
-  const dOnly = String(dateStr).trim().split('T')[0];
-  const list = db.holidays || [];
-  return list.find((h) => h.date === dOnly && h.active !== false) || null;
-}
-
-function addHoliday({ name, date, multiplier = 2, active = true, description = '' }) {
-  if (!name || !String(name).trim()) throw new Error('Vui lòng nhập tên ngày lễ!');
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
-    throw new Error('Vui lòng chọn ngày lễ hợp lệ (Định dạng: YYYY-MM-DD)!');
-  const db = ensureDbFile();
-  if (!db.holidays) db.holidays = [];
-
-  const existing = db.holidays.find((h) => h.date === date);
-  if (existing) {
-    throw new Error(`Ngày ${date} đã tồn tại trong danh sách ngày lễ (${existing.name})!`);
-  }
-
-  const newHol = {
-    id: `hol-${date}-${Date.now().toString(36)}`,
-    name: String(name).trim(),
-    date: date,
-    multiplier: Math.max(1, Number(multiplier) || 2),
-    active: active !== false,
-    isDefault: false,
-    description: String(description || '').trim(),
-  };
-
-  db.holidays.push(newHol);
-  db.holidays.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  saveDatabase(db);
-  return newHol;
-}
-
-function updateHoliday(id, updateData) {
-  const db = ensureDbFile();
-  if (!db.holidays) db.holidays = [];
-  const idx = db.holidays.findIndex((h) => h.id === id);
-  if (idx === -1) throw new Error('Không tìm thấy ngày lễ cần cập nhật!');
-
-  if (updateData.name !== undefined) db.holidays[idx].name = String(updateData.name).trim();
-  if (updateData.multiplier !== undefined)
-    db.holidays[idx].multiplier = Math.max(1, Number(updateData.multiplier) || 2);
-  if (updateData.active !== undefined) db.holidays[idx].active = updateData.active === true;
-  if (updateData.description !== undefined)
-    db.holidays[idx].description = String(updateData.description).trim();
-  if (updateData.date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(updateData.date)) {
-    db.holidays[idx].date = updateData.date;
-  }
-
-  saveDatabase(db);
-  return db.holidays[idx];
-}
-
-function deleteHoliday(id) {
-  const db = ensureDbFile();
-  if (!db.holidays) db.holidays = [];
-  const initialLen = db.holidays.length;
-  db.holidays = db.holidays.filter((h) => h.id !== id);
-  if (db.holidays.length === initialLen) {
-    throw new Error('Không tìm thấy ngày lễ để xóa!');
-  }
-  saveDatabase(db);
-  return { success: true, message: 'Đã xóa ngày lễ thành công!' };
-}
-
 module.exports = {
-  isMongoConnected: () => isMongo,
-  getHolidays,
-  getHolidayByDate,
-  addHoliday,
-  updateHoliday,
-  deleteHoliday,
-
   getEmployees,
   getEmployeeByIdOrUsername,
   addEmployee,
@@ -2463,46 +867,26 @@ module.exports = {
   deleteEmployee,
   authenticateUser,
   changeEmployeePassword,
-  resetEmployeePassword,
   getAttendance,
   getActiveShift,
   checkIn,
   checkOut,
   recordDailyWork,
-  getMakeupRequests,
-  approveMakeupAttendance,
-  rejectMakeupAttendance,
-  resetMakeupAttendanceToPending,
-  deleteMakeupAttendance,
   adjustAttendance,
   deleteAttendance,
-  updateEmployeeAvatar,
-  requestSalaryAdvance,
-  getSalaryAdvances,
-  getSalaryMonthForAdvance,
-  getVietnamTodayYMD,
-  getVietnamCurrentYM,
-  updateSalaryAdvance,
-  deleteSalaryAdvance,
-  requestLeave,
-  getLeaveRequests,
-  deleteLeaveRequest,
-  createCashHandover,
-  getCashHandovers,
-  deleteCashHandover,
-  countLeaveDaysInMonth,
-  calculateMonthlyAbsenceDays,
   getEmployeeMonthlySummary,
   getMasterMonthlyReport,
+  exportAttendanceExcel,
   getSettings,
   updateSettings,
   getShifts,
-  getAdminProfileStatus,
-  updateAdminProfile,
-  changeAdminPassword,
-  resetAdminPasswordDirect,
-  recoverAdminPassword,
-  hashPassword,
-  comparePasswords,
-  isBcryptHash,
+  // SHARED SHIFTS (NEW)
+  getSharedShifts,
+  createSharedShift,
+  updateSharedShift,
+  deleteSharedShift,
+  generateAttendanceFromSharedShifts,
+  // CLOUD SYNC
+  syncFromCloud,
+  flushCloudSync
 };
